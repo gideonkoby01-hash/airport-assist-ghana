@@ -1,0 +1,134 @@
+{
+  "name": "ShiftReport",
+  "type": "object",
+  "properties": {
+    "supervisor_id": {
+      "type": "string"
+    },
+    "supervisor_name": {
+      "type": "string"
+    },
+    "shift_type": {
+      "type": "string",
+      "enum": [
+        "morning",
+        "night"
+      ]
+    },
+    "shift_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "shift_start": {
+      "type": "string"
+    },
+    "shift_end": {
+      "type": "string"
+    },
+    "booking_count": {
+      "type": "number"
+    },
+    "total_passengers": {
+      "type": "number"
+    },
+    "service_breakdown": {
+      "type": "string"
+    },
+    "total_revenue": {
+      "type": "number"
+    },
+    "total_collected": {
+      "type": "number"
+    },
+    "total_outstanding": {
+      "type": "number"
+    },
+    "lounges_used": {
+      "type": "string"
+    },
+    "porter_count": {
+      "type": "number"
+    },
+    "total_commission": {
+      "type": "number"
+    },
+    "cancellations": {
+      "type": "number"
+    },
+    "no_shows": {
+      "type": "number"
+    },
+    "completed": {
+      "type": "number"
+    },
+    "remarks": {
+      "type": "string"
+    },
+    "booking_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "shift_type",
+    "shift_date",
+    "supervisor_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "management"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "supervisor"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "management"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

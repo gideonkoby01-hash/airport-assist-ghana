@@ -1,0 +1,20 @@
+{
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "passenger",
+        "supervisor",
+        "management",
+        "admin"
+      ],
+      "default": "passenger"
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "name": "User",
+  "type": "object"
+}
