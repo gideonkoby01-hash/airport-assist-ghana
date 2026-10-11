@@ -40,23 +40,16 @@ export default function StaffManager() {
     if (!email.trim()) return setErr("Enter an email address.");
     setInviting(true);
     try {
-      // The platform only accepts "user" or "admin" as an invite role, so invite
-      // with the closest platform role, then set the app-specific role on the
-      // newly created user record.
+      // The platform only accepts "user" or "admin" as an invite role. Invite
+      // with the closest platform role, then store the desired app-specific
+      // role so it is applied automatically when the user logs in.
       const platformRole = role === "admin" ? "admin" : "user";
-      const result = await base44.users.inviteUser(email.trim(), platformRole);
+      await base44.users.inviteUser(email.trim(), platformRole);
       if (role !== platformRole) {
-        let targetId = result?.id || result?._id;
-        if (!targetId) {
-          const items = await base44.entities.User.filter({});
-          const target = (items || []).find(
-            (u) => (u.email || "").toLowerCase() === email.trim().toLowerCase()
-          );
-          targetId = target?.id;
-        }
-        if (targetId) {
-          await base44.entities.User.update(targetId, { role });
-        }
+        await base44.entities.StaffRoleAssignment.upsert(
+          [{ email: email.trim().toLowerCase(), role }],
+          { key: "email" }
+        );
       }
       setMsg(`Invitation sent to ${email.trim()} as ${roleLabel(role)}.`);
       setEmail("");

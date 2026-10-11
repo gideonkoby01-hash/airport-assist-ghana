@@ -81,7 +81,16 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      let currentUser = await base44.auth.me();
+      // Apply any pending staff role assignment (admin invite flow).
+      try {
+        const res = await base44.functions.invoke("applyStaffRoleOnLogin", {});
+        if (res?.data?.applied) {
+          currentUser = await base44.auth.me();
+        }
+      } catch (e) {
+        console.warn("Staff role check failed:", e);
+      }
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);

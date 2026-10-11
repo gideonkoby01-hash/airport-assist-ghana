@@ -19,6 +19,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [role, setRole] = useState("passenger");
+  const [fullName, setFullName] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,7 +48,17 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      window.location.href = safeReturnTo();
+      if (role === "supervisor" || role === "management") {
+        // Submit a staff access request; the account is held as "pending" until an admin approves.
+        const res = await base44.functions.invoke("submitStaffRequest", {
+          requested_role: role,
+          full_name: fullName.trim(),
+        });
+        if (res?.data?.error) throw new Error(res.data.error);
+        window.location.href = "/pending";
+      } else {
+        window.location.href = safeReturnTo();
+      }
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {
@@ -167,6 +179,41 @@ export default function Register() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label>I am registering as</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {["passenger", "supervisor", "management"].map((r) => (
+              <button
+                type="button"
+                key={r}
+                onClick={() => setRole(r)}
+                className={`px-2 py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${
+                  role === r ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          {role !== "passenger" && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Staff accounts require Admin approval before access.
+            </p>
+          )}
+        </div>
+        {role !== "passenger" && (
+          <div className="space-y-2">
+            <Label htmlFor="fullname">Full Name</Label>
+            <Input
+              id="fullname"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your full name"
+              className="h-12"
+              required
+            />
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">

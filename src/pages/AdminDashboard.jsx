@@ -6,6 +6,7 @@ import RoleGuard from "@/components/RoleGuard";
 import StaffManager from "@/components/StaffManager";
 import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
+import StaffRequests from "@/components/StaffRequests";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
@@ -52,6 +53,7 @@ function AdminInner() {
         <TabButton active={tab === "staff"} onClick={() => setTab("staff")}>Staff Accounts</TabButton>
         <TabButton active={tab === "packages"} onClick={() => setTab("packages")}>Service Packages</TabButton>
         <TabButton active={tab === "lounges"} onClick={() => setTab("lounges")}>Lounges</TabButton>
+        <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>Staff Requests</TabButton>
       </div>
 
       {tab === "summary" && (
@@ -67,6 +69,7 @@ function AdminInner() {
       {tab === "staff" && <StaffManager />}
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
+      {tab === "requests" && <StaffRequests />}
     </AppLayout>
   );
 }

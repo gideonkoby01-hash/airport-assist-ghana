@@ -7,7 +7,8 @@
         "passenger",
         "supervisor",
         "management",
-        "admin"
+        "admin",
+        "pending"
       ],
       "default": "passenger"
     }

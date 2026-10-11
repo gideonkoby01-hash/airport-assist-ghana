@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 export default function RoleGuard({ allowedRoles, children }) {
   const { user } = useAuth();
   const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
+  if (role === "pending") return <Navigate to="/pending" replace />;
   if (!allowedRoles.includes(role)) {
     const home =
       role === "admin" ? "/admin" : role === "management" ? "/management" : role === "supervisor" ? "/supervisor" : "/passenger";

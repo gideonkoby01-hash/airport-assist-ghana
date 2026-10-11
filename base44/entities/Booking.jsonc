@@ -184,7 +184,35 @@
         }
       ]
     },
-    "create": {},
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "passenger"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "supervisor"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "management"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
     "update": {
       "$or": [
         {

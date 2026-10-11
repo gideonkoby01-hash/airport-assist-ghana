@@ -18,6 +18,7 @@ import SupervisorDashboard from '@/pages/SupervisorDashboard';
 import ManagementDashboard from '@/pages/ManagementDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import BookingDetail from '@/pages/BookingDetail';
+import PendingApproval from '@/pages/PendingApproval';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
         <Route path="/management" element={<ManagementDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/bookings/:id" element={<BookingDetail />} />
+        <Route path="/pending" element={<PendingApproval />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
