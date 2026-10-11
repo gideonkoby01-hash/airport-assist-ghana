@@ -21,8 +21,8 @@ export default function StaffManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.User.filter({}, { sort: "email", limit: 100 });
-      setUsers(page.items || []);
+      const items = await base44.entities.User.filter({});
+      setUsers((items || []).sort((a, b) => (a.email || "").localeCompare(b.email || "")));
     } catch (e) {
       setErr(e.message || "Failed to load users.");
     } finally {

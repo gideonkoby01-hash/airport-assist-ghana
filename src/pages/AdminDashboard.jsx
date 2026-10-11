@@ -32,7 +32,7 @@ function AdminInner() {
       .aggregate({ groupBy: "status", sum: ["total_value", "amount_collected", "outstanding_balance"] })
       .then((r) => setRows(r.rows || []))
       .catch(() => setRows([]));
-    base44.entities.User.filter({}, { limit: 100 }).then((p) => setUserCount((p.items || []).length)).catch(() => {});
+    base44.entities.User.filter({}).then((items) => setUserCount((items || []).length)).catch(() => {});
     base44.entities.Lounge.count().then(setLoungeCount).catch(() => {});
   }, []);
 
