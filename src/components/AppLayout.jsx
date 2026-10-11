@@ -37,7 +37,7 @@ export default function AppLayout({ children }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const role = user?.role || "passenger";
+  const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
   const items = NAV[role] || NAV.passenger;
   const currentTab = new URLSearchParams(location.search).get("tab");
 
