@@ -66,6 +66,18 @@ export const PAYMENT_METHOD_LABELS = {
   corporate_account: "Corporate Account",
 };
 
+export const REPORT_SERVICE_LABELS = {
+  departure_only: "Departure Only",
+  full_departure: "Full Departure Service",
+  arrival: "Arrival Service",
+};
+
+export const REPORT_PAYMENT_LABELS = {
+  pos: "POS",
+  cash: "Cash",
+  momo: "MoMo",
+};
+
 export const PACKAGE_LABELS = {
   full_arrival: "Full Arrival Assist",
   full_departure: "Full Departure Assist",

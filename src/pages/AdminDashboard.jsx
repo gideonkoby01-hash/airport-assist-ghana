@@ -9,6 +9,7 @@ import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import StaffRequests from "@/components/StaffRequests";
+import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
@@ -58,6 +59,7 @@ function AdminInner() {
         <TabButton active={tab === "porters"} onClick={() => setTab("porters")}>Porters</TabButton>
         <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
         <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>Staff Requests</TabButton>
+        <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
       </div>
 
       {tab === "summary" && (
@@ -76,6 +78,7 @@ function AdminInner() {
       {tab === "porters" && <PorterManager />}
       {tab === "supervisors" && <SupervisorDirectory />}
       {tab === "requests" && <StaffRequests />}
+      {tab === "reports" && <ShiftReportViewer />}
     </AppLayout>
   );
 }

@@ -22,12 +22,14 @@ const NAV = {
   management: [
     { label: "Operations", to: "/management", tab: null },
     { label: "All Bookings", to: "/management", tab: "bookings" },
+    { label: "Shift Reports", to: "/management", tab: "reports" },
   ],
   admin: [
     { label: "Summary", to: "/admin", tab: null },
     { label: "Staff Accounts", to: "/admin", tab: "staff" },
     { label: "Service Packages", to: "/admin", tab: "packages" },
     { label: "Lounges", to: "/admin", tab: "lounges" },
+    { label: "Shift Reports", to: "/admin", tab: "reports" },
   ],
 };
 

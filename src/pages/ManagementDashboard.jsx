@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingList from "@/components/BookingList";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
+import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import { formatGHS, STATUS_LABELS } from "@/lib/packages";
 import { BarChart3, Wallet, Users, AlertCircle } from "lucide-react";
@@ -83,6 +84,7 @@ function ManagementInner() {
         <TabButton active={tab === "ops"} onClick={() => setTab("ops")}>Summary</TabButton>
         <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>All Bookings</TabButton>
         <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
+        <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
       </div>
 
       {tab === "ops" && (
@@ -132,6 +134,7 @@ function ManagementInner() {
       )}
 
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
+      {tab === "reports" && <ShiftReportViewer />}
     </AppLayout>
   );
 }

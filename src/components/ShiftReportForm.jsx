@@ -5,235 +5,578 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, FileText, CalendarDays, Save } from "lucide-react";
+import { Loader2, Plus, Trash2, Save, ArrowLeft, FileText, Eye, CalendarDays } from "lucide-react";
 import {
-  PACKAGE_LABELS,
-  shiftBounds,
   formatGHS,
-  PORTER_COMMISSION_PER_PASSENGER } from
-"@/lib/packages";
+  REPORT_SERVICE_LABELS,
+  REPORT_PAYMENT_LABELS,
+  PORTER_COMMISSION_PER_PASSENGER,
+} from "@/lib/packages";
+import ShiftReportSummary from "@/components/ShiftReportSummary";
+
+const SERVICE_TYPES = [
+  { value: "departure_only", label: "Departure Only" },
+  { value: "full_departure", label: "Full Departure Service" },
+  { value: "arrival", label: "Arrival Service" },
+];
+
+const PAYMENT_METHODS = [
+  { value: "pos", label: "POS" },
+  { value: "cash", label: "Cash" },
+  { value: "momo", label: "MoMo" },
+];
 
 export default function ShiftReportForm({ supervisor }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [shiftDate, setShiftDate] = useState(today);
-  const [shiftType, setShiftType] = useState("morning");
+  const [view, setView] = useState("form");
+  const [submittedReport, setSubmittedReport] = useState(null);
+  const [viewingReport, setViewingReport] = useState(null);
+
+  const [periodStart, setPeriodStart] = useState(today);
+  const [periodEnd, setPeriodEnd] = useState(today);
+  const [meetAssistEntries, setMeetAssistEntries] = useState([
+    { service_type: "", amount_paid: "", payment_method: "" },
+  ]);
+  const [porterTotalBookings, setPorterTotalBookings] = useState("");
+  const [porterAmountPaid, setPorterAmountPaid] = useState("");
+  const [porterPaymentMethod, setPorterPaymentMethod] = useState("");
+  const [porterEntries, setPorterEntries] = useState([]);
   const [remarks, setRemarks] = useState("");
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const [porters, setPorters] = useState([]);
+  const [reports, setReports] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(null);
-  const [reports, setReports] = useState([]);
+  const [duplicateWarning, setDuplicateWarning] = useState("");
 
-  const loadBookings = async () => {
-    setLoading(true);
-    setError("");
+  const loadPorters = async () => {
     try {
-      const page = await base44.entities.Booking.filter(
-        { assigned_supervisor_id: supervisor.id, flight_date: shiftDate },
-        { sort: "scheduled_flight_time", limit: 200 }
-      );
-      setBookings(page.items || []);
-    } catch (err) {
-      setError(err.message || "Failed to load bookings for this date.");
-    } finally {
-      setLoading(false);
-    }
+      const page = await base44.entities.Porter.filter({ active: true }, { sort: "full_name" });
+      setPorters(page.items || []);
+    } catch {}
   };
-
-  useEffect(() => {
-    loadBookings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shiftDate]);
 
   const loadReports = async () => {
     try {
       const page = await base44.entities.ShiftReport.filter(
         { supervisor_id: supervisor.id },
-        { sort: "-created_date", limit: 10 }
+        { sort: "-created_date", limit: 20 }
       );
       setReports(page.items || []);
     } catch {}
   };
+
   useEffect(() => {
+    loadPorters();
     loadReports();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const totals = useMemo(() => {
-    const active = bookings.filter((b) => b.status !== "cancelled" && b.status !== "no_show");
-    const breakdown = {};
-    bookings.forEach((b) => {
-      breakdown[b.package_name || PACKAGE_LABELS[b.package_code] || b.package_code] =
-      (breakdown[b.package_name || PACKAGE_LABELS[b.package_code] || b.package_code] || 0) + 1;
-    });
-    const lounges = [
-    ...new Set(bookings.map((b) => b.lounge_used).filter(Boolean))];
-
-    const porterCount = bookings.reduce((s, b) => s + (b.porters?.length || 0), 0);
-    const commission = bookings.reduce(
-      (s, b) => s + (b.porters || []).reduce((ss, p) => ss + (p.commission || 0), 0),
-      0
+  const computed = useMemo(() => {
+    const validMA = meetAssistEntries.filter(
+      (e) => e.service_type && e.payment_method && Number(e.amount_paid) > 0
     );
-    return {
-      booking_count: bookings.length,
-      total_passengers: active.reduce((s, b) => s + (b.num_passengers || 0), 0),
-      service_breakdown: Object.entries(breakdown).
-      map(([k, v]) => `${k}: ${v}`).
-      join(", "),
-      total_revenue: active.reduce((s, b) => s + (b.total_value || 0), 0),
-      total_collected: bookings.reduce((s, b) => s + (b.amount_collected || 0), 0),
-      total_outstanding: bookings.reduce((s, b) => s + (b.outstanding_balance || 0), 0),
-      lounges_used: lounges.join(", "),
-      porter_count: porterCount,
-      total_commission: commission,
-      cancellations: bookings.filter((b) => b.status === "cancelled").length,
-      no_shows: bookings.filter((b) => b.status === "no_show").length,
-      completed: bookings.filter((b) => b.status === "completed").length
+    const counts = {
+      departure_only: validMA.filter((e) => e.service_type === "departure_only").length,
+      full_departure: validMA.filter((e) => e.service_type === "full_departure").length,
+      arrival: validMA.filter((e) => e.service_type === "arrival").length,
     };
-  }, [bookings]);
+    const totalsByMethod = {
+      pos: validMA.filter((e) => e.payment_method === "pos").reduce((s, e) => s + Number(e.amount_paid || 0), 0),
+      cash: validMA.filter((e) => e.payment_method === "cash").reduce((s, e) => s + Number(e.amount_paid || 0), 0),
+      momo: validMA.filter((e) => e.payment_method === "momo").reduce((s, e) => s + Number(e.amount_paid || 0), 0),
+    };
+    const meetAssistTotal = validMA.reduce((s, e) => s + Number(e.amount_paid || 0), 0);
+
+    const validPorters = porterEntries.filter((e) => e.porter_id && Number(e.passengers_handled) > 0);
+    const porterTotalPassengers = validPorters.reduce((s, e) => s + Number(e.passengers_handled || 0), 0);
+    const porterTotalCommission = validPorters.reduce((s, e) => s + Number(e.commission || 0), 0);
+    const porterAmt = Number(porterAmountPaid || 0);
+    const grandTotal = meetAssistTotal + porterAmt;
+
+    return { validMA, validPorters, counts, totalsByMethod, meetAssistTotal, porterTotalPassengers, porterTotalCommission, porterAmt, grandTotal };
+  }, [meetAssistEntries, porterEntries, porterAmountPaid]);
+
+  const addMAEntry = () =>
+    setMeetAssistEntries([...meetAssistEntries, { service_type: "", amount_paid: "", payment_method: "" }]);
+  const removeMAEntry = (idx) => setMeetAssistEntries(meetAssistEntries.filter((_, i) => i !== idx));
+  const updateMAEntry = (idx, field, value) => {
+    const next = [...meetAssistEntries];
+    next[idx] = { ...next[idx], [field]: value };
+    setMeetAssistEntries(next);
+  };
+
+  const addPorterEntry = () =>
+    setPorterEntries([...porterEntries, { porter_id: "", porter_name: "", passengers_handled: "", commission: 0 }]);
+  const removePorterEntry = (idx) => setPorterEntries(porterEntries.filter((_, i) => i !== idx));
+  const updatePorterEntry = (idx, field, value) => {
+    const next = [...porterEntries];
+    next[idx] = { ...next[idx], [field]: value };
+    if (field === "porter_id") {
+      const p = porters.find((p) => p.id === value);
+      next[idx].porter_name = p ? p.full_name : "";
+    }
+    if (field === "passengers_handled") {
+      next[idx].commission = PORTER_COMMISSION_PER_PASSENGER * Number(value || 0);
+    }
+    setPorterEntries(next);
+  };
+
+  const validate = () => {
+    if (!periodStart || !periodEnd) return "Select a reporting period.";
+    if (periodEnd < periodStart) return "Period end must be on or after period start.";
+    if (computed.validMA.length === 0 && computed.validPorters.length === 0)
+      return "Add at least one Meet & Assist entry or Porter entry.";
+    for (let i = 0; i < meetAssistEntries.length; i++) {
+      const e = meetAssistEntries[i];
+      if (e.service_type || e.amount_paid || e.payment_method) {
+        if (!e.service_type || !e.payment_method || Number(e.amount_paid) <= 0)
+          return `Meet & Assist entry ${i + 1} is incomplete. Fill in service type, amount, and payment method, or remove it.`;
+      }
+    }
+    for (let i = 0; i < porterEntries.length; i++) {
+      const e = porterEntries[i];
+      if (e.porter_id || e.passengers_handled) {
+        if (!e.porter_id || Number(e.passengers_handled) <= 0)
+          return `Porter entry ${i + 1} is incomplete. Select a porter and enter passengers handled, or remove it.`;
+      }
+    }
+    return "";
+  };
+
+  const buildPayload = () => {
+    const payload = {
+      supervisor_id: supervisor.id,
+      supervisor_name: supervisor.full_name || supervisor.email,
+      reporting_period_start: periodStart,
+      reporting_period_end: periodEnd,
+      meet_assist_entries: computed.validMA.map((e) => ({
+        service_type: e.service_type,
+        amount_paid: Number(e.amount_paid),
+        payment_method: e.payment_method,
+      })),
+      porter_total_bookings: Number(porterTotalBookings || 0),
+      porter_amount_paid: Number(porterAmountPaid || 0),
+      porter_entries: computed.validPorters.map((e) => ({
+        porter_id: e.porter_id,
+        porter_name: e.porter_name,
+        passengers_handled: Number(e.passengers_handled),
+        commission: Number(e.commission),
+      })),
+      meet_assist_total_paid: computed.meetAssistTotal,
+      porter_total_passengers: computed.porterTotalPassengers,
+      porter_total_commission: computed.porterTotalCommission,
+      grand_total_paid: computed.grandTotal,
+      remarks: remarks.trim(),
+    };
+    if (porterPaymentMethod) payload.porter_payment_method = porterPaymentMethod;
+    return payload;
+  };
 
   const submit = async () => {
     setError("");
-    if (!shiftDate) return setError("Select a shift date.");
+    setDuplicateWarning("");
+    const v = validate();
+    if (v) {
+      setError(v);
+      return;
+    }
     setSaving(true);
     try {
-      const bounds = shiftBounds(shiftDate, shiftType);
-      const payload = {
+      const dup = await base44.entities.ShiftReport.filter({
         supervisor_id: supervisor.id,
-        supervisor_name: supervisor.full_name || supervisor.email,
-        shift_type: shiftType,
-        shift_date: shiftDate,
-        shift_start: bounds.start.toISOString(),
-        shift_end: bounds.end.toISOString(),
-        ...totals,
-        remarks: remarks.trim(),
-        booking_ids: bookings.map((b) => b.id)
-      };
-      const rep = await base44.entities.ShiftReport.create(payload);
-      setSuccess(rep);
-      setRemarks("");
+        reporting_period_start: periodStart,
+        reporting_period_end: periodEnd,
+      });
+      if ((dup.items || []).length > 0) {
+        setDuplicateWarning(
+          "A report already exists for this reporting period. View it from your recent reports instead of submitting a duplicate."
+        );
+        setSaving(false);
+        return;
+      }
+      const rep = await base44.entities.ShiftReport.create(buildPayload());
+      setSubmittedReport(rep);
       loadReports();
     } catch (err) {
-      setError(err.message || "Failed to submit shift report.");
+      setError(err.message || "Failed to submit report.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (success) {
+  const resetForm = () => {
+    setSubmittedReport(null);
+    setView("form");
+    setPeriodStart(today);
+    setPeriodEnd(today);
+    setMeetAssistEntries([{ service_type: "", amount_paid: "", payment_method: "" }]);
+    setPorterTotalBookings("");
+    setPorterAmountPaid("");
+    setPorterPaymentMethod("");
+    setPorterEntries([]);
+    setRemarks("");
+    setError("");
+    setDuplicateWarning("");
+  };
+
+  if (submittedReport) {
     return (
-      <div className="bg-card rounded-2xl border border-emerald-200 p-6 text-center">
-        <FileText className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
-        <h3 className="text-lg font-bold">Shift report submitted</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {success.shift_type === "morning" ? "Morning" : "Night"} shift · {success.shift_date}
-        </p>
-        <Button className="mt-4" onClick={() => setSuccess(null)}>
+      <div className="space-y-5">
+        <div className="bg-card rounded-2xl border border-emerald-200 p-6 text-center">
+          <FileText className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+          <h3 className="text-lg font-bold">Report submitted successfully</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {submittedReport.reporting_period_start} to {submittedReport.reporting_period_end}
+          </p>
+        </div>
+        <ShiftReportSummary report={submittedReport} />
+        <Button onClick={resetForm} className="w-full sm:w-auto">
           Submit another report
         </Button>
-      </div>);
-
+      </div>
+    );
   }
 
+  if (viewingReport) {
+    return (
+      <div className="space-y-5">
+        <Button variant="outline" onClick={() => setViewingReport(null)}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to form
+        </Button>
+        <ShiftReportSummary report={viewingReport} />
+      </div>
+    );
+  }
+
+  if (view === "summary") {
+    const previewReport = { ...buildPayload(), created_date: new Date().toISOString() };
+    return (
+      <div className="space-y-5">
+        <h3 className="text-lg font-bold">Report Summary — Review Before Submitting</h3>
+        {duplicateWarning && (
+          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            {duplicateWarning}
+          </div>
+        )}
+        <ShiftReportSummary report={previewReport} />
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setView("form");
+              setDuplicateWarning("");
+            }}
+            disabled={saving}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to form
+          </Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Submit report
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const v = validate();
   return (
     <div className="space-y-5">
       <div className="bg-card rounded-2xl border border-border p-5">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-accent" /> Shift Details
+          <CalendarDays className="w-4 h-4 text-accent" /> Reporting Period
         </h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Shift date</Label>
-            <Input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
+            <Label>Period start</Label>
+            <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Shift</Label>
-            <Select value={shiftType} onValueChange={setShiftType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Label>Period end</Label>
+            <Input type="date" value={periodEnd} min={periodStart} onChange={(e) => setPeriodEnd(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+      {duplicateWarning && (
+        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          {duplicateWarning}
+        </div>
+      )}
+
+      {/* Meet & Assist Section */}
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground">A. Meet & Assist</h3>
+          <Button size="sm" variant="outline" onClick={addMAEntry}>
+            <Plus className="w-4 h-4 mr-1" /> Add Entry
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {meetAssistEntries.map((entry, idx) => (
+            <div
+              key={idx}
+              className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-3 last:border-0 last:pb-0"
+            >
+              <div className="sm:col-span-4 space-y-1">
+                <Label className="text-xs">Service Type</Label>
+                <Select value={entry.service_type} onValueChange={(val) => updateMAEntry(idx, "service_type", val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_TYPES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-3 space-y-1">
+                <Label className="text-xs">Amount Paid (GHS)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={entry.amount_paid}
+                  onChange={(e) => updateMAEntry(idx, "amount_paid", e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="sm:col-span-4 space-y-1">
+                <Label className="text-xs">Payment Method</Label>
+                <Select value={entry.payment_method} onValueChange={(val) => updateMAEntry(idx, "payment_method", val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-1 flex justify-end">
+                {meetAssistEntries.length > 1 && (
+                  <Button size="icon" variant="ghost" onClick={() => removeMAEntry(idx)}>
+                    <Trash2 className="w-4 h-4 text-rose-500" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {computed.validMA.length > 0 && (
+          <div className="mt-4 grid sm:grid-cols-2 gap-4 text-sm">
+            <div className="bg-secondary rounded-lg p-3">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Service Counts</p>
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span>Departure Only</span>
+                  <span className="font-medium">{computed.counts.departure_only}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Full Departure Service</span>
+                  <span className="font-medium">{computed.counts.full_departure}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Arrival Service</span>
+                  <span className="font-medium">{computed.counts.arrival}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-secondary rounded-lg p-3">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Amounts by Method</p>
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span>POS</span>
+                  <span className="font-medium">{formatGHS(computed.totalsByMethod.pos)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cash</span>
+                  <span className="font-medium">{formatGHS(computed.totalsByMethod.cash)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>MoMo</span>
+                  <span className="font-medium">{formatGHS(computed.totalsByMethod.momo)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-1 mt-1">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-semibold">{formatGHS(computed.meetAssistTotal)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Porter Section */}
+      <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground">B. Porter</h3>
+          <Button size="sm" variant="outline" onClick={addPorterEntry} disabled={porters.length === 0}>
+            <Plus className="w-4 h-4 mr-1" /> Add Porter
+          </Button>
+        </div>
+
+        {porters.length === 0 && (
+          <p className="text-sm text-muted-foreground mb-3">
+            No active porters in the directory. Ask an admin to add porters first.
+          </p>
+        )}
+
+        <div className="grid sm:grid-cols-3 gap-3 mb-4">
+          <div className="space-y-1">
+            <Label className="text-xs">Total Porter Bookings</Label>
+            <Input
+              type="number"
+              min="0"
+              value={porterTotalBookings}
+              onChange={(e) => setPorterTotalBookings(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Amount Paid (GHS)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={porterAmountPaid}
+              onChange={(e) => setPorterAmountPaid(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Payment Method</Label>
+            <Select value={porterPaymentMethod} onValueChange={setPorterPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select method" />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="morning">Morning (06:00–18:00)</SelectItem>
-                <SelectItem value="night">Night (18:00–06:00)</SelectItem>
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">Africa/Accra time. Totals are calculated from bookings assigned to you on this date.</p>
+
+        {porterEntries.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Porter Assignments (commission: {formatGHS(PORTER_COMMISSION_PER_PASSENGER)}/passenger)
+            </p>
+            {porterEntries.map((entry, idx) => (
+              <div
+                key={idx}
+                className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-3 last:border-0 last:pb-0"
+              >
+                <div className="sm:col-span-5 space-y-1">
+                  <Label className="text-xs">Porter</Label>
+                  <Select value={entry.porter_id} onValueChange={(val) => updatePorterEntry(idx, "porter_id", val)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select porter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {porters.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-3 space-y-1">
+                  <Label className="text-xs">Passengers Handled</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={entry.passengers_handled}
+                    onChange={(e) => updatePorterEntry(idx, "passengers_handled", e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="sm:col-span-3 space-y-1">
+                  <Label className="text-xs">Commission</Label>
+                  <Input readOnly value={formatGHS(entry.commission || 0)} className="bg-secondary" />
+                </div>
+                <div className="sm:col-span-1 flex justify-end">
+                  <Button size="icon" variant="ghost" onClick={() => removePorterEntry(idx)}>
+                    <Trash2 className="w-4 h-4 text-rose-500" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end gap-6 text-sm">
+              <span>
+                Total Passengers: <span className="font-semibold">{computed.porterTotalPassengers}</span>
+              </span>
+              <span>
+                Total Commission: <span className="font-semibold">{formatGHS(computed.porterTotalCommission)}</span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
-
-      {/* Computed totals */}
-      <div className="bg-card rounded-2xl border border-border p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-foreground">Calculated Totals</h3>
-          {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-          <Metric label="Bookings" value={totals.booking_count} />
-          <Metric label="Passengers" value={totals.total_passengers} />
-          <Metric label="Completed" value={totals.completed} />
-          <Metric label="Cancellations" value={totals.cancellations} />
-          <Metric label="No-shows" value={totals.no_shows} />
-          <Metric label="Porters assigned" value={totals.porter_count} />
-          <Metric label="Revenue" value={formatGHS(totals.total_revenue)} />
-          <Metric label="Collected" value={formatGHS(totals.total_collected)} />
-          <Metric label="Outstanding" value={formatGHS(totals.total_outstanding)} />
-          <Metric label="Commission" value={formatGHS(totals.total_commission)} />
-        </div>
-        {totals.service_breakdown &&
-        <p className="text-xs text-muted-foreground mt-3">
-            <span className="font-medium">Service types:</span> {totals.service_breakdown}
-          </p>
-        }
-        {totals.lounges_used &&
-        <p className="text-xs text-muted-foreground mt-1">
-            <span className="font-medium">Lounges used:</span> {totals.lounges_used}
-          </p>
-        }
-        
-
-        
-      </div>
-
+      {/* Remarks */}
       <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-        <Label>Remarks</Label>
+        <Label>Remarks (optional)</Label>
         <Textarea
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
           placeholder="Incidents, observations, handover notes…"
-          rows={4} />
-        
-        <Button onClick={submit} disabled={saving || loading} className="w-full sm:w-auto">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-          Submit shift report
-        </Button>
+          rows={3}
+        />
       </div>
 
-      {reports.length > 0 &&
-      <div className="bg-card rounded-2xl border border-border p-5">
+      {/* Actions */}
+      <div className="flex gap-3">
+        <Button
+          onClick={() => {
+            setError("");
+            setDuplicateWarning("");
+            setView("summary");
+          }}
+          disabled={!!v}
+        >
+          <Eye className="w-4 h-4 mr-2" /> Review Summary
+        </Button>
+      </div>
+      {v && <p className="text-xs text-muted-foreground">{v}</p>}
+
+      {/* Recent Reports */}
+      {reports.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-5">
           <h3 className="text-sm font-semibold text-foreground mb-3">Recent Reports</h3>
-          <div className="space-y-2">
-            {reports.map((r) =>
-          <div key={r.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
-                <span className="font-medium capitalize">{r.shift_type} shift · {r.shift_date}</span>
-                <span className="text-muted-foreground">
-                  {r.booking_count} bookings · {formatGHS(r.total_revenue)} · {formatGHS(r.total_collected)} collected
+          <div className="space-y-1">
+            {reports.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => setViewingReport(r)}
+                className="w-full flex items-center justify-between text-sm border-b border-border pb-2 last:border-0 hover:bg-secondary/50 rounded-lg p-2 -mx-2 text-left transition-colors"
+              >
+                <span className="font-medium">
+                  {r.reporting_period_start
+                    ? `${r.reporting_period_start} to ${r.reporting_period_end}`
+                    : `${r.shift_date || "—"} (${r.shift_type || ""})`}
                 </span>
-              </div>
-          )}
+                <span className="text-muted-foreground">
+                  {r.grand_total_paid != null ? formatGHS(r.grand_total_paid) : formatGHS(r.total_revenue || 0)}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
-      }
-    </div>);
-
-}
-
-function Metric({ label, value }) {
-  return (
-    <div className="bg-secondary rounded-lg p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-semibold text-foreground mt-0.5">{value}</p>
-    </div>);
-
+      )}
+    </div>
+  );
 }

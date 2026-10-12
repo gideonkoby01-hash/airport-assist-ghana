@@ -69,12 +69,93 @@
       "items": {
         "type": "string"
       }
+    },
+    "reporting_period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "reporting_period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "meet_assist_entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service_type": {
+            "type": "string",
+            "enum": [
+              "departure_only",
+              "full_departure",
+              "arrival"
+            ]
+          },
+          "amount_paid": {
+            "type": "number"
+          },
+          "payment_method": {
+            "type": "string",
+            "enum": [
+              "pos",
+              "cash",
+              "momo"
+            ]
+          }
+        }
+      }
+    },
+    "porter_total_bookings": {
+      "type": "number"
+    },
+    "porter_amount_paid": {
+      "type": "number"
+    },
+    "porter_payment_method": {
+      "type": "string",
+      "enum": [
+        "pos",
+        "cash",
+        "momo"
+      ]
+    },
+    "porter_entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "porter_id": {
+            "type": "string"
+          },
+          "porter_name": {
+            "type": "string"
+          },
+          "passengers_handled": {
+            "type": "number"
+          },
+          "commission": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "meet_assist_total_paid": {
+      "type": "number"
+    },
+    "porter_total_passengers": {
+      "type": "number"
+    },
+    "porter_total_commission": {
+      "type": "number"
+    },
+    "grand_total_paid": {
+      "type": "number"
     }
   },
   "required": [
-    "shift_type",
-    "shift_date",
-    "supervisor_id"
+    "supervisor_id",
+    "reporting_period_start",
+    "reporting_period_end"
   ],
   "rls": {
     "read": {
