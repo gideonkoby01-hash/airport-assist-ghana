@@ -33,7 +33,7 @@ export default function ShiftReportForm({ supervisor }) {
   const [viewingReport, setViewingReport] = useState(null);
 
   const [periodStart, setPeriodStart] = useState(today);
-  const [periodEnd, setPeriodEnd] = useState(today);
+  const [shiftType, setShiftType] = useState("morning");
   const [meetAssistEntries, setMeetAssistEntries] = useState([
     { service_type: "", amount_paid: "", payment_method: "" },
   ]);
@@ -123,8 +123,8 @@ export default function ShiftReportForm({ supervisor }) {
   };
 
   const validate = () => {
-    if (!periodStart || !periodEnd) return "Select a reporting period.";
-    if (periodEnd < periodStart) return "Period end must be on or after period start.";
+    if (!periodStart) return "Select a reporting period start date.";
+    if (!shiftType) return "Select a shift time.";
     if (computed.validMA.length === 0 && computed.validPorters.length === 0)
       return "Add at least one Meet & Assist entry or Porter entry.";
     for (let i = 0; i < meetAssistEntries.length; i++) {
@@ -149,7 +149,7 @@ export default function ShiftReportForm({ supervisor }) {
       supervisor_id: supervisor.id,
       supervisor_name: supervisor.full_name || supervisor.email,
       reporting_period_start: periodStart,
-      reporting_period_end: periodEnd,
+      shift_type: shiftType,
       meet_assist_entries: computed.validMA.map((e) => ({
         service_type: e.service_type,
         amount_paid: Number(e.amount_paid),
@@ -186,7 +186,7 @@ export default function ShiftReportForm({ supervisor }) {
       const dup = await base44.entities.ShiftReport.filter({
         supervisor_id: supervisor.id,
         reporting_period_start: periodStart,
-        reporting_period_end: periodEnd,
+        shift_type: shiftType,
       });
       if ((dup.items || []).length > 0) {
         setDuplicateWarning(
@@ -209,7 +209,7 @@ export default function ShiftReportForm({ supervisor }) {
     setSubmittedReport(null);
     setView("form");
     setPeriodStart(today);
-    setPeriodEnd(today);
+    setShiftType("morning");
     setMeetAssistEntries([{ service_type: "", amount_paid: "", payment_method: "" }]);
     setPorterTotalBookings("");
     setPorterAmountPaid("");
@@ -293,8 +293,16 @@ export default function ShiftReportForm({ supervisor }) {
             <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Period end</Label>
-            <Input type="date" value={periodEnd} min={periodStart} onChange={(e) => setPeriodEnd(e.target.value)} />
+            <Label>Shift time</Label>
+            <Select value={shiftType} onValueChange={setShiftType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="morning">Morning Shift</SelectItem>
+                <SelectItem value="night">Night Shift</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -387,6 +395,10 @@ export default function ShiftReportForm({ supervisor }) {
                 <div className="flex justify-between">
                   <span>Arrival Service</span>
                   <span className="font-medium">{computed.counts.arrival}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-1 mt-1">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-semibold">{computed.validMA.length}</span>
                 </div>
               </div>
             </div>

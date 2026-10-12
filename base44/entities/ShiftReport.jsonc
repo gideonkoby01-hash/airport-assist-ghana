@@ -155,7 +155,7 @@
   "required": [
     "supervisor_id",
     "reporting_period_start",
-    "reporting_period_end"
+    "shift_type"
   ],
   "rls": {
     "read": {

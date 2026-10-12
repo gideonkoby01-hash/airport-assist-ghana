@@ -1,5 +1,5 @@
 import React from "react";
-import { formatGHS, REPORT_SERVICE_LABELS, REPORT_PAYMENT_LABELS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
+import { formatGHS, REPORT_SERVICE_LABELS, REPORT_PAYMENT_LABELS, PORTER_COMMISSION_PER_PASSENGER, SHIFT_LABELS } from "@/lib/packages";
 
 export default function ShiftReportSummary({ report }) {
   if (!report) return null;
@@ -41,7 +41,7 @@ export default function ShiftReportSummary({ report }) {
       <div className="bg-secondary rounded-lg p-4 grid sm:grid-cols-3 gap-3 text-sm">
         <div>
           <p className="text-xs text-muted-foreground">Reporting Period</p>
-          <p className="font-semibold">{report.reporting_period_start} to {report.reporting_period_end}</p>
+          <p className="font-semibold">{report.reporting_period_start} · {SHIFT_LABELS[report.shift_type] || report.shift_type || "—"}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Supervisor</p>
@@ -88,6 +88,7 @@ export default function ShiftReportSummary({ report }) {
                   <div className="flex justify-between"><span>Departure Only</span><span className="font-medium">{counts.departure_only}</span></div>
                   <div className="flex justify-between"><span>Full Departure Service</span><span className="font-medium">{counts.full_departure}</span></div>
                   <div className="flex justify-between"><span>Arrival Service</span><span className="font-medium">{counts.arrival}</span></div>
+                  <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="font-semibold">Total</span><span className="font-semibold">{meetAssist.length}</span></div>
                 </div>
               </div>
               <div>

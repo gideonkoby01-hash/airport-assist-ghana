@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, ChevronDown, ChevronRight, FileText } from "lucide-react";
-import { formatGHS } from "@/lib/packages";
+import { formatGHS, SHIFT_LABELS } from "@/lib/packages";
 import ShiftReportSummary from "@/components/ShiftReportSummary";
 
 export default function ShiftReportViewer() {
@@ -65,7 +65,7 @@ export default function ShiftReportViewer() {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold truncate">
                     {isNewFormat
-                      ? `${r.reporting_period_start} to ${r.reporting_period_end}`
+                      ? `${r.reporting_period_start} · ${SHIFT_LABELS[r.shift_type] || r.shift_type || ""}`
                       : `${r.shift_date || "—"} · ${r.shift_type || ""}`}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5 truncate">

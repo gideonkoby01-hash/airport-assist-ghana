@@ -78,6 +78,11 @@ export const REPORT_PAYMENT_LABELS = {
   momo: "MoMo",
 };
 
+export const SHIFT_LABELS = {
+  morning: "Morning Shift",
+  night: "Night Shift",
+};
+
 export const PACKAGE_LABELS = {
   full_arrival: "Full Arrival Assist",
   full_departure: "Full Departure Assist",
