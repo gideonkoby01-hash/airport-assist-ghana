@@ -191,9 +191,9 @@ export default function ShiftReportForm({ supervisor }) {
             <span className="font-medium">Lounges used:</span> {totals.lounges_used}
           </p>
         }
-        <p className="text-xs text-muted-foreground mt-1 hidden">
-          Commission rate: {formatGHS(PORTER_COMMISSION_PER_PASSENGER)} per passenger handled.
-        </p>
+        
+
+        
       </div>
 
       <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
