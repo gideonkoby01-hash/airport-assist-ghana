@@ -91,7 +91,7 @@ function SupervisorInner() {
         </div>
       )}
 
-      {tab === "notifications" && <SupervisorNotifications userId={user.id} />}
+      {tab === "notifications" && <SupervisorNotifications userId={user.id} onUnreadChange={setUnreadCount} />}
       {tab === "report" && <ShiftReportForm supervisor={user} />}
     </AppLayout>
   );

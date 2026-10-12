@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 
-export default function SupervisorNotifications({ userId }) {
+export default function SupervisorNotifications({ userId, onUnreadChange }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +27,12 @@ export default function SupervisorNotifications({ userId }) {
     load();
   }, []);
 
+  useEffect(() => {
+    if (onUnreadChange) onUnreadChange(notifications.filter((n) => !n.read).length);
+  }, [notifications]);
+
   const markRead = async (n) => {
+    if (n.read) return;
     try {
       await base44.entities.Notification.update(n.id, { read: true });
       setNotifications((ns) => ns.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
@@ -77,8 +82,9 @@ export default function SupervisorNotifications({ userId }) {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`bg-card rounded-xl border p-4 ${
-                n.read ? "border-border" : "border-accent/40 bg-accent/5"
+              onClick={() => markRead(n)}
+              className={`bg-card rounded-xl border p-4 cursor-pointer transition-colors ${
+                n.read ? "border-border" : "border-accent/40 bg-accent/5 hover:bg-accent/10"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -91,6 +97,7 @@ export default function SupervisorNotifications({ userId }) {
                   {n.booking_id && (
                     <Link
                       to={`/bookings/${n.booking_id}`}
+                      onClick={(e) => { e.stopPropagation(); markRead(n); }}
                       className="text-xs text-accent hover:underline mt-2 inline-block"
                     >
                       View booking {n.booking_reference} →
@@ -102,7 +109,7 @@ export default function SupervisorNotifications({ userId }) {
                 </div>
                 {!n.read && (
                   <button
-                    onClick={() => markRead(n)}
+                    onClick={(e) => { e.stopPropagation(); markRead(n); }}
                     className="text-xs text-muted-foreground hover:text-foreground shrink-0"
                   >
                     Mark read
