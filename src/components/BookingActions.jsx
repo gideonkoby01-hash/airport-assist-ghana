@@ -155,6 +155,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
     <div className="space-y-5">
       {/* Supervisor assignment */}
       {canAssignSupervisor && (
+        <>
         <Panel icon={UserPlus} title="Responsible Supervisor">
           {loadingSupers ? (
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -183,6 +184,55 @@ export default function BookingActions({ booking, user, onUpdated }) {
             </p>
           )}
         </Panel>
+
+        {/* Porters */}
+        <Panel icon={Users} title="Porters & Commission">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1 flex-1 min-w-[160px]">
+              <Label className="text-xs">Porter name</Label>
+              <Input value={porterName} onChange={(e) => setPorterName(e.target.value)} placeholder="Porter name" />
+            </div>
+            <div className="space-y-1 w-28">
+              <Label className="text-xs">Passengers handled</Label>
+              <Input
+                type="number"
+                min={1}
+                value={porterHandled}
+                onChange={(e) => setPorterHandled(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground pb-2">
+              Commission: <span className="font-semibold text-foreground">{formatGHS(porterCommission(Number(porterHandled || 0)))}</span>
+            </div>
+            <Button onClick={addPorter} disabled={savingPorter}>
+              {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
+              Add
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {formatGHS(PORTER_COMMISSION_PER_PASSENGER)} commission per passenger handled.
+          </p>
+          {booking.porters?.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {booking.porters.map((p, i) => (
+                <div key={i} className="flex items-center justify-between bg-secondary rounded-lg px-3 py-2 text-sm">
+                  <span>
+                    <span className="font-medium">{p.porter_name}</span> · {p.passengers_handled} passenger(s) ·{" "}
+                    {formatGHS(p.commission)}
+                  </span>
+                  <button onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex justify-between text-sm font-semibold pt-1 border-t border-border">
+                <span>Total commission</span>
+                <span>{formatGHS((booking.porters || []).reduce((s, p) => s + (p.commission || 0), 0))}</span>
+              </div>
+            </div>
+          )}
+        </Panel>
+        </>
       )}
 
       {canOperate && (
@@ -254,54 +304,6 @@ export default function BookingActions({ booking, user, onUpdated }) {
                 <PaymentBadge status={booking.payment_status} />
               </div>
             </div>
-          </Panel>
-
-          {/* Porters */}
-          <Panel icon={Users} title="Porters & Commission">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1 flex-1 min-w-[160px]">
-                <Label className="text-xs">Porter name</Label>
-                <Input value={porterName} onChange={(e) => setPorterName(e.target.value)} placeholder="Porter name" />
-              </div>
-              <div className="space-y-1 w-28">
-                <Label className="text-xs">Passengers handled</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={porterHandled}
-                  onChange={(e) => setPorterHandled(e.target.value)}
-                />
-              </div>
-              <div className="text-sm text-muted-foreground pb-2">
-                Commission: <span className="font-semibold text-foreground">{formatGHS(porterCommission(Number(porterHandled || 0)))}</span>
-              </div>
-              <Button onClick={addPorter} disabled={savingPorter}>
-                {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
-                Add
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {formatGHS(PORTER_COMMISSION_PER_PASSENGER)} commission per passenger handled.
-            </p>
-            {booking.porters?.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {booking.porters.map((p, i) => (
-                  <div key={i} className="flex items-center justify-between bg-secondary rounded-lg px-3 py-2 text-sm">
-                    <span>
-                      <span className="font-medium">{p.porter_name}</span> · {p.passengers_handled} passenger(s) ·{" "}
-                      {formatGHS(p.commission)}
-                    </span>
-                    <button onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <div className="flex justify-between text-sm font-semibold pt-1 border-t border-border">
-                  <span>Total commission</span>
-                  <span>{formatGHS((booking.porters || []).reduce((s, p) => s + (p.commission || 0), 0))}</span>
-                </div>
-              </div>
-            )}
           </Panel>
 
           {/* Lounge */}
