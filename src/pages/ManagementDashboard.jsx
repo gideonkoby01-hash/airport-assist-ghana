@@ -13,8 +13,8 @@ export default function ManagementDashboard() {
   return (
     <RoleGuard allowedRoles={["management", "admin"]}>
       <ManagementInner />
-    </RoleGuard>
-  );
+    </RoleGuard>);
+
 }
 
 function ManagementInner() {
@@ -45,7 +45,7 @@ function ManagementInner() {
       const byStatus = await base44.entities.Booking.aggregate({
         groupBy: "status",
         sum: ["total_value", "amount_collected", "outstanding_balance"],
-        sort: "-count",
+        sort: "-count"
       });
       setStatusRows(byStatus.rows || []);
     } catch {}
@@ -54,7 +54,7 @@ function ManagementInner() {
         groupBy: "package_code",
         sum: ["total_value"],
         countDistinct: "package_code",
-        sort: "-sum_total_value",
+        sort: "-sum_total_value"
       });
       setPkgRows(byPkg.rows || []);
     } catch {}
@@ -74,7 +74,7 @@ function ManagementInner() {
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Operations Management</h1>
+        <h1 className="text-2xl font-bold text-foreground">Management</h1>
         <p className="text-muted-foreground text-sm mt-1">Organisation-wide bookings, assignments, and figures.</p>
       </div>
 
@@ -83,8 +83,8 @@ function ManagementInner() {
         <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>All Bookings</TabButton>
       </div>
 
-      {tab === "ops" && (
-        <div className="space-y-6">
+      {tab === "ops" &&
+      <div className="space-y-6">
           <div className="grid sm:grid-cols-4 gap-4">
             <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
             <StatCard label="Collected" value={formatGHS(totalCollected)} icon={Wallet} />
@@ -96,40 +96,40 @@ function ManagementInner() {
             <div className="bg-card rounded-2xl border border-border p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3">By Status</h3>
               <div className="space-y-2">
-                {statusRows.map((r) => (
-                  <div key={r.status} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
+                {statusRows.map((r) =>
+              <div key={r.status} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
                     <span className="font-medium">{STATUS_LABELS[r.status] || r.status}</span>
                     <span className="text-muted-foreground">
                       {r.count} · {formatGHS(r.sum_total_value)}
                     </span>
                   </div>
-                ))}
+              )}
                 {statusRows.length === 0 && <p className="text-sm text-muted-foreground">No data yet.</p>}
               </div>
             </div>
             <div className="bg-card rounded-2xl border border-border p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3">By Service Package</h3>
               <div className="space-y-2">
-                {pkgRows.map((r) => (
-                  <div key={r.package_code} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
+                {pkgRows.map((r) =>
+              <div key={r.package_code} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
                     <span className="font-medium capitalize">{(r.package_code || "").replace("_", " ")}</span>
                     <span className="text-muted-foreground">
                       {r.count} · {formatGHS(r.sum_total_value)}
                     </span>
                   </div>
-                ))}
+              )}
                 {pkgRows.length === 0 && <p className="text-sm text-muted-foreground">No data yet.</p>}
               </div>
             </div>
           </div>
         </div>
-      )}
+      }
 
-      {tab === "bookings" && (
-        <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." />
-      )}
-    </AppLayout>
-  );
+      {tab === "bookings" &&
+      <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." />
+      }
+    </AppLayout>);
+
 }
 
 function TabButton({ active, onClick, children }) {
@@ -137,10 +137,10 @@ function TabButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-        active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-      }`}
-    >
+      active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`
+      }>
+      
       {children}
-    </button>
-  );
+    </button>);
+
 }
