@@ -39,7 +39,6 @@ export default function ShiftReportForm({ supervisor }) {
   ]);
   const [porterTotalBookings, setPorterTotalBookings] = useState("");
   const [porterAmountPaid, setPorterAmountPaid] = useState("");
-  const [porterPaymentMethod, setPorterPaymentMethod] = useState("");
   const [porterEntries, setPorterEntries] = useState([]);
   const [remarks, setRemarks] = useState("");
 
@@ -169,7 +168,6 @@ export default function ShiftReportForm({ supervisor }) {
       grand_total_paid: computed.grandTotal,
       remarks: remarks.trim(),
     };
-    if (porterPaymentMethod) payload.porter_payment_method = porterPaymentMethod;
     return payload;
   };
 
@@ -213,7 +211,6 @@ export default function ShiftReportForm({ supervisor }) {
     setMeetAssistEntries([{ service_type: "", amount_paid: "", payment_method: "" }]);
     setPorterTotalBookings("");
     setPorterAmountPaid("");
-    setPorterPaymentMethod("");
     setPorterEntries([]);
     setRemarks("");
     setError("");
@@ -442,7 +439,7 @@ export default function ShiftReportForm({ supervisor }) {
           </p>
         )}
 
-        <div className="grid sm:grid-cols-3 gap-3 mb-4">
+        <div className="grid sm:grid-cols-2 gap-3 mb-4">
           <div className="space-y-1">
             <Label className="text-xs">Total Porter Bookings</Label>
             <Input
@@ -463,21 +460,6 @@ export default function ShiftReportForm({ supervisor }) {
               onChange={(e) => setPorterAmountPaid(e.target.value)}
               placeholder="0.00"
             />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Payment Method</Label>
-            <Select value={porterPaymentMethod} onValueChange={setPorterPaymentMethod}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select method" />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHODS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 

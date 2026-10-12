@@ -111,7 +111,7 @@ export default function ShiftReportSummary({ report }) {
           <p className="text-sm text-muted-foreground">No porter entries.</p>
         ) : (
           <>
-            <div className="grid sm:grid-cols-3 gap-4 mb-4 text-sm">
+            <div className="grid sm:grid-cols-2 gap-4 mb-4 text-sm">
               <div className="bg-secondary rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Total Porter Bookings</p>
                 <p className="font-semibold mt-0.5">{report.porter_total_bookings || 0}</p>
@@ -119,10 +119,6 @@ export default function ShiftReportSummary({ report }) {
               <div className="bg-secondary rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Amount Paid</p>
                 <p className="font-semibold mt-0.5">{formatGHS(report.porter_amount_paid || 0)}</p>
-              </div>
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="text-xs text-muted-foreground">Payment Method</p>
-                <p className="font-semibold mt-0.5">{REPORT_PAYMENT_LABELS[report.porter_payment_method] || "—"}</p>
               </div>
             </div>
             {porterEntries.length > 0 && (
