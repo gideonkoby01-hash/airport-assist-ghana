@@ -286,7 +286,7 @@ export default function ShiftReportForm({ supervisor }) {
         </h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Shift </Label>
+            <Label>Shift D </Label>
             <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
           </div>
           <div className="space-y-1.5">
