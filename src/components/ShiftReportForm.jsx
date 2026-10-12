@@ -10,8 +10,8 @@ import {
   PACKAGE_LABELS,
   shiftBounds,
   formatGHS,
-  PORTER_COMMISSION_PER_PASSENGER,
-} from "@/lib/packages";
+  PORTER_COMMISSION_PER_PASSENGER } from
+"@/lib/packages";
 
 export default function ShiftReportForm({ supervisor }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -65,11 +65,11 @@ export default function ShiftReportForm({ supervisor }) {
     const breakdown = {};
     bookings.forEach((b) => {
       breakdown[b.package_name || PACKAGE_LABELS[b.package_code] || b.package_code] =
-        (breakdown[b.package_name || PACKAGE_LABELS[b.package_code] || b.package_code] || 0) + 1;
+      (breakdown[b.package_name || PACKAGE_LABELS[b.package_code] || b.package_code] || 0) + 1;
     });
     const lounges = [
-      ...new Set(bookings.map((b) => b.lounge_used).filter(Boolean)),
-    ];
+    ...new Set(bookings.map((b) => b.lounge_used).filter(Boolean))];
+
     const porterCount = bookings.reduce((s, b) => s + (b.porters?.length || 0), 0);
     const commission = bookings.reduce(
       (s, b) => s + (b.porters || []).reduce((ss, p) => ss + (p.commission || 0), 0),
@@ -78,9 +78,9 @@ export default function ShiftReportForm({ supervisor }) {
     return {
       booking_count: bookings.length,
       total_passengers: active.reduce((s, b) => s + (b.num_passengers || 0), 0),
-      service_breakdown: Object.entries(breakdown)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(", "),
+      service_breakdown: Object.entries(breakdown).
+      map(([k, v]) => `${k}: ${v}`).
+      join(", "),
       total_revenue: active.reduce((s, b) => s + (b.total_value || 0), 0),
       total_collected: bookings.reduce((s, b) => s + (b.amount_collected || 0), 0),
       total_outstanding: bookings.reduce((s, b) => s + (b.outstanding_balance || 0), 0),
@@ -89,7 +89,7 @@ export default function ShiftReportForm({ supervisor }) {
       total_commission: commission,
       cancellations: bookings.filter((b) => b.status === "cancelled").length,
       no_shows: bookings.filter((b) => b.status === "no_show").length,
-      completed: bookings.filter((b) => b.status === "completed").length,
+      completed: bookings.filter((b) => b.status === "completed").length
     };
   }, [bookings]);
 
@@ -108,7 +108,7 @@ export default function ShiftReportForm({ supervisor }) {
         shift_end: bounds.end.toISOString(),
         ...totals,
         remarks: remarks.trim(),
-        booking_ids: bookings.map((b) => b.id),
+        booking_ids: bookings.map((b) => b.id)
       };
       const rep = await base44.entities.ShiftReport.create(payload);
       setSuccess(rep);
@@ -132,8 +132,8 @@ export default function ShiftReportForm({ supervisor }) {
         <Button className="mt-4" onClick={() => setSuccess(null)}>
           Submit another report
         </Button>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -181,17 +181,17 @@ export default function ShiftReportForm({ supervisor }) {
           <Metric label="Outstanding" value={formatGHS(totals.total_outstanding)} />
           <Metric label="Commission" value={formatGHS(totals.total_commission)} />
         </div>
-        {totals.service_breakdown && (
-          <p className="text-xs text-muted-foreground mt-3">
+        {totals.service_breakdown &&
+        <p className="text-xs text-muted-foreground mt-3">
             <span className="font-medium">Service types:</span> {totals.service_breakdown}
           </p>
-        )}
-        {totals.lounges_used && (
-          <p className="text-xs text-muted-foreground mt-1">
+        }
+        {totals.lounges_used &&
+        <p className="text-xs text-muted-foreground mt-1">
             <span className="font-medium">Lounges used:</span> {totals.lounges_used}
           </p>
-        )}
-        <p className="text-xs text-muted-foreground mt-1">
+        }
+        <p className="text-xs text-muted-foreground mt-1 hidden">
           Commission rate: {formatGHS(PORTER_COMMISSION_PER_PASSENGER)} per passenger handled.
         </p>
       </div>
@@ -202,31 +202,31 @@ export default function ShiftReportForm({ supervisor }) {
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
           placeholder="Incidents, observations, handover notes…"
-          rows={4}
-        />
+          rows={4} />
+        
         <Button onClick={submit} disabled={saving || loading} className="w-full sm:w-auto">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
           Submit shift report
         </Button>
       </div>
 
-      {reports.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-5">
+      {reports.length > 0 &&
+      <div className="bg-card rounded-2xl border border-border p-5">
           <h3 className="text-sm font-semibold text-foreground mb-3">Recent Reports</h3>
           <div className="space-y-2">
-            {reports.map((r) => (
-              <div key={r.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
+            {reports.map((r) =>
+          <div key={r.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
                 <span className="font-medium capitalize">{r.shift_type} shift · {r.shift_date}</span>
                 <span className="text-muted-foreground">
                   {r.booking_count} bookings · {formatGHS(r.total_revenue)} · {formatGHS(r.total_collected)} collected
                 </span>
               </div>
-            ))}
+          )}
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 function Metric({ label, value }) {
@@ -234,6 +234,6 @@ function Metric({ label, value }) {
     <div className="bg-secondary rounded-lg p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="font-semibold text-foreground mt-0.5">{value}</p>
-    </div>
-  );
+    </div>);
+
 }
