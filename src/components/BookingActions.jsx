@@ -44,7 +44,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   useEffect(() => {
     if (canAssignSupervisor) {
       setLoadingSupers(true);
-      base44.entities.User.filter({ role: "supervisor" })
+      base44.entities.SupervisorDirectory.filter({ active: true }, { sort: "full_name" })
         .then((page) => setSupervisors(page.items || []))
         .catch(() => setSupervisors([]))
         .finally(() => setLoadingSupers(false));
@@ -134,14 +134,14 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const assignSupervisor = async () => {
     if (!assignId) return alert("Select a supervisor.");
-    const sup = supervisors.find((s) => s.id === assignId);
     setSavingAssign(true);
     try {
-      await patch({
-        assigned_supervisor_id: assignId,
-        assigned_supervisor_name: sup ? sup.full_name || sup.email : "",
-        status: booking.status === "confirmed" ? "assigned" : booking.status,
+      const res = await base44.functions.invoke("assignSupervisor", {
+        booking_id: booking.id,
+        supervisor_user_id: assignId,
       });
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (onUpdated && res?.data?.booking) onUpdated(res.data.booking);
     } catch (err) {
       alert(err.message || "Failed to assign supervisor");
     } finally {
@@ -167,7 +167,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
                 </SelectTrigger>
                 <SelectContent>
                   {supervisors.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
+                    <SelectItem key={s.id} value={s.user_id}>
                       {s.full_name || s.email}
                     </SelectItem>
                   ))}

@@ -7,6 +7,7 @@ import RoleGuard from "@/components/RoleGuard";
 import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
 import ShiftReportForm from "@/components/ShiftReportForm";
+import SupervisorNotifications from "@/components/SupervisorNotifications";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
 import { ClipboardList, Wallet, Users, Armchair } from "lucide-react";
@@ -25,6 +26,7 @@ function SupervisorInner() {
   const tab = searchParams.get("tab") || "assigned";
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams({ tab: t });
 
@@ -45,6 +47,7 @@ function SupervisorInner() {
 
   useEffect(() => {
     load();
+    base44.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -62,6 +65,9 @@ function SupervisorInner() {
       <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
         <TabButton active={tab === "assigned"} onClick={() => setTab("assigned")}>Assigned Bookings</TabButton>
         <TabButton active={tab === "walkin"} onClick={() => setTab("walkin")}>Walk-in Booking</TabButton>
+        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
+          Notifications{unreadCount > 0 && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full bg-accent text-accent-foreground">{unreadCount}</span>}
+        </TabButton>
         <TabButton active={tab === "report"} onClick={() => setTab("report")}>Shift Report</TabButton>
       </div>
 
@@ -85,6 +91,7 @@ function SupervisorInner() {
         </div>
       )}
 
+      {tab === "notifications" && <SupervisorNotifications userId={user.id} />}
       {tab === "report" && <ShiftReportForm supervisor={user} />}
     </AppLayout>
   );

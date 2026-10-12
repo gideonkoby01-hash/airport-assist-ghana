@@ -25,6 +25,19 @@ export default async function(req) {
       // Grant the requested staff role securely.
       await base44.asServiceRole.entities.User.update(request.user_id, { role: request.requested_role });
       await base44.asServiceRole.entities.AccountRequest.update(request_id, { status: 'approved' });
+
+      // Auto-add approved supervisors to the Supervisor Directory.
+      if (request.requested_role === 'supervisor') {
+        const existing = await base44.asServiceRole.entities.SupervisorDirectory.filter({ user_id: request.user_id });
+        if ((existing.items || []).length === 0) {
+          await base44.asServiceRole.entities.SupervisorDirectory.create({
+            user_id: request.user_id,
+            full_name: request.full_name || '',
+            email: request.email || '',
+            active: true,
+          });
+        }
+      }
     } else {
       // Reject: the user stays "pending" and sees the rejection on the pending screen.
       await base44.asServiceRole.entities.AccountRequest.update(request_id, { status: 'rejected' });

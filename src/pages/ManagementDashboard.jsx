@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingList from "@/components/BookingList";
+import SupervisorDirectory from "@/components/SupervisorDirectory";
 import StatCard from "@/components/StatCard";
 import { formatGHS, STATUS_LABELS } from "@/lib/packages";
 import { BarChart3, Wallet, Users, AlertCircle } from "lucide-react";
@@ -81,6 +82,7 @@ function ManagementInner() {
       <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
         <TabButton active={tab === "ops"} onClick={() => setTab("ops")}>Summary</TabButton>
         <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>All Bookings</TabButton>
+        <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
       </div>
 
       {tab === "ops" && (
@@ -128,6 +130,8 @@ function ManagementInner() {
       {tab === "bookings" && (
         <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." />
       )}
+
+      {tab === "supervisors" && <SupervisorDirectory readOnly />}
     </AppLayout>
   );
 }

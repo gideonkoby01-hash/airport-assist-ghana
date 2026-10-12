@@ -7,6 +7,7 @@ import StaffManager from "@/components/StaffManager";
 import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
+import SupervisorDirectory from "@/components/SupervisorDirectory";
 import StaffRequests from "@/components/StaffRequests";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
@@ -55,6 +56,7 @@ function AdminInner() {
         <TabButton active={tab === "packages"} onClick={() => setTab("packages")}>Service Packages</TabButton>
         <TabButton active={tab === "lounges"} onClick={() => setTab("lounges")}>Lounges</TabButton>
         <TabButton active={tab === "porters"} onClick={() => setTab("porters")}>Porters</TabButton>
+        <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
         <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>Staff Requests</TabButton>
       </div>
 
@@ -72,6 +74,7 @@ function AdminInner() {
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}
+      {tab === "supervisors" && <SupervisorDirectory />}
       {tab === "requests" && <StaffRequests />}
     </AppLayout>
   );
