@@ -10,21 +10,21 @@ import {
   formatGHS,
   REPORT_SERVICE_LABELS,
   REPORT_PAYMENT_LABELS,
-  PORTER_COMMISSION_PER_PASSENGER,
-} from "@/lib/packages";
+  PORTER_COMMISSION_PER_PASSENGER } from
+"@/lib/packages";
 import ShiftReportSummary from "@/components/ShiftReportSummary";
 
 const SERVICE_TYPES = [
-  { value: "departure_only", label: "Departure Only" },
-  { value: "full_departure", label: "Full Departure Service" },
-  { value: "arrival", label: "Arrival Service" },
-];
+{ value: "departure_only", label: "Departure Only" },
+{ value: "full_departure", label: "Full Departure Service" },
+{ value: "arrival", label: "Arrival Service" }];
+
 
 const PAYMENT_METHODS = [
-  { value: "pos", label: "POS" },
-  { value: "cash", label: "Cash" },
-  { value: "momo", label: "MoMo" },
-];
+{ value: "pos", label: "POS" },
+{ value: "cash", label: "Cash" },
+{ value: "momo", label: "MoMo" }];
+
 
 export default function ShiftReportForm({ supervisor }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -35,8 +35,8 @@ export default function ShiftReportForm({ supervisor }) {
   const [periodStart, setPeriodStart] = useState(today);
   const [shiftType, setShiftType] = useState("morning");
   const [meetAssistEntries, setMeetAssistEntries] = useState([
-    { service_type: "", amount_paid: "", payment_method: "" },
-  ]);
+  { service_type: "", amount_paid: "", payment_method: "" }]
+  );
   const [porterTotalBookings, setPorterTotalBookings] = useState("");
   const [porterAmountPaid, setPorterAmountPaid] = useState("");
   const [porterEntries, setPorterEntries] = useState([]);
@@ -78,12 +78,12 @@ export default function ShiftReportForm({ supervisor }) {
     const counts = {
       departure_only: validMA.filter((e) => e.service_type === "departure_only").length,
       full_departure: validMA.filter((e) => e.service_type === "full_departure").length,
-      arrival: validMA.filter((e) => e.service_type === "arrival").length,
+      arrival: validMA.filter((e) => e.service_type === "arrival").length
     };
     const totalsByMethod = {
       pos: validMA.filter((e) => e.payment_method === "pos").reduce((s, e) => s + Number(e.amount_paid || 0), 0),
       cash: validMA.filter((e) => e.payment_method === "cash").reduce((s, e) => s + Number(e.amount_paid || 0), 0),
-      momo: validMA.filter((e) => e.payment_method === "momo").reduce((s, e) => s + Number(e.amount_paid || 0), 0),
+      momo: validMA.filter((e) => e.payment_method === "momo").reduce((s, e) => s + Number(e.amount_paid || 0), 0)
     };
     const meetAssistTotal = validMA.reduce((s, e) => s + Number(e.amount_paid || 0), 0);
 
@@ -97,7 +97,7 @@ export default function ShiftReportForm({ supervisor }) {
   }, [meetAssistEntries, porterEntries, porterAmountPaid]);
 
   const addMAEntry = () =>
-    setMeetAssistEntries([...meetAssistEntries, { service_type: "", amount_paid: "", payment_method: "" }]);
+  setMeetAssistEntries([...meetAssistEntries, { service_type: "", amount_paid: "", payment_method: "" }]);
   const removeMAEntry = (idx) => setMeetAssistEntries(meetAssistEntries.filter((_, i) => i !== idx));
   const updateMAEntry = (idx, field, value) => {
     const next = [...meetAssistEntries];
@@ -106,7 +106,7 @@ export default function ShiftReportForm({ supervisor }) {
   };
 
   const addPorterEntry = () =>
-    setPorterEntries([...porterEntries, { porter_id: "", porter_name: "", passengers_handled: "", commission: 0 }]);
+  setPorterEntries([...porterEntries, { porter_id: "", porter_name: "", passengers_handled: "", commission: 0 }]);
   const removePorterEntry = (idx) => setPorterEntries(porterEntries.filter((_, i) => i !== idx));
   const updatePorterEntry = (idx, field, value) => {
     const next = [...porterEntries];
@@ -125,19 +125,19 @@ export default function ShiftReportForm({ supervisor }) {
     if (!periodStart) return "Select a reporting period start date.";
     if (!shiftType) return "Select a shift time.";
     if (computed.validMA.length === 0 && computed.validPorters.length === 0)
-      return "Add at least one Meet & Assist entry or Porter entry.";
+    return "Add at least one Meet & Assist entry or Porter entry.";
     for (let i = 0; i < meetAssistEntries.length; i++) {
       const e = meetAssistEntries[i];
       if (e.service_type || e.amount_paid || e.payment_method) {
         if (!e.service_type || !e.payment_method || Number(e.amount_paid) <= 0)
-          return `Meet & Assist entry ${i + 1} is incomplete. Fill in service type, amount, and payment method, or remove it.`;
+        return `Meet & Assist entry ${i + 1} is incomplete. Fill in service type, amount, and payment method, or remove it.`;
       }
     }
     for (let i = 0; i < porterEntries.length; i++) {
       const e = porterEntries[i];
       if (e.porter_id || e.passengers_handled) {
         if (!e.porter_id || Number(e.passengers_handled) <= 0)
-          return `Porter entry ${i + 1} is incomplete. Select a porter and enter passengers handled, or remove it.`;
+        return `Porter entry ${i + 1} is incomplete. Select a porter and enter passengers handled, or remove it.`;
       }
     }
     return "";
@@ -152,7 +152,7 @@ export default function ShiftReportForm({ supervisor }) {
       meet_assist_entries: computed.validMA.map((e) => ({
         service_type: e.service_type,
         amount_paid: Number(e.amount_paid),
-        payment_method: e.payment_method,
+        payment_method: e.payment_method
       })),
       porter_total_bookings: Number(porterTotalBookings || 0),
       porter_amount_paid: Number(porterAmountPaid || 0),
@@ -160,13 +160,13 @@ export default function ShiftReportForm({ supervisor }) {
         porter_id: e.porter_id,
         porter_name: e.porter_name,
         passengers_handled: Number(e.passengers_handled),
-        commission: Number(e.commission),
+        commission: Number(e.commission)
       })),
       meet_assist_total_paid: computed.meetAssistTotal,
       porter_total_passengers: computed.porterTotalPassengers,
       porter_total_commission: computed.porterTotalCommission,
       grand_total_paid: computed.grandTotal,
-      remarks: remarks.trim(),
+      remarks: remarks.trim()
     };
     return payload;
   };
@@ -184,7 +184,7 @@ export default function ShiftReportForm({ supervisor }) {
       const dup = await base44.entities.ShiftReport.filter({
         supervisor_id: supervisor.id,
         reporting_period_start: periodStart,
-        shift_type: shiftType,
+        shift_type: shiftType
       });
       if ((dup.items || []).length > 0) {
         setDuplicateWarning(
@@ -231,8 +231,8 @@ export default function ShiftReportForm({ supervisor }) {
         <Button onClick={resetForm} className="w-full sm:w-auto">
           Submit another report
         </Button>
-      </div>
-    );
+      </div>);
+
   }
 
   if (viewingReport) {
@@ -242,8 +242,8 @@ export default function ShiftReportForm({ supervisor }) {
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to form
         </Button>
         <ShiftReportSummary report={viewingReport} />
-      </div>
-    );
+      </div>);
+
   }
 
   if (view === "summary") {
@@ -251,11 +251,11 @@ export default function ShiftReportForm({ supervisor }) {
     return (
       <div className="space-y-5">
         <h3 className="text-lg font-bold">Report Summary — Review Before Submitting</h3>
-        {duplicateWarning && (
-          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+        {duplicateWarning &&
+        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
             {duplicateWarning}
           </div>
-        )}
+        }
         <ShiftReportSummary report={previewReport} />
         <div className="flex gap-3">
           <Button
@@ -264,8 +264,8 @@ export default function ShiftReportForm({ supervisor }) {
               setView("form");
               setDuplicateWarning("");
             }}
-            disabled={saving}
-          >
+            disabled={saving}>
+            
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to form
           </Button>
           <Button onClick={submit} disabled={saving}>
@@ -273,8 +273,8 @@ export default function ShiftReportForm({ supervisor }) {
             Submit report
           </Button>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   const v = validate();
@@ -286,7 +286,7 @@ export default function ShiftReportForm({ supervisor }) {
         </h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Period start</Label>
+            <Label>Shift </Label>
             <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -305,11 +305,11 @@ export default function ShiftReportForm({ supervisor }) {
       </div>
 
       {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
-      {duplicateWarning && (
-        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+      {duplicateWarning &&
+      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
           {duplicateWarning}
         </div>
-      )}
+      }
 
       {/* Meet & Assist Section */}
       <div className="bg-card rounded-2xl border border-border p-5">
@@ -320,11 +320,11 @@ export default function ShiftReportForm({ supervisor }) {
           </Button>
         </div>
         <div className="space-y-3">
-          {meetAssistEntries.map((entry, idx) => (
-            <div
-              key={idx}
-              className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-3 last:border-0 last:pb-0"
-            >
+          {meetAssistEntries.map((entry, idx) =>
+          <div
+            key={idx}
+            className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-3 last:border-0 last:pb-0">
+            
               <div className="sm:col-span-4 space-y-1">
                 <Label className="text-xs">Service Type</Label>
                 <Select value={entry.service_type} onValueChange={(val) => updateMAEntry(idx, "service_type", val)}>
@@ -332,24 +332,24 @@ export default function ShiftReportForm({ supervisor }) {
                     <SelectValue placeholder="Select service" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SERVICE_TYPES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
+                    {SERVICE_TYPES.map((s) =>
+                  <SelectItem key={s.value} value={s.value}>
                         {s.label}
                       </SelectItem>
-                    ))}
+                  )}
                   </SelectContent>
                 </Select>
               </div>
               <div className="sm:col-span-3 space-y-1">
                 <Label className="text-xs">Amount Paid (GHS)</Label>
                 <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={entry.amount_paid}
-                  onChange={(e) => updateMAEntry(idx, "amount_paid", e.target.value)}
-                  placeholder="0.00"
-                />
+                type="number"
+                min="0"
+                step="0.01"
+                value={entry.amount_paid}
+                onChange={(e) => updateMAEntry(idx, "amount_paid", e.target.value)}
+                placeholder="0.00" />
+              
               </div>
               <div className="sm:col-span-4 space-y-1">
                 <Label className="text-xs">Payment Method</Label>
@@ -358,26 +358,26 @@ export default function ShiftReportForm({ supervisor }) {
                     <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PAYMENT_METHODS.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
+                    {PAYMENT_METHODS.map((m) =>
+                  <SelectItem key={m.value} value={m.value}>
                         {m.label}
                       </SelectItem>
-                    ))}
+                  )}
                   </SelectContent>
                 </Select>
               </div>
               <div className="sm:col-span-1 flex justify-end">
-                {meetAssistEntries.length > 1 && (
-                  <Button size="icon" variant="ghost" onClick={() => removeMAEntry(idx)}>
+                {meetAssistEntries.length > 1 &&
+              <Button size="icon" variant="ghost" onClick={() => removeMAEntry(idx)}>
                     <Trash2 className="w-4 h-4 text-rose-500" />
                   </Button>
-                )}
+              }
               </div>
             </div>
-          ))}
+          )}
         </div>
-        {computed.validMA.length > 0 && (
-          <div className="mt-4 grid sm:grid-cols-2 gap-4 text-sm">
+        {computed.validMA.length > 0 &&
+        <div className="mt-4 grid sm:grid-cols-2 gap-4 text-sm">
             <div className="bg-secondary rounded-lg p-3">
               <p className="text-xs font-semibold text-muted-foreground mb-2">Service Counts</p>
               <div className="space-y-1">
@@ -421,7 +421,7 @@ export default function ShiftReportForm({ supervisor }) {
               </div>
             </div>
           </div>
-        )}
+        }
       </div>
 
       {/* Porter Section */}
@@ -433,11 +433,11 @@ export default function ShiftReportForm({ supervisor }) {
           </Button>
         </div>
 
-        {porters.length === 0 && (
-          <p className="text-sm text-muted-foreground mb-3">
+        {porters.length === 0 &&
+        <p className="text-sm text-muted-foreground mb-3">
             No active porters in the directory. Ask an admin to add porters first.
           </p>
-        )}
+        }
 
         <div className="grid sm:grid-cols-2 gap-3 mb-4">
           <div className="space-y-1">
@@ -447,8 +447,8 @@ export default function ShiftReportForm({ supervisor }) {
               min="0"
               value={porterTotalBookings}
               onChange={(e) => setPorterTotalBookings(e.target.value)}
-              placeholder="0"
-            />
+              placeholder="0" />
+            
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Amount Paid (GHS)</Label>
@@ -458,21 +458,21 @@ export default function ShiftReportForm({ supervisor }) {
               step="0.01"
               value={porterAmountPaid}
               onChange={(e) => setPorterAmountPaid(e.target.value)}
-              placeholder="0.00"
-            />
+              placeholder="0.00" />
+            
           </div>
         </div>
 
-        {porterEntries.length > 0 && (
-          <div className="space-y-3">
+        {porterEntries.length > 0 &&
+        <div className="space-y-3">
             <p className="text-xs font-semibold text-muted-foreground">
               Porter Assignments (commission: {formatGHS(PORTER_COMMISSION_PER_PASSENGER)}/passenger)
             </p>
-            {porterEntries.map((entry, idx) => (
-              <div
-                key={idx}
-                className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-3 last:border-0 last:pb-0"
-              >
+            {porterEntries.map((entry, idx) =>
+          <div
+            key={idx}
+            className="grid sm:grid-cols-12 gap-2 items-end border-b border-border pb-3 last:border-0 last:pb-0">
+            
                 <div className="sm:col-span-5 space-y-1">
                   <Label className="text-xs">Porter</Label>
                   <Select value={entry.porter_id} onValueChange={(val) => updatePorterEntry(idx, "porter_id", val)}>
@@ -480,23 +480,23 @@ export default function ShiftReportForm({ supervisor }) {
                       <SelectValue placeholder="Select porter" />
                     </SelectTrigger>
                     <SelectContent>
-                      {porters.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
+                      {porters.map((p) =>
+                  <SelectItem key={p.id} value={p.id}>
                           {p.full_name}
                         </SelectItem>
-                      ))}
+                  )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="sm:col-span-3 space-y-1">
                   <Label className="text-xs">Passengers Handled</Label>
                   <Input
-                    type="number"
-                    min="0"
-                    value={entry.passengers_handled}
-                    onChange={(e) => updatePorterEntry(idx, "passengers_handled", e.target.value)}
-                    placeholder="0"
-                  />
+                type="number"
+                min="0"
+                value={entry.passengers_handled}
+                onChange={(e) => updatePorterEntry(idx, "passengers_handled", e.target.value)}
+                placeholder="0" />
+              
                 </div>
                 <div className="sm:col-span-3 space-y-1">
                   <Label className="text-xs">Commission</Label>
@@ -508,7 +508,7 @@ export default function ShiftReportForm({ supervisor }) {
                   </Button>
                 </div>
               </div>
-            ))}
+          )}
             <div className="flex justify-end gap-6 text-sm">
               <span>
                 Total Passengers: <span className="font-semibold">{computed.porterTotalPassengers}</span>
@@ -518,7 +518,7 @@ export default function ShiftReportForm({ supervisor }) {
               </span>
             </div>
           </div>
-        )}
+        }
       </div>
 
       {/* Remarks */}
@@ -528,8 +528,8 @@ export default function ShiftReportForm({ supervisor }) {
           value={remarks}
           onChange={(e) => setRemarks(e.target.value)}
           placeholder="Incidents, observations, handover notes…"
-          rows={3}
-        />
+          rows={3} />
+        
       </div>
 
       {/* Actions */}
@@ -540,37 +540,37 @@ export default function ShiftReportForm({ supervisor }) {
             setDuplicateWarning("");
             setView("summary");
           }}
-          disabled={!!v}
-        >
+          disabled={!!v}>
+          
           <Eye className="w-4 h-4 mr-2" /> Review Summary
         </Button>
       </div>
       {v && <p className="text-xs text-muted-foreground">{v}</p>}
 
       {/* Recent Reports */}
-      {reports.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-5">
+      {reports.length > 0 &&
+      <div className="bg-card rounded-2xl border border-border p-5">
           <h3 className="text-sm font-semibold text-foreground mb-3">Recent Reports</h3>
           <div className="space-y-1">
-            {reports.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => setViewingReport(r)}
-                className="w-full flex items-center justify-between text-sm border-b border-border pb-2 last:border-0 hover:bg-secondary/50 rounded-lg p-2 -mx-2 text-left transition-colors"
-              >
+            {reports.map((r) =>
+          <button
+            key={r.id}
+            onClick={() => setViewingReport(r)}
+            className="w-full flex items-center justify-between text-sm border-b border-border pb-2 last:border-0 hover:bg-secondary/50 rounded-lg p-2 -mx-2 text-left transition-colors">
+            
                 <span className="font-medium">
-                  {r.reporting_period_start
-                    ? `${r.reporting_period_start} to ${r.reporting_period_end}`
-                    : `${r.shift_date || "—"} (${r.shift_type || ""})`}
+                  {r.reporting_period_start ?
+              `${r.reporting_period_start} to ${r.reporting_period_end}` :
+              `${r.shift_date || "—"} (${r.shift_type || ""})`}
                 </span>
                 <span className="text-muted-foreground">
                   {r.grand_total_paid != null ? formatGHS(r.grand_total_paid) : formatGHS(r.total_revenue || 0)}
                 </span>
               </button>
-            ))}
+          )}
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
