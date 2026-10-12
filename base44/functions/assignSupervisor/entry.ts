@@ -16,11 +16,11 @@ export default async function(req) {
     }
 
     // Verify the supervisor is active in the directory.
-    const dirPage = await base44.asServiceRole.entities.SupervisorDirectory.filter({
+    const dirResults = await base44.asServiceRole.entities.SupervisorDirectory.filter({
       user_id: supervisor_user_id,
       active: true,
     });
-    const dirEntry = (dirPage.items || [])[0];
+    const dirEntry = Array.isArray(dirResults) ? dirResults[0] : (dirResults.items || [])[0];
     if (!dirEntry) {
       return Response.json({ error: 'Supervisor not found or not active in the directory' }, { status: 400 });
     }
