@@ -130,6 +130,9 @@
           "porter_name": {
             "type": "string"
           },
+          "porter_phone": {
+            "type": "string"
+          },
           "passengers_handled": {
             "type": "number"
           },

@@ -124,6 +124,7 @@ export default function ShiftReportForm({ supervisor }) {
     if (field === "porter_id") {
       const p = porters.find((p) => p.id === value);
       next[idx].porter_name = p ? p.full_name : "";
+      next[idx].porter_phone = p ? p.phone_number : "";
     }
     if (field === "passengers_handled") {
       next[idx].commission = PORTER_COMMISSION_PER_PASSENGER * Number(value || 0);
@@ -169,6 +170,7 @@ export default function ShiftReportForm({ supervisor }) {
       porter_entries: computed.validPorters.map((e) => ({
         porter_id: e.porter_id,
         porter_name: e.porter_name,
+        porter_phone: e.porter_phone || "",
         passengers_handled: Number(e.passengers_handled),
         commission: Number(e.commission)
       })),

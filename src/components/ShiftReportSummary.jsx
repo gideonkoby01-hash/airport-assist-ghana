@@ -136,7 +136,12 @@ export default function ShiftReportSummary({ report }) {
                     {porterEntries.map((e, i) => (
                       <tr key={i} className="border-b border-border/50">
                         <td className="py-2 pr-3">{i + 1}</td>
-                        <td className="py-2 pr-3">{e.porter_name}</td>
+                        <td className="py-2 pr-3">
+                      {e.porter_name}
+                      {e.porter_phone && (
+                        <span className="block text-xs text-muted-foreground">{e.porter_phone}</span>
+                      )}
+                    </td>
                         <td className="py-2 pr-3 text-right">{e.passengers_handled}</td>
                         <td className="py-2 text-right">{formatGHS(e.commission)}</td>
                       </tr>
