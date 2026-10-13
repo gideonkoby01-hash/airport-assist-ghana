@@ -44,6 +44,7 @@ export default function ShiftReportForm({ supervisor }) {
 
   const [porters, setPorters] = useState([]);
   const [reports, setReports] = useState([]);
+  const [supervisorFullName, setSupervisorFullName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState("");
@@ -52,6 +53,14 @@ export default function ShiftReportForm({ supervisor }) {
     try {
       const page = await base44.entities.Porter.filter({ active: true }, { sort: "full_name" });
       setPorters(page.items || []);
+    } catch {}
+  };
+
+  const loadSupervisorName = async () => {
+    try {
+      const page = await base44.entities.SupervisorDirectory.filter({ user_id: supervisor.id });
+      const entry = (page.items || [])[0];
+      if (entry?.full_name) setSupervisorFullName(entry.full_name);
     } catch {}
   };
 
@@ -68,6 +77,7 @@ export default function ShiftReportForm({ supervisor }) {
   useEffect(() => {
     loadPorters();
     loadReports();
+    loadSupervisorName();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -146,7 +156,7 @@ export default function ShiftReportForm({ supervisor }) {
   const buildPayload = () => {
     const payload = {
       supervisor_id: supervisor.id,
-      supervisor_name: supervisor.full_name || supervisor.email,
+      supervisor_name: supervisorFullName || supervisor.full_name || supervisor.email,
       reporting_period_start: periodStart,
       shift_type: shiftType,
       meet_assist_entries: computed.validMA.map((e) => ({
