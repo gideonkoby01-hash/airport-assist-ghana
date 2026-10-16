@@ -8,7 +8,7 @@ import BookingList from "@/components/BookingList";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
-import { formatGHS, STATUS_LABELS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
+import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, AlertCircle } from "lucide-react";
 
 export default function ManagementDashboard() {
@@ -26,7 +26,6 @@ function ManagementInner() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusRows, setStatusRows] = useState([]);
-  const [pkgRows, setPkgRows] = useState([]);
   const [reports, setReports] = useState([]);
 
   const setTab = (t) => setSearchParams({ tab: t });
@@ -51,15 +50,6 @@ function ManagementInner() {
         sort: "-count",
       });
       setStatusRows(byStatus.rows || []);
-    } catch {}
-    try {
-      const byPkg = await base44.entities.Booking.aggregate({
-        groupBy: "package_code",
-        sum: ["total_value"],
-        countDistinct: "package_code",
-        sort: "-sum_total_value",
-      });
-      setPkgRows(byPkg.rows || []);
     } catch {}
   };
 
@@ -149,36 +139,6 @@ function ManagementInner() {
             <StatCard label="Unassigned" value={unassigned} icon={Users} />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-5">
-            <div className="bg-card rounded-2xl border border-border p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3">By Status</h3>
-              <div className="space-y-2">
-                {statusRows.map((r) => (
-                  <div key={r.status} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
-                    <span className="font-medium">{STATUS_LABELS[r.status] || r.status}</span>
-                    <span className="text-muted-foreground">
-                      {r.count} · {formatGHS(r.sum_total_value)}
-                    </span>
-                  </div>
-                ))}
-                {statusRows.length === 0 && <p className="text-sm text-muted-foreground">No data yet.</p>}
-              </div>
-            </div>
-            <div className="bg-card rounded-2xl border border-border p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3">By Service Package</h3>
-              <div className="space-y-2">
-                {pkgRows.map((r) => (
-                  <div key={r.package_code} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
-                    <span className="font-medium capitalize">{(r.package_code || "").replace("_", " ")}</span>
-                    <span className="text-muted-foreground">
-                      {r.count} · {formatGHS(r.sum_total_value)}
-                    </span>
-                  </div>
-                ))}
-                {pkgRows.length === 0 && <p className="text-sm text-muted-foreground">No data yet.</p>}
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
