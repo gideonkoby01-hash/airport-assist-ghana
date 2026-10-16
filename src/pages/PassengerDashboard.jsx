@@ -138,11 +138,6 @@ function PackageCard({ pkg, onBook }) {
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{pkg.exclusions}</p>
         </div>
-        {!pkg.includes_lounge && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
-            <Sparkles className="w-3 h-3" /> No lounge access
-          </span>
-        )}
       </div>
       <button
         onClick={onBook}
