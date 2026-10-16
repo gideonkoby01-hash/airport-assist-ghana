@@ -8,7 +8,7 @@ import BookingList from "@/components/BookingList";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
-import { formatGHS, STATUS_LABELS } from "@/lib/packages";
+import { formatGHS, STATUS_LABELS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, AlertCircle } from "lucide-react";
 
 export default function ManagementDashboard() {
@@ -27,6 +27,7 @@ function ManagementInner() {
   const [loading, setLoading] = useState(true);
   const [statusRows, setStatusRows] = useState([]);
   const [pkgRows, setPkgRows] = useState([]);
+  const [reports, setReports] = useState([]);
 
   const setTab = (t) => setSearchParams({ tab: t });
 
@@ -62,14 +63,66 @@ function ManagementInner() {
     } catch {}
   };
 
+  // Same source as the Admin Dashboard: every submitted shift report.
+  const loadReports = async () => {
+    try {
+      let items = [];
+      let cursor;
+      do {
+        const page = await base44.entities.ShiftReport.filter(
+          {},
+          {
+            sort: "-created_date",
+            limit: 100,
+            cursor,
+            fields: [
+              "grand_total_paid",
+              "porter_total_commission",
+              "meet_assist_total_paid",
+              "porter_amount_paid",
+              "porter_entries",
+              "meet_assist_entries",
+            ],
+          }
+        );
+        items = items.concat(page.items || []);
+        cursor = page.next_cursor;
+      } while (cursor);
+      setReports(items);
+    } catch {
+      setReports([]);
+    }
+  };
+
   useEffect(() => {
     load();
     loadSummary();
+    loadReports();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const totalRevenue = statusRows.reduce((s, r) => s + (r.sum_total_value || 0), 0);
-  const totalCollected = statusRows.reduce((s, r) => s + (r.sum_amount_collected || 0), 0);
+  // Single source of truth: sum every submitted shift report (matches Admin Dashboard).
+  // Amount Collected = Meet & Assist + Porter collected (grand_total_paid).
+  // Porter Commissions = recorded passenger counts × GHS 30/passenger.
+  // Total Revenue = Amount Collected − Porter Commissions.
+  const { collected, commissions } = reports.reduce(
+    (acc, r) => {
+      const meetAssistTotal =
+        r.meet_assist_total_paid != null
+          ? r.meet_assist_total_paid
+          : (r.meet_assist_entries || []).reduce((s, e) => s + (e.amount_paid || 0), 0);
+      const porterCollected = r.porter_amount_paid || 0;
+      acc.collected += r.grand_total_paid != null ? r.grand_total_paid : meetAssistTotal + porterCollected;
+      acc.commissions +=
+        r.porter_total_commission != null
+          ? r.porter_total_commission
+          : (r.porter_entries || []).reduce((s, e) => s + (e.passengers_handled || 0), 0) *
+            PORTER_COMMISSION_PER_PASSENGER;
+      return acc;
+    },
+    { collected: 0, commissions: 0 }
+  );
+  const totalRevenue = collected - commissions;
   const totalOutstanding = statusRows.reduce((s, r) => s + (r.sum_outstanding_balance || 0), 0);
   const unassigned = bookings.filter((b) => !b.assigned_supervisor_id && b.status === "confirmed").length;
 
@@ -91,7 +144,7 @@ function ManagementInner() {
         <div className="space-y-6">
           <div className="grid sm:grid-cols-4 gap-4">
             <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
-            <StatCard label="Collected" value={formatGHS(totalCollected)} icon={Wallet} />
+            <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(totalOutstanding)} icon={AlertCircle} />
             <StatCard label="Unassigned" value={unassigned} icon={Users} />
           </div>
