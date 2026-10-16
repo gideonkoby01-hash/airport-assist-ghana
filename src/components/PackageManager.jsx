@@ -38,7 +38,13 @@ export default function PackageManager() {
   };
 
   const setDraft = (id, k, v) =>
-    setDrafts((d) => ({ ...d, [id]: { ...draft({ id, ...drafts[id] || {} }), [k]: v } }));
+    setDrafts((d) => {
+      const pkg = packages.find((p) => p.id === id);
+      const base = pkg
+        ? { name: pkg.name, price: pkg.price, inclusions: pkg.inclusions, exclusions: pkg.exclusions, includes_lounge: pkg.includes_lounge, active: pkg.active }
+        : {};
+      return { ...d, [id]: { ...base, ...(d[id] || {}), [k]: v } };
+    });
 
   const save = async (p) => {
     setSaving(p.id);
