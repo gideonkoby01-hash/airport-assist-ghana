@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import BookingActions from "@/components/BookingActions";
+import PassengerPhoto from "@/components/PassengerPhoto";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import {
   PACKAGE_LABELS,
@@ -20,28 +21,11 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [photoUrl, setPhotoUrl] = useState(null);
-  const [photoLoading, setPhotoLoading] = useState(false);
 
   const load = async () => {
     try {
       const b = await base44.entities.Booking.get(id);
       setBooking(b);
-      if (b.passenger_photo_uri) {
-        setPhotoLoading(true);
-        try {
-          const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({
-            file_uri: b.passenger_photo_uri,
-          });
-          setPhotoUrl(signed_url);
-        } catch {
-          setPhotoUrl(null);
-        } finally {
-          setPhotoLoading(false);
-        }
-      } else {
-        setPhotoUrl(null);
-      }
     } catch (err) {
       setError(err.message || "Booking not found or you do not have access.");
     } finally {
@@ -146,17 +130,8 @@ export default function BookingDetail() {
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Users className="w-4 h-4 text-accent" /> Passenger Identification Photo
             </h3>
-            {photoLoading ? (
-              <div className="flex items-center text-muted-foreground text-sm">
-                <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin mr-2" />
-                Loading photo…
-              </div>
-            ) : photoUrl ? (
-              <img
-                src={photoUrl}
-                alt="Passenger identification"
-                className="w-40 h-40 rounded-xl object-cover border border-border"
-              />
+            {booking.passenger_photo_uri ? (
+              <PassengerPhoto fileUri={booking.passenger_photo_uri} />
             ) : (
               <div className="flex items-center gap-3 text-muted-foreground text-sm">
                 <div className="w-16 h-16 rounded-xl border border-dashed border-border flex items-center justify-center">
