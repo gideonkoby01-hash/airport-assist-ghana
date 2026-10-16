@@ -397,7 +397,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Users className="w-4 h-4 text-accent" /> Passenger Identification Photo
         </h3>
-        <p className="text-xs text-muted-foreground">Optional. This will help with easy identifation during meet &  (JPG, PNG, or WEBP, up to 5MB).
+        <p className="text-xs text-muted-foreground">Optional. For easy identification during meet & greet (JPG, PNG, or WEBP, up to 5MB).
 
         </p>
         {photoError &&
