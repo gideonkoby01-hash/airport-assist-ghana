@@ -61,6 +61,10 @@
     "lounge_used": {
       "type": "string"
     },
+    "passenger_photo_uri": {
+      "type": "string",
+      "description": "Private file URI of the passenger's identification photo. Access is governed by the booking RLS."
+    },
     "passengers": {
       "type": "array",
       "items": {

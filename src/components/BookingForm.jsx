@@ -17,6 +17,9 @@ import {
 
 const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, special_requests: "" };
 
+const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+
 export default function BookingForm({ channel = "online", user, supervisor, onCreated }) {
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
@@ -37,6 +40,10 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoError, setPhotoError] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -78,6 +85,35 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
   const removePassenger = (i) =>
     setPassengers((ps) => (ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps));
 
+  const onPhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoError("");
+    const type = (file.type || "").toLowerCase();
+    if (!ACCEPTED_PHOTO_TYPES.includes(type)) {
+      setPhotoError("Photo must be a JPG, PNG, or WEBP image.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      setPhotoError("Photo must be 5MB or smaller.");
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const onPhotoRemove = () => {
+    setPhotoFile(null);
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
   const validate = () => {
     if (!form.package_code) return "Please select a service package.";
     if (!form.flight_number.trim()) return "Flight number is required.";
@@ -102,6 +138,21 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
     try {
       const pkg = selectedPkg;
       const ref = generateReference();
+      let passenger_photo_uri = "";
+      if (photoFile) {
+        setPhotoUploading(true);
+        try {
+          const res = await base44.integrations.Core.UploadPrivateFile({ file: photoFile });
+          passenger_photo_uri = res.file_uri;
+        } catch (err) {
+          setPhotoUploading(false);
+          setSubmitting(false);
+          setError(err.message || "Failed to upload photo. Please try again.");
+          return;
+        } finally {
+          setPhotoUploading(false);
+        }
+      }
       const payload = {
         reference: ref,
         package_code: pkg.code,
@@ -132,6 +183,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
         amount_collected: 0,
         outstanding_balance: totalValue,
         booking_channel: channel,
+        passenger_photo_uri,
       };
       if (channel === "walk_in" && supervisor) {
         payload.assigned_supervisor_id = supervisor.id;
@@ -184,6 +236,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
                 lounge_used: "",
               });
               setPassengers([{ ...emptyPassenger }]);
+              onPhotoRemove();
             }}
           >
             {channel === "walk_in" ? "New walk-in booking" : "Book another service"}
@@ -337,6 +390,53 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Passenger identification photo */}
+      <section className="bg-card rounded-2xl border border-border p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Users className="w-4 h-4 text-accent" /> Passenger Identification Photo
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Optional. Upload a clear photo of the passenger's face (JPG, PNG, or WEBP, up to 5MB).
+        </p>
+        {photoError && (
+          <div className="p-2 rounded-lg bg-destructive/10 text-destructive text-xs">{photoError}</div>
+        )}
+        {photoPreview ? (
+          <div className="flex items-center gap-4">
+            <img
+              src={photoPreview}
+              alt="Passenger photo preview"
+              className="w-24 h-24 rounded-xl object-cover border border-border"
+            />
+            <div className="flex gap-3">
+              <label className="cursor-pointer text-xs font-medium text-accent hover:underline">
+                Replace
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={onPhotoSelect}
+                />
+              </label>
+              <button type="button" onClick={onPhotoRemove} className="text-xs font-medium text-rose-500 hover:underline">
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-6 cursor-pointer hover:border-accent/50 transition-colors">
+            <Users className="w-6 h-6 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Click to upload a photo</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={onPhotoSelect}
+            />
+          </label>
+        )}
       </section>
 
       {/* Summary */}
