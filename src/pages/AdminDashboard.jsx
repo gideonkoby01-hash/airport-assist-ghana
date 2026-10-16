@@ -53,12 +53,8 @@ function AdminInner() {
 
       <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
         <TabButton active={tab === "summary"} onClick={() => setTab("summary")}>Summary</TabButton>
-        <TabButton active={tab === "staff"} onClick={() => setTab("staff")}>Staff Accounts</TabButton>
         <TabButton active={tab === "packages"} onClick={() => setTab("packages")}>Service Packages</TabButton>
         <TabButton active={tab === "lounges"} onClick={() => setTab("lounges")}>Lounges</TabButton>
-        <TabButton active={tab === "porters"} onClick={() => setTab("porters")}>Porters</TabButton>
-        <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
-        <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>Staff Requests</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
       </div>
 
