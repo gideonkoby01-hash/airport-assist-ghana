@@ -224,11 +224,6 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
                   <span className="text-lg font-bold text-primary">{formatGHS(p.price)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{p.inclusions}</p>
-                {!p.includes_lounge && (
-                  <span className="inline-block mt-2 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
-                    No lounge access
-                  </span>
-                )}
               </button>
             ))}
           </div>
