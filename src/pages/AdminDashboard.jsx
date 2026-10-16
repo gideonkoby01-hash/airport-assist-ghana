@@ -12,7 +12,7 @@ import StaffRequests from "@/components/StaffRequests";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
-import { BarChart3, Wallet, Users, Armchair, Receipt } from "lucide-react";
+import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
 
 export default function AdminDashboard() {
   return (
@@ -29,6 +29,7 @@ function AdminInner() {
   const [loadingReports, setLoadingReports] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [loungeCount, setLoungeCount] = useState(0);
+  const [outstanding, setOutstanding] = useState(0);
 
   const setTab = (t) => setSearchParams(t === "summary" ? {} : { tab: t });
 
@@ -67,6 +68,10 @@ function AdminInner() {
     })();
     base44.entities.User.filter({}).then((items) => setUserCount((items || []).length)).catch(() => {});
     base44.entities.Lounge.count().then(setLoungeCount).catch(() => {});
+    base44.entities.Booking
+      .aggregate({ groupBy: "status", sum: ["outstanding_balance"] })
+      .then((r) => setOutstanding((r.rows || []).reduce((s, row) => s + (row.sum_outstanding_balance || 0), 0)))
+      .catch(() => setOutstanding(0));
     return () => {
       active = false;
     };
@@ -120,7 +125,7 @@ function AdminInner() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
             <StatCard label="Amount Collected" value={formatGHS(collected)} icon={Wallet} />
-            <StatCard label="Porter Commissions" value={formatGHS(commissions)} icon={Receipt} />
+            <StatCard label="Outstanding Balance" value={formatGHS(outstanding)} icon={Wallet} />
             <StatCard label="Users" value={userCount} icon={Users} />
             <StatCard label="Lounges" value={loungeCount} icon={Armchair} />
           </div>
