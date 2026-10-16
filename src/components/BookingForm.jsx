@@ -12,8 +12,8 @@ import {
   computeTotal,
   generateReference,
   formatGHS,
-  packageByCode,
-} from "@/lib/packages";
+  packageByCode } from
+"@/lib/packages";
 
 const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, special_requests: "" };
 
@@ -34,7 +34,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
     nationality: "",
     total_bags: 0,
     special_requests: "",
-    lounge_used: "",
+    lounge_used: ""
   });
   const [passengers, setPassengers] = useState([{ ...emptyPassenger }]);
   const [submitting, setSubmitting] = useState(false);
@@ -80,10 +80,10 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
   };
 
   const setPassenger = (i, k, v) =>
-    setPassengers((ps) => ps.map((p, idx) => (idx === i ? { ...p, [k]: v } : p)));
+  setPassengers((ps) => ps.map((p, idx) => idx === i ? { ...p, [k]: v } : p));
   const addPassenger = () => setPassengers((ps) => [...ps, { ...emptyPassenger }]);
   const removePassenger = (i) =>
-    setPassengers((ps) => (ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps));
+  setPassengers((ps) => ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps);
 
   const onPhotoSelect = (e) => {
     const file = e.target.files?.[0];
@@ -175,7 +175,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           contact: p.contact.trim(),
           nationality: p.nationality.trim(),
           total_bags: Number(p.total_bags || 0),
-          special_requests: p.special_requests.trim(),
+          special_requests: p.special_requests.trim()
         })),
         porters: [],
         status: channel === "walk_in" ? "assigned" : "confirmed",
@@ -183,7 +183,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
         amount_collected: 0,
         outstanding_balance: totalValue,
         booking_channel: channel,
-        passenger_photo_uri,
+        passenger_photo_uri
       };
       if (channel === "walk_in" && supervisor) {
         payload.assigned_supervisor_id = supervisor.id;
@@ -233,17 +233,17 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
                 nationality: "",
                 total_bags: 0,
                 special_requests: "",
-                lounge_used: "",
+                lounge_used: ""
               });
               setPassengers([{ ...emptyPassenger }]);
               onPhotoRemove();
-            }}
-          >
+            }}>
+            
             {channel === "walk_in" ? "New walk-in booking" : "Book another service"}
           </Button>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -255,32 +255,32 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" /> Service Package
         </h3>
-        {loadingPkgs ? (
-          <div className="flex items-center text-muted-foreground text-sm py-4">
+        {loadingPkgs ?
+        <div className="flex items-center text-muted-foreground text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 gap-3">
-            {packages.map((p) => (
-              <button
-                type="button"
-                key={p.code}
-                onClick={() => onPackageChange(p.code)}
-                className={`text-left rounded-xl border p-4 transition-all ${
-                  form.package_code === p.code
-                    ? "border-accent ring-2 ring-accent/40 bg-accent/5"
-                    : "border-border hover:border-accent/50"
-                }`}
-              >
+          </div> :
+
+        <div className="grid sm:grid-cols-2 gap-3">
+            {packages.map((p) =>
+          <button
+            type="button"
+            key={p.code}
+            onClick={() => onPackageChange(p.code)}
+            className={`text-left rounded-xl border p-4 transition-all ${
+            form.package_code === p.code ?
+            "border-accent ring-2 ring-accent/40 bg-accent/5" :
+            "border-border hover:border-accent/50"}`
+            }>
+            
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">{p.name}</span>
                   <span className="text-lg font-bold text-primary">{formatGHS(p.price)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{p.inclusions}</p>
               </button>
-            ))}
+          )}
           </div>
-        )}
+        }
       </section>
 
       {/* Flight details */}
@@ -321,12 +321,12 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
             <Label>Nationality</Label>
             <Input value={form.nationality} onChange={(e) => setField("nationality", e.target.value)} placeholder="e.g. Ghanaian" />
           </div>
-          {selectedPkg?.includes_lounge && (
-            <div className="space-y-1.5">
+          {selectedPkg?.includes_lounge &&
+          <div className="space-y-1.5">
               <Label>Lounge preference</Label>
               <Input value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="e.g. Akwaaba Lounge" />
             </div>
-          )}
+          }
         </div>
         <div className="space-y-1.5">
           <Label>Special requests</Label>
@@ -334,8 +334,8 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
             value={form.special_requests}
             onChange={(e) => setField("special_requests", e.target.value)}
             placeholder="Wheelchair, unaccompanied minor, VIP, etc."
-            rows={2}
-          />
+            rows={2} />
+          
         </div>
       </section>
 
@@ -350,15 +350,15 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           </Button>
         </div>
         <div className="space-y-3">
-          {passengers.map((p, i) => (
-            <div key={i} className="rounded-xl border border-border p-4 bg-secondary/30">
+          {passengers.map((p, i) =>
+          <div key={i} className="rounded-xl border border-border p-4 bg-secondary/30">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Passenger {i + 1}</span>
-                {passengers.length > 1 && (
-                  <button type="button" onClick={() => removePassenger(i)} className="text-rose-500 hover:text-rose-700">
+                {passengers.length > 1 &&
+              <button type="button" onClick={() => removePassenger(i)} className="text-rose-500 hover:text-rose-700">
                     <Trash2 className="w-4 h-4" />
                   </button>
-                )}
+              }
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -376,11 +376,11 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
                 <div className="space-y-1">
                   <Label className="text-xs">Bags</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    value={p.total_bags}
-                    onChange={(e) => setPassenger(i, "total_bags", e.target.value)}
-                  />
+                  type="number"
+                  min={0}
+                  value={p.total_bags}
+                  onChange={(e) => setPassenger(i, "total_bags", e.target.value)} />
+                
                 </div>
               </div>
               <div className="space-y-1 mt-2">
@@ -388,7 +388,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
                 <Input value={p.special_requests} onChange={(e) => setPassenger(i, "special_requests", e.target.value)} />
               </div>
             </div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -397,46 +397,46 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Users className="w-4 h-4 text-accent" /> Passenger Identification Photo
         </h3>
-        <p className="text-xs text-muted-foreground">
-          Optional. Upload a clear photo of the passenger's face (JPG, PNG, or WEBP, up to 5MB).
+        <p className="text-xs text-muted-foreground">Optional. This will  (JPG, PNG, or WEBP, up to 5MB).
+
         </p>
-        {photoError && (
-          <div className="p-2 rounded-lg bg-destructive/10 text-destructive text-xs">{photoError}</div>
-        )}
-        {photoPreview ? (
-          <div className="flex items-center gap-4">
+        {photoError &&
+        <div className="p-2 rounded-lg bg-destructive/10 text-destructive text-xs">{photoError}</div>
+        }
+        {photoPreview ?
+        <div className="flex items-center gap-4">
             <img
-              src={photoPreview}
-              alt="Passenger photo preview"
-              className="w-24 h-24 rounded-xl object-cover border border-border"
-            />
+            src={photoPreview}
+            alt="Passenger photo preview"
+            className="w-24 h-24 rounded-xl object-cover border border-border" />
+          
             <div className="flex gap-3">
               <label className="cursor-pointer text-xs font-medium text-accent hover:underline">
                 Replace
                 <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={onPhotoSelect}
-                />
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={onPhotoSelect} />
+              
               </label>
               <button type="button" onClick={onPhotoRemove} className="text-xs font-medium text-rose-500 hover:underline">
                 Remove
               </button>
             </div>
-          </div>
-        ) : (
-          <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-6 cursor-pointer hover:border-accent/50 transition-colors">
+          </div> :
+
+        <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-6 cursor-pointer hover:border-accent/50 transition-colors">
             <Users className="w-6 h-6 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Click to upload a photo</span>
             <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={onPhotoSelect}
-            />
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={onPhotoSelect} />
+          
           </label>
-        )}
+        }
       </section>
 
       {/* Summary */}
@@ -451,17 +451,17 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           </p>
         </div>
         <Button type="submit" size="lg" disabled={submitting || !selectedPkg} className="bg-accent text-accent-foreground hover:bg-accent/90">
-          {submitting ? (
-            <>
+          {submitting ?
+          <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…
-            </>
-          ) : channel === "walk_in" ? (
-            "Save walk-in booking"
-          ) : (
-            "Confirm booking"
-          )}
+            </> :
+          channel === "walk_in" ?
+          "Save walk-in booking" :
+
+          "Confirm booking"
+          }
         </Button>
       </div>
-    </form>
-  );
+    </form>);
+
 }
