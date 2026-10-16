@@ -11,8 +11,8 @@ import SupervisorDirectory from "@/components/SupervisorDirectory";
 import StaffRequests from "@/components/StaffRequests";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
-import { formatGHS } from "@/lib/packages";
-import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
+import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
+import { BarChart3, Wallet, Users, Armchair, Receipt } from "lucide-react";
 
 export default function AdminDashboard() {
   return (
@@ -25,24 +25,75 @@ export default function AdminDashboard() {
 function AdminInner() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "summary";
-  const [rows, setRows] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [loungeCount, setLoungeCount] = useState(0);
 
   const setTab = (t) => setSearchParams(t === "summary" ? {} : { tab: t });
 
   useEffect(() => {
-    base44.entities.Booking
-      .aggregate({ groupBy: "status", sum: ["total_value", "amount_collected", "outstanding_balance"] })
-      .then((r) => setRows(r.rows || []))
-      .catch(() => setRows([]));
+    let active = true;
+    (async () => {
+      try {
+        let items = [];
+        let cursor;
+        do {
+          const page = await base44.entities.ShiftReport.filter(
+            {},
+            {
+              sort: "-created_date",
+              limit: 100,
+              cursor,
+              fields: [
+                "grand_total_paid",
+                "porter_total_commission",
+                "meet_assist_total_paid",
+                "porter_amount_paid",
+                "porter_entries",
+                "meet_assist_entries",
+              ],
+            }
+          );
+          items = items.concat(page.items || []);
+          cursor = page.next_cursor;
+        } while (cursor);
+        if (active) setReports(items);
+      } catch {
+        if (active) setReports([]);
+      } finally {
+        if (active) setLoadingReports(false);
+      }
+    })();
     base44.entities.User.filter({}).then((items) => setUserCount((items || []).length)).catch(() => {});
     base44.entities.Lounge.count().then(setLoungeCount).catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const revenue = rows.reduce((s, r) => s + (r.sum_total_value || 0), 0);
-  const collected = rows.reduce((s, r) => s + (r.sum_amount_collected || 0), 0);
-  const outstanding = rows.reduce((s, r) => s + (r.sum_outstanding_balance || 0), 0);
+  // Single source of truth: sum every submitted shift report.
+  // Amount Collected = Meet & Assist + Porter collected (grand_total_paid).
+  // Porter Commissions = recorded passenger counts × GHS 30/passenger.
+  // Total Revenue = Amount Collected − Porter Commissions.
+  const { collected, commissions } = reports.reduce(
+    (acc, r) => {
+      const meetAssistTotal =
+        r.meet_assist_total_paid != null
+          ? r.meet_assist_total_paid
+          : (r.meet_assist_entries || []).reduce((s, e) => s + (e.amount_paid || 0), 0);
+      const porterCollected = r.porter_amount_paid || 0;
+      acc.collected += r.grand_total_paid != null ? r.grand_total_paid : meetAssistTotal + porterCollected;
+      acc.commissions +=
+        r.porter_total_commission != null
+          ? r.porter_total_commission
+          : (r.porter_entries || []).reduce((s, e) => s + (e.passengers_handled || 0), 0) *
+            PORTER_COMMISSION_PER_PASSENGER;
+      return acc;
+    },
+    { collected: 0, commissions: 0 }
+  );
+  const totalRevenue = collected - commissions;
 
   return (
     <AppLayout>
@@ -59,12 +110,20 @@ function AdminInner() {
       </div>
 
       {tab === "summary" && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total Revenue" value={formatGHS(revenue)} icon={BarChart3} accent />
-          <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
-          <StatCard label="Outstanding" value={formatGHS(outstanding)} icon={Wallet} />
-          <StatCard label="Users" value={userCount} icon={Users} />
-          <StatCard label="Lounges" value={loungeCount} icon={Armchair} />
+        <div className="space-y-4">
+          {loadingReports && (
+            <div className="flex items-center text-muted-foreground text-sm">
+              <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin mr-2" />
+              Calculating figures from submitted shift reports…
+            </div>
+          )}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
+            <StatCard label="Amount Collected" value={formatGHS(collected)} icon={Wallet} />
+            <StatCard label="Porter Commissions" value={formatGHS(commissions)} icon={Receipt} />
+            <StatCard label="Users" value={userCount} icon={Users} />
+            <StatCard label="Lounges" value={loungeCount} icon={Armchair} />
+          </div>
         </div>
       )}
 
