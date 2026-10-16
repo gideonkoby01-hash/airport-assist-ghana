@@ -9,7 +9,8 @@ import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
-import { BarChart3, Wallet, Users, AlertCircle } from "lucide-react";
+import { BarChart3, Wallet, Users, AlertCircle, Bell } from "lucide-react";
+import ManagementNotifications from "@/components/ManagementNotifications";
 
 export default function ManagementDashboard() {
   return (
@@ -27,6 +28,7 @@ function ManagementInner() {
   const [loading, setLoading] = useState(true);
   const [statusRows, setStatusRows] = useState([]);
   const [reports, setReports] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams({ tab: t });
 
@@ -84,10 +86,18 @@ function ManagementInner() {
     }
   };
 
+  const loadUnread = async () => {
+    try {
+      const c = await base44.entities.Notification.count({ user_id: user.id, read: false });
+      setUnreadCount(c || 0);
+    } catch {}
+  };
+
   useEffect(() => {
     load();
     loadSummary();
     loadReports();
+    loadUnread();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -128,6 +138,14 @@ function ManagementInner() {
         <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>All Bookings</TabButton>
         <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
+        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
+          Notifications
+          {unreadCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
+              {unreadCount}
+            </span>
+          )}
+        </TabButton>
       </div>
 
       {tab === "ops" && (
@@ -137,8 +155,33 @@ function ManagementInner() {
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(totalOutstanding)} icon={AlertCircle} />
             <StatCard label="Unassigned" value={unassigned} icon={Users} />
+            <button onClick={() => setTab("notifications")} className="text-left">
+              <StatCard
+                label="Notifications"
+                value={unreadCount}
+                sub={unreadCount > 0 ? "New booking alerts" : "All caught up"}
+                icon={Bell}
+                accent
+              />
+            </button>
           </div>
 
+          {unreadCount > 0 && (
+            <button
+              onClick={() => setTab("notifications")}
+              className="w-full flex items-center justify-between bg-accent/10 border border-accent/30 rounded-xl px-5 py-4 text-left hover:bg-accent/15 transition-colors">
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-accent" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {unreadCount} new booking notification{unreadCount !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tap to review new booking alerts.</p>
+                </div>
+              </div>
+              <span className="text-xs font-medium text-accent">View →</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -148,6 +191,9 @@ function ManagementInner() {
 
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
       {tab === "reports" && <ShiftReportViewer />}
+      {tab === "notifications" && (
+        <ManagementNotifications userId={user.id} onUnreadChange={setUnreadCount} />
+      )}
     </AppLayout>
   );
 }
