@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { STATUS_LABELS } from "@/lib/packages";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
@@ -7,6 +8,7 @@ import { Bell, Check } from "lucide-react";
 export default function ManagementNotifications({ userId, onUnreadChange }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
@@ -82,7 +84,7 @@ export default function ManagementNotifications({ userId, onUnreadChange }) {
           {notifications.map((n) => (
             <div
               key={n.id}
-              onClick={() => markRead(n)}
+              onClick={() => { markRead(n); if (n.booking_id) navigate(`/bookings/${n.booking_id}`); }}
               className={`bg-card rounded-xl border p-4 cursor-pointer transition-colors ${
                 n.read ? "border-border" : "border-accent/40 bg-accent/5 hover:bg-accent/10"
               }`}
@@ -92,6 +94,11 @@ export default function ManagementNotifications({ userId, onUnreadChange }) {
                   <div className="flex items-center gap-2">
                     {!n.read && <span className="w-2 h-2 rounded-full bg-accent shrink-0" />}
                     <p className="text-sm font-semibold text-foreground">{n.title}</p>
+                    {n.type === "status_change" && n.previous_status && n.new_status && (
+                      <span className="text-[11px] bg-secondary text-muted-foreground rounded px-1.5 py-0.5">
+                        {STATUS_LABELS[n.previous_status] || n.previous_status} → {STATUS_LABELS[n.new_status] || n.new_status}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{n.message}</p>
                   {n.booking_id && (

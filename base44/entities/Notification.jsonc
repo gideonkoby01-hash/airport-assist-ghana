@@ -26,8 +26,27 @@
       "enum": [
         "assignment",
         "reassignment",
-        "info"
+        "info",
+        "status_change"
       ]
+    },
+    "previous_status": {
+      "type": "string",
+      "description": "For status_change notifications: the booking status before the update."
+    },
+    "new_status": {
+      "type": "string",
+      "description": "For status_change notifications: the booking status after the update."
+    },
+    "supervisor_name": {
+      "type": "string",
+      "description": "For status_change notifications: the supervisor who made the change."
+    },
+    "supervisor_id": {
+      "type": "string"
+    },
+    "service_type": {
+      "type": "string"
     }
   },
   "required": [

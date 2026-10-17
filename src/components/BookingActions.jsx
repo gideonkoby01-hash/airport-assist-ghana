@@ -60,7 +60,12 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const saveStatus = async () => {
     setSavingStatus(true);
     try {
-      await patch({ status });
+      const res = await base44.functions.invoke("updateBookingStatus", {
+        booking_id: booking.id,
+        new_status: status,
+      });
+      if (res?.data?.error) throw new Error(res.data.error);
+      if (res?.data?.booking && onUpdated) onUpdated(res.data.booking);
     } catch (err) {
       alert(err.message || "Failed to update status");
     } finally {
