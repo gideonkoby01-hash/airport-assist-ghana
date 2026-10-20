@@ -13,6 +13,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
+import RoleRedirect from '@/components/RoleRedirect';
 import PassengerDashboard from '@/pages/PassengerDashboard';
 import SupervisorDashboard from '@/pages/SupervisorDashboard';
 import ManagementDashboard from '@/pages/ManagementDashboard';
@@ -50,8 +51,11 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      {/* Public company homepage — no sign-in required */}
+      <Route path="/" element={<Home />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/" element={<Home />} />
+        {/* Role-based dashboard redirect for signed-in users */}
+        <Route path="/portal" element={<RoleRedirect />} />
         <Route path="/passenger" element={<PassengerDashboard />} />
         <Route path="/supervisor" element={<SupervisorDashboard />} />
         <Route path="/management" element={<ManagementDashboard />} />
