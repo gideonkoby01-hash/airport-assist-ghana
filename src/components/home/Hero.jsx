@@ -13,7 +13,7 @@ export default function Hero() {
       <div className="relative min-h-[88vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1561101904-da649fcbf03f?auto=format&fit=crop&w=1920&q=80"
+            src="https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/42d913358_appimg3.jpeg"
             alt="Airport terminal concourse"
             className="w-full h-full object-cover"
             fittingType="fill"
