@@ -57,9 +57,11 @@ export default function SiteHeader() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-[#d4af37]">
-              <Link to={signInDest}>{isAuthenticated ? "Dashboard" : "Sign In"}</Link>
-            </Button>
+            {!isAuthenticated && (
+              <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-[#d4af37]">
+                <Link to={signInDest}>Sign In</Link>
+              </Button>
+            )}
             <Button asChild className="bg-[#d4af37] hover:bg-[#c39a2e] text-[#0b213c] font-semibold">
               <Link to={bookDest}>Book Now</Link>
             </Button>
@@ -89,13 +91,15 @@ export default function SiteHeader() {
               </a>
             ))}
             <div className="pt-3 border-t border-white/10 flex flex-col gap-3">
-              <Link
-                to={signInDest}
-                onClick={close}
-                className="block text-center py-2.5 rounded-lg border border-white/25 text-white font-medium"
-              >
-                {isAuthenticated ? "Dashboard" : "Sign In"}
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  to={signInDest}
+                  onClick={close}
+                  className="block text-center py-2.5 rounded-lg border border-white/25 text-white font-medium"
+                >
+                  Sign In
+                </Link>
+              )}
               <Link
                 to={bookDest}
                 onClick={close}
