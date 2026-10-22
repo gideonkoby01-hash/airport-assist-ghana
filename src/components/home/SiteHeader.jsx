@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, Plane, Phone } from "lucide-react";
+import { Menu, X, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHomeCta } from "@/components/home/useHomeCta";
 
@@ -57,12 +57,6 @@ export default function SiteHeader() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <a
-              href="tel:+233537755063"
-              className="flex items-center gap-1.5 text-sm text-white/80 hover:text-[#d4af37] transition-colors"
-            >
-              <Phone className="w-4 h-4" /> +233 537 755 063
-            </a>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-[#d4af37]">
               <Link to={signInDest}>{isAuthenticated ? "Dashboard" : "Sign In"}</Link>
             </Button>

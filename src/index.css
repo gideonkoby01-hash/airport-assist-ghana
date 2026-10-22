@@ -93,9 +93,9 @@
   .tricolor-bar {
     background: linear-gradient(
       to right,
-      #006400 0% 33.33%,
+      #FF0000 0% 33.33%,
       #FFD700 33.33% 66.66%,
-      #FF0000 66.66% 100%
+      #006400 66.66% 100%
     );
   }
 }

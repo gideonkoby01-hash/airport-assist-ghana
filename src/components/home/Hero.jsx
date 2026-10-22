@@ -30,7 +30,7 @@ export default function Hero() {
               <Clock className="w-3.5 h-3.5" /> Available 24/7
             </span>
             <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.05] tracking-tight">
-              Your Journey.
+              Your Journey
               <span className="block text-[#d4af37]">Made Effortless.</span>
             </h1>
             <p className="mt-6 text-lg text-white/85 leading-relaxed max-w-xl">

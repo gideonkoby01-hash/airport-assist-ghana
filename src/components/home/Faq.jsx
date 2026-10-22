@@ -11,16 +11,12 @@ const FAQS = [
     a: "No. We do not issue or guarantee visas or entry. Visa-on-arrival assistance is provided where applicable, but all visa and entry decisions rest with the relevant authorities.",
   },
   {
-    q: "Can you eliminate queues or guarantee specific time savings?",
-    a: "No. We cannot guarantee queue elimination or specific time savings. Our team helps you navigate procedures more smoothly, but wait times depend on airport and authority conditions.",
-  },
-  {
     q: "Is lounge access included in every package?",
     a: "Lounge access depends on the selected package. Full Arrival and Full Departure include lounge access; Departure Priority Only and Porter Service Only do not.",
   },
   {
     q: "Do you offer luggage delivery?",
-    a: "We assist with baggage handling within the terminal as part of eligible packages, but we do not offer luggage delivery as a service.",
+    a: "Coming soon. Efforts are underway to introduce luggage delivery as part of our service portfolio. In the meantime, we assist with baggage handling within the terminal as part of eligible packages.",
   },
   {
     q: "How do I book a service?",
