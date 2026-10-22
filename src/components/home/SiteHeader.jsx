@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Image } from "@/components/ui/image";
 import { useHomeCta } from "@/components/home/useHomeCta";
 
 const NAV_LINKS = [
@@ -34,11 +33,11 @@ export default function SiteHeader() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link to="/" onClick={close} className="flex items-center gap-2 shrink-0">
-            <Image
+            <img
               src="https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/34167ba77_logo.png"
               alt="Airport Assist Ghana logo"
-              className="h-10 w-auto"
-              fittingType="fit"
+              height="40"
+              className="h-10 w-auto object-contain"
             />
             <div className="leading-tight">
               <span className="block text-white font-semibold tracking-wide text-base">
