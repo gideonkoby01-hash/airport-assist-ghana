@@ -43,7 +43,7 @@ const PACKAGES = [
   {
     code: "departure_priority",
     name: "Departure Priority Only",
-    price: 400,
+    price: 500,
     description:
       "Priority fast-track security and immigration escort to get you to your gate quickly. Lounge access is not included.",
     inclusions: [

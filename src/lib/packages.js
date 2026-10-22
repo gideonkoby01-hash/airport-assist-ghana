@@ -25,7 +25,7 @@ export const PACKAGE_DEFINITIONS = [
   {
     code: "departure_priority",
     name: "Departure Priority Only",
-    price: 400,
+    price: 500,
     flight_type: "departure",
     includes_lounge: false,
     inclusions: "Fast-track security & immigration, Priority boarding.",
