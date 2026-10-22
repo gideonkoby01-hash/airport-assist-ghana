@@ -13,15 +13,15 @@ export default function Hero() {
       <div className="relative min-h-[88vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1436491865332-7a61a109cc82?auto=format&fit=crop&w=1920&q=80"
+            src="https://images.unsplash.com/photo-1561101904-da649fcbf03f?auto=format&fit=crop&w=1920&q=80"
             alt="Airport terminal concourse"
             className="w-full h-full object-cover"
             fittingType="fill"
             focalPointX={0.5}
             focalPointY={0.4}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b213c]/95 via-[#0b213c]/85 to-[#0b213c]/55" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0b213c]/90 via-[#0b213c]/65 to-[#0b213c]/25" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c]/70 to-transparent" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
