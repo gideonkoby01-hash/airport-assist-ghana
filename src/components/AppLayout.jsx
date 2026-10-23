@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = {
   passenger: [
-    { label: "Dashboard", to: "/passenger", tab: null },
+    { label: "Dashboard", to: "/", tab: null },
     { label: "Book a Service", to: "/passenger", tab: "book" },
     { label: "My Bookings", to: "/passenger", tab: "bookings" },
   ],
