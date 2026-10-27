@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { getAdminRecipients } from '../../shared/notifyHelpers.ts';
+import { sendTransactionalEmail } from '../../shared/emailDelivery.ts';
 
 export default async function(req) {
   try {
@@ -71,7 +72,33 @@ export default async function(req) {
       console.error(`submitStaffRequest: failed to notify admins: ${e.message}`);
     }
 
-    return Response.json({ ok: true, notified, failed });
+    // Email the requester an acknowledgment that the request was received and
+    // is awaiting Admin review (never implying approval). Best effort: the
+    // request was recorded successfully, so a mail failure is logged and
+    // reported but does not fail the submission.
+    let email_ack = null;
+    try {
+      const contactName = fullName || user.full_name || user.email;
+      const firstName = contactName.trim().split(/\s+/)[0] || 'there';
+      email_ack = await sendTransactionalEmail(base44, {
+        eventKey: 'staff_request_received:' + request.id,
+        templateName: 'StaffRequestReceived',
+        to: user.email,
+        userId: user.id,
+        relatedEntityId: request.id,
+        variables: {
+          first_name: firstName,
+          role_label: requestedRole === 'management' ? 'Management' : 'Supervisor',
+          submitted_line: new Date().toLocaleString(),
+          cta_url: 'https://airportassistghana.base44.app/login',
+        },
+      });
+    } catch (e) {
+      console.error('submitStaffRequest: acknowledgment email failed: ' + e.message);
+      email_ack = { status: 'failed', reason: 'error', message: e.message, sent: false };
+    }
+
+    return Response.json({ ok: true, notified, failed, email_ack });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

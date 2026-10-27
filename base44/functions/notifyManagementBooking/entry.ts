@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { getStaffRecipients } from '../../shared/notifyHelpers.ts';
+import { sendTransactionalEmail, logSkippedEmail } from '../../shared/emailDelivery.ts';
 
 // Called by the "New Booking Management Notify" workflow whenever a Booking is
 // created, and manually by Admin/Management. Authorization is enforced
@@ -99,9 +100,64 @@ export default async function(req) {
       }
     }
 
+    // Passenger booking confirmation email (online bookings only, addressed
+    // to the registered account that made the booking). Best effort: a mail
+    // failure is logged and reported but never fails this notification flow.
+    let passenger_email = null;
+    if (booking.booking_channel === 'online' && booking.created_by_id) {
+      try {
+        const creator = await base44.asServiceRole.entities.User.get(booking.created_by_id)
+          .catch((e) => (e.status === 404 ? null : Promise.reject(e)));
+        const contactName =
+          (booking.passengers && booking.passengers[0] && booking.passengers[0].name) ||
+          booking.contact || (creator && creator.full_name) || '';
+        const firstName = contactName.trim().split(/\s+/)[0] || 'there';
+        const ghs = (n) => (typeof n === 'number' ? 'GHS ' + n.toFixed(2) : '—');
+        const dir =
+          booking.flight_type === 'arrival' ? 'Arrival'
+          : booking.flight_type === 'departure' ? 'Departure' : '—';
+        if (creator && creator.email) {
+          passenger_email = await sendTransactionalEmail(base44, {
+            eventKey: 'booking_confirmation:' + booking_id,
+            templateName: 'BookingConfirmation',
+            to: creator.email,
+            userId: creator.id,
+            relatedEntityId: booking_id,
+            variables: {
+              first_name: firstName,
+              order_id: booking.reference || booking_id,
+              item_name: booking.package_name || booking.package_code || '—',
+              flight_line: [booking.airline, booking.flight_number].filter(Boolean).join(' ') || 'To be confirmed',
+              travel_line: [booking.flight_date, booking.scheduled_flight_time].filter(Boolean).join(' · ') || 'To be confirmed',
+              direction_line: dir,
+              travelers_line:
+                (booking.num_passengers || 0) + ' passenger(s)' +
+                (booking.total_bags ? ' · ' + booking.total_bags + ' bag(s)' : ''),
+              total: ghs(booking.total_value),
+              cta_url: 'https://airportassistghana.base44.app/passenger?tab=bookings',
+            },
+          });
+        } else {
+          console.warn('notifyManagementBooking: no valid recipient for booking confirmation ' + booking_id);
+          await logSkippedEmail(
+            base44,
+            'booking_confirmation:' + booking_id,
+            'BookingConfirmation',
+            booking.created_by_id,
+            booking_id,
+            'No registered account or email for the booking creator'
+          );
+          passenger_email = { status: 'skipped', reason: 'no_valid_recipient', sent: false };
+        }
+      } catch (e) {
+        console.error('notifyManagementBooking: booking confirmation email failed: ' + e.message);
+        passenger_email = { status: 'failed', reason: 'error', message: e.message, sent: false };
+      }
+    }
+
     // Truthful result: never report success when all creations failed.
     if (created.length === 0 && failed.length > 0) {
-      return Response.json({ error: 'All notification creations failed', failed }, { status: 500 });
+      return Response.json({ error: 'All notification creations failed', failed, passenger_email }, { status: 500 });
     }
     return Response.json({
       ok: true,
@@ -110,6 +166,7 @@ export default async function(req) {
       notified: created.length,
       duplicates_skipped: duplicates,
       failed,
+      passenger_email,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { sendTransactionalEmail, logSkippedEmail } from '../../shared/emailDelivery.ts';
 
 export default async function(req) {
   try {
@@ -85,7 +86,51 @@ export default async function(req) {
       }
     }
 
-    return Response.json({ ok: true, action, requester_notified });
+    // Email the requester the outcome after the decision is saved. Best
+    // effort: logged and reported, never rolled back; no internal notes or
+    // administrative details are included.
+    let email_result = null;
+    if (request.user_id) {
+      try {
+        const requester = await base44.asServiceRole.entities.User.get(request.user_id)
+          .catch((e) => (e.status === 404 ? null : Promise.reject(e)));
+        if (requester && requester.email) {
+          const roleLabel = request.requested_role === 'management' ? 'Management' : 'Supervisor';
+          const approved = action === 'approve';
+          const contactName = request.full_name || requester.full_name || requester.email;
+          const firstName = contactName.trim().split(/\s+/)[0] || 'there';
+          email_result = await sendTransactionalEmail(base44, {
+            eventKey: 'staff_request_decision:' + request_id + ':' + action,
+            templateName: approved ? 'StaffRequestApproved' : 'StaffRequestRejected',
+            to: requester.email,
+            userId: requester.id,
+            relatedEntityId: request_id,
+            variables: {
+              first_name: firstName,
+              role_label: roleLabel,
+              decision_line: new Date().toLocaleString(),
+              cta_url: 'https://airportassistghana.base44.app/login',
+            },
+          });
+        } else {
+          console.warn('processStaffRequest: no valid recipient for request ' + request_id);
+          await logSkippedEmail(
+            base44,
+            'staff_request_decision:' + request_id + ':' + action,
+            action === 'approve' ? 'StaffRequestApproved' : 'StaffRequestRejected',
+            request.user_id,
+            request_id,
+            'No registered account or email for the requester'
+          );
+          email_result = { status: 'skipped', reason: 'no_valid_recipient', sent: false };
+        }
+      } catch (e) {
+        console.error('processStaffRequest: outcome email failed: ' + e.message);
+        email_result = { status: 'failed', reason: 'error', message: e.message, sent: false };
+      }
+    }
+
+    return Response.json({ ok: true, action, requester_notified, email_result });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
