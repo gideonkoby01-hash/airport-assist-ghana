@@ -33,7 +33,14 @@ export default async function(req) {
       return Response.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    const isReassignment = !!booking.assigned_supervisor_id && booking.assigned_supervisor_id !== supervisor_user_id;
+    // Duplicate guard: assigning the supervisor who is already assigned is not
+    // a new event -> do not re-alert them. Legitimate separate events (a
+    // different supervisor, or a later re-assignment away and back) still notify.
+    if (booking.assigned_supervisor_id === supervisor_user_id) {
+      return Response.json({ ok: true, booking, duplicate: true, notified: 0 });
+    }
+
+    const isReassignment = !!booking.assigned_supervisor_id;
 
     // Update the booking assignment.
     const updated = await base44.asServiceRole.entities.Booking.update(booking_id, {
