@@ -27,7 +27,9 @@
         "assignment",
         "reassignment",
         "info",
-        "status_change"
+        "status_change",
+        "shift_report",
+        "staff_request"
       ]
     },
     "previous_status": {
@@ -47,6 +49,18 @@
     },
     "service_type": {
       "type": "string"
+    },
+    "shift_report_id": {
+      "type": "string",
+      "description": "For shift_report notifications: the submitted ShiftReport the alert refers to."
+    },
+    "account_request_id": {
+      "type": "string",
+      "description": "For staff_request notifications: the AccountRequest the alert refers to."
+    },
+    "link_path": {
+      "type": "string",
+      "description": "App-relative deep link for this notification's next step, e.g. /passenger?tab=bookings or /admin?tab=reports."
     }
   },
   "required": [

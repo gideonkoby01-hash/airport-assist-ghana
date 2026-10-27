@@ -13,6 +13,7 @@ const NAV = {
     { label: "Dashboard", to: "/", tab: null },
     { label: "Book a Service", to: "/passenger", tab: "book" },
     { label: "My Bookings", to: "/passenger", tab: "bookings" },
+    { label: "Notifications", to: "/passenger", tab: "notifications" },
   ],
   supervisor: [
     { label: "Assigned Bookings", to: "/supervisor", tab: null },

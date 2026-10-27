@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
+import PassengerNotifications from "@/components/PassengerNotifications";
 import StatCard from "@/components/StatCard";
 import { PACKAGE_DEFINITIONS, formatGHS } from "@/lib/packages";
 import { Plane, Ticket, CheckCircle2, XCircle, Sparkles } from "lucide-react";
@@ -26,6 +27,7 @@ function PassengerInner() {
   const [bookings, setBookings] = useState([]);
   const [loadingBk, setLoadingBk] = useState(true);
   const [stats, setStats] = useState({ total: 0, active: 0, completed: 0 });
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams(t === "home" ? {} : { tab: t });
 
@@ -62,6 +64,17 @@ function PassengerInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const loadUnread = () =>
+      base44.entities.Notification.count({ user_id: user.id, read: false })
+        .then((c) => setUnreadCount(c || 0))
+        .catch(() => {});
+    loadUnread();
+    // Refresh the unread badge safely when the page regains focus.
+    window.addEventListener("focus", loadUnread);
+    return () => window.removeEventListener("focus", loadUnread);
+  }, [user.id]);
+
   return (
     <AppLayout>
       <div className="mb-6">
@@ -73,6 +86,14 @@ function PassengerInner() {
         <TabButton active={tab === "home"} onClick={() => setTab("home")}>Overview</TabButton>
         <TabButton active={tab === "book"} onClick={() => setTab("book")}>Book a Service</TabButton>
         <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>My Bookings</TabButton>
+        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
+          Notifications
+          {unreadCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
+              {unreadCount}
+            </span>
+          )}
+        </TabButton>
       </div>
 
       {tab === "home" && (
@@ -97,6 +118,10 @@ function PassengerInner() {
 
       {tab === "bookings" && (
         <BookingList bookings={bookings} loading={loadingBk} emptyMessage="You have no bookings yet. Book a service to get started." />
+      )}
+
+      {tab === "notifications" && (
+        <PassengerNotifications userId={user.id} onUnreadChange={setUnreadCount} />
       )}
     </AppLayout>
   );

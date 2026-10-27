@@ -84,7 +84,11 @@ export default function ManagementNotifications({ userId, onUnreadChange }) {
           {notifications.map((n) => (
             <div
               key={n.id}
-              onClick={() => { markRead(n); if (n.booking_id) navigate(`/bookings/${n.booking_id}`); }}
+              onClick={() => {
+                markRead(n);
+                const t = n.link_path || (n.booking_id ? `/bookings/${n.booking_id}` : null);
+                if (t) navigate(t);
+              }}
               className={`bg-card rounded-xl border p-4 cursor-pointer transition-colors ${
                 n.read ? "border-border" : "border-accent/40 bg-accent/5 hover:bg-accent/10"
               }`}
@@ -108,6 +112,15 @@ export default function ManagementNotifications({ userId, onUnreadChange }) {
                       className="text-xs text-accent hover:underline mt-2 inline-block"
                     >
                       View booking {n.booking_reference} →
+                    </Link>
+                  )}
+                  {n.link_path && (
+                    <Link
+                      to={n.link_path}
+                      onClick={(e) => { e.stopPropagation(); markRead(n); }}
+                      className="text-xs text-accent hover:underline mt-2 inline-block ml-2"
+                    >
+                      {n.type === "shift_report" ? "View shift reports" : n.type === "staff_request" ? "View staff requests" : "Open"} →
                     </Link>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">

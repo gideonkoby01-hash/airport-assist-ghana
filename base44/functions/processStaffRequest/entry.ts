@@ -43,7 +43,49 @@ export default async function(req) {
       await base44.asServiceRole.entities.AccountRequest.update(request_id, { status: 'rejected' });
     }
 
-    return Response.json({ ok: true, action });
+    // Notify the requester of the outcome through the in-app Notification
+    // entity (only when the request carries a valid account identifier). Best
+    // effort: logged on failure; no administrative details are included.
+    let requester_notified = false;
+    if (request.user_id) {
+      try {
+        const existing = await base44.asServiceRole.entities.Notification.filter({
+          account_request_id: request_id,
+          type: 'staff_request',
+        });
+        const existingIds = new Set(
+          (Array.isArray(existing) ? existing : existing.items || []).map((n) => n.user_id)
+        );
+        if (!existingIds.has(request.user_id)) {
+          const roleLabel = request.requested_role === 'management' ? 'Management' : 'Supervisor';
+          const approved = action === 'approve';
+          await base44.asServiceRole.entities.Notification.create({
+            user_id: request.user_id,
+            account_request_id: request_id,
+            title: approved ? 'Staff Access Approved' : 'Staff Access Rejected',
+            message: approved
+              ? [
+                  `Your request for ${roleLabel} access has been approved.`,
+                  `Sign in and open your ${roleLabel} dashboard to get started.`,
+                ].join('\n')
+              : [
+                  `Your request for ${roleLabel} access was not approved.`,
+                  'If you believe this is an error, please contact the Admin office.',
+                ].join('\n'),
+            read: false,
+            type: 'staff_request',
+            link_path: approved
+              ? (request.requested_role === 'management' ? '/management' : '/supervisor')
+              : '/login',
+          });
+          requester_notified = true;
+        }
+      } catch (e) {
+        console.error(`processStaffRequest: failed to notify requester: ${e.message}`);
+      }
+    }
+
+    return Response.json({ ok: true, action, requester_notified });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

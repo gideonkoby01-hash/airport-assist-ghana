@@ -9,6 +9,8 @@ import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import StaffRequests from "@/components/StaffRequests";
+import ManagementNotifications from "@/components/ManagementNotifications";
+import { useAuth } from "@/lib/AuthContext";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
@@ -23,8 +25,10 @@ export default function AdminDashboard() {
 }
 
 function AdminInner() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "summary";
+  const [unreadCount, setUnreadCount] = useState(0);
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [userCount, setUserCount] = useState(0);
@@ -77,6 +81,17 @@ function AdminInner() {
     };
   }, []);
 
+  useEffect(() => {
+    const loadUnread = () =>
+      base44.entities.Notification.count({ user_id: user.id, read: false })
+        .then((c) => setUnreadCount(c || 0))
+        .catch(() => {});
+    loadUnread();
+    // Refresh the unread badge safely when the page regains focus.
+    window.addEventListener("focus", loadUnread);
+    return () => window.removeEventListener("focus", loadUnread);
+  }, [user.id]);
+
   // Single source of truth: sum every submitted shift report.
   // Amount Collected = Meet & Assist + Porter collected (grand_total_paid).
   // Porter Commissions = recorded passenger counts × GHS 30/passenger.
@@ -112,6 +127,14 @@ function AdminInner() {
         <TabButton active={tab === "packages"} onClick={() => setTab("packages")}>Service Packages</TabButton>
         <TabButton active={tab === "lounges"} onClick={() => setTab("lounges")}>Lounges</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
+        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
+          Notifications
+          {unreadCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
+              {unreadCount}
+            </span>
+          )}
+        </TabButton>
       </div>
 
       {tab === "summary" && (
@@ -139,6 +162,9 @@ function AdminInner() {
       {tab === "supervisors" && <SupervisorDirectory />}
       {tab === "requests" && <StaffRequests />}
       {tab === "reports" && <ShiftReportViewer />}
+      {tab === "notifications" && (
+        <ManagementNotifications userId={user.id} onUnreadChange={setUnreadCount} />
+      )}
     </AppLayout>
   );
 }

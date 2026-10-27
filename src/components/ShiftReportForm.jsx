@@ -48,6 +48,7 @@ export default function ShiftReportForm({ supervisor }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState("");
+  const [notifyWarning, setNotifyWarning] = useState("");
 
   const loadPorters = async () => {
     try {
@@ -208,6 +209,13 @@ export default function ShiftReportForm({ supervisor }) {
       const rep = await base44.entities.ShiftReport.create(buildPayload());
       setSubmittedReport(rep);
       loadReports();
+      // Alert Management/Admin (best effort: a failure never undoes the submission).
+      try {
+        const res = await base44.functions.invoke("notifyShiftReport", { shift_report_id: rep.id });
+        if (res?.data?.error) throw new Error(res.data.error);
+      } catch {
+        setNotifyWarning("Your report was submitted, but the staff alert could not be sent. Please inform management.");
+      }
     } catch (err) {
       setError(err.message || "Failed to submit report.");
     } finally {
@@ -227,6 +235,7 @@ export default function ShiftReportForm({ supervisor }) {
     setRemarks("");
     setError("");
     setDuplicateWarning("");
+    setNotifyWarning("");
   };
 
   if (submittedReport) {
@@ -239,6 +248,11 @@ export default function ShiftReportForm({ supervisor }) {
             {submittedReport.reporting_period_start} to {submittedReport.reporting_period_end}
           </p>
         </div>
+        {notifyWarning &&
+        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            {notifyWarning}
+          </div>
+        }
         <ShiftReportSummary report={submittedReport} />
         <Button onClick={resetForm} className="w-full sm:w-auto">
           Submit another report
