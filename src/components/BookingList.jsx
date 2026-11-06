@@ -46,6 +46,11 @@ export default function BookingList({ bookings, loading, emptyMessage = "No book
             </div>
             <div className="text-left sm:text-right">
               <p className="text-lg font-bold text-foreground">{formatGHS(b.total_value)}</p>
+              {Number(b.discount_amount || 0) > 0 && (
+                <p className="text-xs text-emerald-700">
+                  {b.discount_code}: −{formatGHS(b.discount_amount)}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground capitalize">{b.booking_channel?.replace("_", " ")}</p>
               {b.assigned_supervisor_name && (
                 <p className="text-xs text-muted-foreground mt-0.5">Sup: {b.assigned_supervisor_name}</p>

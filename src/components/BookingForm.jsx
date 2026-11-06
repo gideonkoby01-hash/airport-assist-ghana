@@ -7,11 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Users, Plane, CheckCircle2 } from "lucide-react";
 import PaymentInformation from "@/components/PaymentInformation";
+import DiscountCodeInput from "@/components/DiscountCodeInput";
 import {
   PACKAGE_DEFINITIONS,
   PACKAGE_LABELS,
   computeTotal,
-  generateReference,
   formatGHS,
   packageByCode } from
 "@/lib/packages";
@@ -45,6 +45,7 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoError, setPhotoError] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -77,14 +78,20 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
   const onPackageChange = (code) => {
     const pkg = packages.find((p) => p.code === code) || packageByCode(code);
     const ft = pkg?.flight_type === "departure" ? "departure" : pkg?.flight_type === "arrival" ? "arrival" : form.flight_type;
+    setAppliedDiscount(null);
     setForm((f) => ({ ...f, package_code: code, flight_type: ft }));
   };
 
   const setPassenger = (i, k, v) =>
   setPassengers((ps) => ps.map((p, idx) => idx === i ? { ...p, [k]: v } : p));
-  const addPassenger = () => setPassengers((ps) => [...ps, { ...emptyPassenger }]);
-  const removePassenger = (i) =>
-  setPassengers((ps) => ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps);
+  const addPassenger = () => {
+    setAppliedDiscount(null);
+    setPassengers((ps) => [...ps, { ...emptyPassenger }]);
+  };
+  const removePassenger = (i) => {
+    setAppliedDiscount(null);
+    setPassengers((ps) => ps.length > 1 ? ps.filter((_, idx) => idx !== i) : ps);
+  };
 
   const onPhotoSelect = (e) => {
     const file = e.target.files?.[0];
@@ -138,13 +145,12 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
     setSubmitting(true);
     try {
       const pkg = selectedPkg;
-      const ref = generateReference();
       let passenger_photo_uri = "";
       if (photoFile) {
         setPhotoUploading(true);
         try {
-          const res = await base44.integrations.Core.UploadPrivateFile({ file: photoFile });
-          passenger_photo_uri = res.file_uri;
+          const upload = await base44.integrations.Core.UploadPrivateFile({ file: photoFile });
+          passenger_photo_uri = upload.file_uri;
         } catch (err) {
           setPhotoUploading(false);
           setSubmitting(false);
@@ -154,47 +160,36 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           setPhotoUploading(false);
         }
       }
-      const payload = {
-        reference: ref,
+      // Price, discount and totals are recalculated on the server: the browser
+      // never sets the amount that is saved.
+      const res = await base44.functions.invoke("createBooking", {
+        channel,
         package_code: pkg.code,
-        package_name: pkg.name,
-        price_per_passenger: Number(pkg.price),
-        num_passengers: numPassengers,
-        total_value: totalValue,
         flight_type: form.flight_type,
-        airline: form.airline.trim(),
-        flight_number: form.flight_number.trim(),
+        airline: form.airline,
+        flight_number: form.flight_number,
         flight_date: form.flight_date,
         scheduled_flight_time: form.scheduled_flight_time,
-        contact: form.contact.trim(),
-        nationality: form.nationality.trim(),
-        total_bags: Number(form.total_bags || 0),
-        special_requests: form.special_requests.trim(),
-        lounge_used: pkg.includes_lounge ? form.lounge_used.trim() : "",
-        passengers: passengers.map((p) => ({
-          name: p.name.trim(),
-          contact: p.contact.trim(),
-          nationality: p.nationality.trim(),
-          total_bags: Number(p.total_bags || 0),
-          special_requests: p.special_requests.trim()
-        })),
-        porters: [],
-        status: channel === "walk_in" ? "assigned" : "confirmed",
-        payment_status: "unpaid",
-        amount_collected: 0,
-        outstanding_balance: totalValue,
-        booking_channel: channel,
-        passenger_photo_uri
-      };
-      if (channel === "walk_in" && supervisor) {
-        payload.assigned_supervisor_id = supervisor.id;
-        payload.assigned_supervisor_name = supervisor.name || supervisor.email;
-      }
-      const booking = await base44.entities.Booking.create(payload);
-      setCreated(booking);
-      if (onCreated) onCreated(booking);
+        contact: form.contact,
+        nationality: form.nationality,
+        total_bags: form.total_bags,
+        special_requests: form.special_requests,
+        lounge_used: form.lounge_used,
+        passengers,
+        passenger_photo_uri,
+        discount_code: appliedDiscount?.code || "",
+      });
+      const data = res?.data || {};
+      if (data.error) throw new Error(data.error);
+      if (!data.booking) throw new Error("The booking could not be saved. Please try again.");
+      setCreated(data.booking);
+      setAppliedDiscount(null);
+      if (onCreated) onCreated(data.booking);
     } catch (err) {
-      setError(err.message || "Failed to create booking. Please try again.");
+      const message =
+        err?.response?.data?.error || err?.message || "Failed to create booking. Please try again.";
+      setError(message);
+      if (/discount/i.test(message)) setAppliedDiscount(null);
     } finally {
       setSubmitting(false);
     }
@@ -216,6 +211,12 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           Total: <span className="font-semibold text-foreground">{formatGHS(created.total_value)}</span> ·{" "}
           {created.num_passengers} passenger{created.num_passengers !== 1 ? "s" : ""}
         </p>
+        {Number(created.discount_amount || 0) > 0 && (
+          <p className="text-xs text-emerald-700 mt-1">
+            Discount {created.discount_code} applied (−{formatGHS(created.discount_amount)} from{" "}
+            {formatGHS(created.original_total)})
+          </p>
+        )}
         <div className="flex gap-3 justify-center mt-6">
           <Button variant="outline" onClick={() => window.location.assign(`/bookings/${created.id}`)}>
             View booking
@@ -440,6 +441,15 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
         }
       </section>
 
+      <DiscountCodeInput
+        applied={appliedDiscount}
+        onApplied={setAppliedDiscount}
+        onRemoved={() => setAppliedDiscount(null)}
+        packageCode={form.package_code}
+        numPassengers={numPassengers}
+        disabled={submitting}
+      />
+
       <PaymentInformation />
 
       {/* Summary */}
@@ -448,10 +458,22 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           <p className="text-xs uppercase tracking-wide opacity-80">
             {selectedPkg ? selectedPkg.name : "Select a package"}
           </p>
-          <p className="text-2xl font-bold">{formatGHS(totalValue)}</p>
+          <p className="text-2xl font-bold">
+            {formatGHS(appliedDiscount ? appliedDiscount.final_total : totalValue)}
+          </p>
           <p className="text-xs opacity-80">
             {formatGHS(pricePerPassenger)} × {numPassengers} passenger{numPassengers !== 1 ? "s" : ""}
           </p>
+          {appliedDiscount && (
+            <div className="mt-2 space-y-0.5 text-xs">
+              <p className="opacity-80">
+                Original total: <span className="line-through">{formatGHS(appliedDiscount.gross_total)}</span>
+              </p>
+              <p className="text-accent font-medium">
+                Discount ({appliedDiscount.code}): −{formatGHS(appliedDiscount.discount_amount)}
+              </p>
+            </div>
+          )}
         </div>
         <Button type="submit" size="lg" disabled={submitting || !selectedPkg} className="bg-accent text-accent-foreground hover:bg-accent/90">
           {submitting ?

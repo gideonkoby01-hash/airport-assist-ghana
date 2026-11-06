@@ -13,7 +13,7 @@ import {
   STATUS_LABELS,
   formatGHS,
 } from "@/lib/packages";
-import { ArrowLeft, Plane, Calendar, Clock, Users, Phone, Globe, Luggage, StickyNote, Armchair } from "lucide-react";
+import { ArrowLeft, Plane, Calendar, Clock, Users, Phone, Globe, Luggage, StickyNote, Armchair, Tag } from "lucide-react";
 
 export default function BookingDetail() {
   const { id } = useParams();
@@ -93,6 +93,46 @@ export default function BookingDetail() {
               </div>
             </div>
           </div>
+
+          {Number(booking.discount_amount || 0) > 0 && (
+            <div className="bg-card rounded-2xl border border-border p-5">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Tag className="w-4 h-4 text-accent" /> Price Breakdown
+              </h3>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Original total</dt>
+                  <dd>{formatGHS(booking.original_total ?? booking.total_value)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">
+                    Discount ({booking.discount_code}
+                    {booking.discount_type === "percentage" ? ` · ${booking.discount_value}%` : ""})
+                  </dt>
+                  <dd className="text-emerald-700">−{formatGHS(booking.discount_amount)}</dd>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2 font-semibold">
+                  <dt>Booking total</dt>
+                  <dd>{formatGHS(booking.total_value)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Collected</dt>
+                  <dd>{formatGHS(booking.amount_collected)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Outstanding</dt>
+                  <dd>{formatGHS(booking.outstanding_balance)}</dd>
+                </div>
+              </dl>
+              {booking.discount_recipient_name && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Discount issued to {booking.discount_recipient_name}
+                  {booking.discount_recipient_type ? ` (${booking.discount_recipient_type})` : ""}. Payment is made in
+                  person at the airport terminal.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="grid lg:grid-cols-2 gap-5">
             {/* Flight info */}

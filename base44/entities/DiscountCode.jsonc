@@ -1,0 +1,136 @@
+{
+  "name": "DiscountCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Normalized (trimmed, uppercase) promo code. Unique across the app, enforced by the manageDiscountCode backend function."
+    },
+    "recipient_type": {
+      "type": "string",
+      "enum": [
+        "individual",
+        "corporation"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "description": "Who the code is restricted to. Individual codes match one verified account email; corporate codes match an approved email domain or an admin-approved member list."
+    },
+    "recipient_name": {
+      "type": "string",
+      "description": "Name of the individual or corporation the code is issued to."
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Contact email for the recipient (administrative). Individual eligibility is configurable separately in eligible_email and defaults to this address."
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "description": "Internal administrative note."
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percentage",
+        "fixed"
+      ],
+      "enumColors": [
+        "green",
+        "yellow"
+      ]
+    },
+    "discount_value": {
+      "type": "number",
+      "description": "Percentage (0-100) when discount_type is percentage, otherwise the fixed GHS amount."
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "max_uses": {
+      "type": "number",
+      "description": "Maximum total redemptions. 0 means unlimited."
+    },
+    "max_uses_per_customer": {
+      "type": "number",
+      "description": "Maximum redemptions per passenger account. 0 means unlimited."
+    },
+    "eligible_email": {
+      "type": "string",
+      "description": "Individual codes only: the single verified account email allowed to redeem."
+    },
+    "eligible_domain": {
+      "type": "string",
+      "description": "Corporate codes only: approved email domain (e.g. acme.com). Any account on this domain is eligible."
+    },
+    "eligible_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Corporate codes only: admin-approved list of member account emails."
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "redemption_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Total redemptions recorded. Incremented atomically at booking time."
+    },
+    "total_discount_granted": {
+      "type": "number",
+      "default": 0,
+      "description": "Sum of all discount amounts granted in GHS."
+    },
+    "last_claim_token": {
+      "type": "string",
+      "description": "Internal concurrency guard used by the createBooking function."
+    }
+  },
+  "required": [
+    "code",
+    "recipient_type",
+    "recipient_name",
+    "discount_type",
+    "discount_value",
+    "start_date",
+    "expiry_date",
+    "max_uses"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

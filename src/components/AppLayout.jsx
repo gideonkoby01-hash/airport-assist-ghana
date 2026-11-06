@@ -31,6 +31,7 @@ const NAV = {
     { label: "Supervisors", to: "/admin", tab: "supervisors" },
     { label: "Porters", to: "/admin", tab: "porters" },
     { label: "Staff Requests", to: "/admin", tab: "requests" },
+    { label: "Discounts", to: "/admin", tab: "discounts" },
     { label: "Service Packages", to: "/admin", tab: "packages" },
     { label: "Lounges", to: "/admin", tab: "lounges" },
     { label: "Shift Reports", to: "/admin", tab: "reports" },

@@ -8,6 +8,7 @@ import BookingList from "@/components/BookingList";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
+import BookingFinancials from "@/components/BookingFinancials";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, AlertCircle, Bell } from "lucide-react";
 import ManagementNotifications from "@/components/ManagementNotifications";
@@ -182,6 +183,7 @@ function ManagementInner() {
               <span className="text-xs font-medium text-accent">View →</span>
             </button>
           )}
+          <BookingFinancials />
         </div>
       )}
 

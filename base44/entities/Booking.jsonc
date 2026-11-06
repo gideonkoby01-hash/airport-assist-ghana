@@ -23,8 +23,50 @@
     "num_passengers": {
       "type": "number"
     },
+    "original_total": {
+      "type": "number",
+      "description": "Booking total before any discount. Equals total_value when no discount was applied."
+    },
     "total_value": {
-      "type": "number"
+      "type": "number",
+      "description": "Booking total actually owed by the passenger (after any discount). Outstanding balance and payments are measured against this value."
+    },
+    "discount_code_id": {
+      "type": "string"
+    },
+    "discount_code": {
+      "type": "string",
+      "description": "Snapshot of the applied promo code, kept unchanged even if the code is later edited or deactivated."
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percentage",
+        "fixed"
+      ]
+    },
+    "discount_value": {
+      "type": "number",
+      "description": "Snapshot of the percentage or fixed GHS value at the time of booking."
+    },
+    "discount_amount": {
+      "type": "number",
+      "description": "Actual GHS discount granted on this booking."
+    },
+    "discount_recipient_type": {
+      "type": "string",
+      "enum": [
+        "individual",
+        "corporation"
+      ]
+    },
+    "discount_recipient_name": {
+      "type": "string",
+      "description": "Individual or corporation the discount was issued to, snapshotted at booking time."
+    },
+    "discount_redeemed_at": {
+      "type": "string",
+      "format": "date-time"
     },
     "flight_type": {
       "type": "string",
