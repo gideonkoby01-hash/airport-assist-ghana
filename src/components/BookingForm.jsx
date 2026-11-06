@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Users, Plane, CheckCircle2 } from "lucide-react";
+import PaymentInformation from "@/components/PaymentInformation";
 import {
   PACKAGE_DEFINITIONS,
   PACKAGE_LABELS,
@@ -438,6 +439,8 @@ export default function BookingForm({ channel = "online", user, supervisor, onCr
           </label>
         }
       </section>
+
+      <PaymentInformation />
 
       {/* Summary */}
       <div className="bg-primary text-primary-foreground rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
