@@ -1,34 +1,9 @@
 import React from "react";
 import SupervisorPhoto from "./SupervisorPhoto";
-import { Phone, MessageCircle, Mail, Languages, UserRound } from "lucide-react";
-
-const telHref = (value) => `tel:${(value || "").replace(/[^\d+]/g, "")}`;
-const waHref = (value) => `https://wa.me/${(value || "").replace(/\D/g, "")}`;
-
-function ContactRow({ icon: Icon, label, value, href, external }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-primary" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
-        {value && href ? (
-          <a
-            href={href}
-            target={external ? "_blank" : undefined}
-            rel={external ? "noopener noreferrer" : undefined}
-            className="text-sm font-medium text-foreground hover:text-accent break-words"
-          >
-            {value}
-          </a>
-        ) : (
-          <p className="text-sm text-muted-foreground">{value || "Not provided"}</p>
-        )}
-      </div>
-    </div>
-  );
-}
+import SupervisorProfileDialog from "./SupervisorProfileDialog";
+import SupervisorContactRow, { telHref, waHref } from "./SupervisorContactRow";
+import SupervisorLanguages from "./SupervisorLanguages";
+import { Phone, MessageCircle, Mail, UserRound } from "lucide-react";
 
 export function SupervisorProfilePlaceholder() {
   return (
@@ -58,10 +33,6 @@ export function SupervisorProfilePlaceholder() {
 
 export default function SupervisorProfileCard({ profile, heading = "Meet Your Supervisor" }) {
   const p = profile || {};
-  const languages = (p.languages || "")
-    .split(",")
-    .map((l) => l.trim())
-    .filter(Boolean);
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
@@ -76,48 +47,38 @@ export default function SupervisorProfileCard({ profile, heading = "Meet Your Su
             fileUri={p.photo_uri}
             name={p.full_name}
             className="w-24 h-24 sm:w-28 sm:h-28"
+            expandable
           />
 
           <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-foreground break-words">
-              {p.full_name || "Airport Assist Supervisor"}
-            </p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-accent mt-0.5">
-              {p.title || "Airport Assist Supervisor"}
-            </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xl font-bold text-foreground break-words">
+                  {p.full_name || "Airport Assist Supervisor"}
+                </p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-accent mt-0.5">
+                  {p.title || "Airport Assist Supervisor"}
+                </p>
+              </div>
+              <SupervisorProfileDialog profile={p} />
+            </div>
 
             <div className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-3">
-              <ContactRow icon={Phone} label="Call" value={p.phone} href={telHref(p.phone)} />
-              <ContactRow
+              <SupervisorContactRow icon={Phone} label="Call" value={p.phone} href={telHref(p.phone)} />
+              <SupervisorContactRow
                 icon={MessageCircle}
                 label="WhatsApp"
                 value={p.whatsapp_number}
                 href={waHref(p.whatsapp_number)}
                 external
               />
-              <ContactRow icon={Mail} label="Email" value={p.email} href={p.email ? `mailto:${p.email}` : null} />
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                  <Languages className="w-4 h-4 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Languages</p>
-                  {languages.length ? (
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {languages.map((lang) => (
-                        <span
-                          key={lang}
-                          className="px-2 py-0.5 rounded-full bg-accent/15 text-[11px] font-medium text-foreground"
-                        >
-                          {lang}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Not provided</p>
-                  )}
-                </div>
-              </div>
+              <SupervisorContactRow
+                icon={Mail}
+                label="Email"
+                value={p.email}
+                href={p.email ? `mailto:${p.email}` : null}
+              />
+              <SupervisorLanguages languages={p.languages} />
             </div>
           </div>
         </div>
