@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import BookingActions from "@/components/BookingActions";
 import PassengerPhoto from "@/components/PassengerPhoto";
+import BookingSupervisor from "@/components/BookingSupervisor";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import {
   PACKAGE_LABELS,
@@ -36,6 +37,18 @@ export default function BookingDetail() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Keep the assignment live: when Management assigns or reassigns this booking,
+  // the supervisor section updates without the passenger reloading the page.
+  useEffect(() => {
+    if (!id) return undefined;
+    const unsubscribe = base44.entities.Booking.subscribe((event) => {
+      if (event?.type === "update" && event?.data?.id === id) {
+        setBooking((prev) => (prev ? { ...prev, ...event.data } : prev));
+      }
+    });
+    return unsubscribe;
   }, [id]);
 
   return (
@@ -124,6 +137,9 @@ export default function BookingDetail() {
               </div>
             </div>
           </div>
+
+          {/* Meet Your Supervisor */}
+          <BookingSupervisor booking={booking} />
 
           {/* Passenger identification photo */}
           <div className="bg-card rounded-2xl border border-border p-5">

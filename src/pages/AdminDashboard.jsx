@@ -126,6 +126,7 @@ function AdminInner() {
         <TabButton active={tab === "summary"} onClick={() => setTab("summary")}>Summary</TabButton>
         <TabButton active={tab === "packages"} onClick={() => setTab("packages")}>Service Packages</TabButton>
         <TabButton active={tab === "lounges"} onClick={() => setTab("lounges")}>Lounges</TabButton>
+        <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
         <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
           Notifications

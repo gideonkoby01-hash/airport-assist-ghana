@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import SupervisorProfilePanel from "@/components/supervisor/SupervisorProfilePanel";
+import { Eye, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 export default function SupervisorDirectory({ readOnly = false }) {
   const [supervisors, setSupervisors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -91,28 +93,46 @@ export default function SupervisorDirectory({ readOnly = false }) {
       ) : (
         <div className="space-y-2">
           {supervisors.map((s) => (
-            <div key={s.id} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
-              <div>
-                <p className="font-medium text-sm">{s.full_name || s.email}</p>
-                <p className="text-xs text-muted-foreground">{s.email}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {!readOnly && (
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Switch checked={!!s.active} onCheckedChange={() => toggle(s)} />
-                    {s.active ? "Active" : "Inactive"}
-                  </label>
-                )}
-                {readOnly && (
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      s.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
-                    }`}
+            <div key={s.id} className="border-b border-border pb-2 last:border-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm">{s.full_name || s.email}</p>
+                  <p className="text-xs text-muted-foreground">{s.email}</p>
+                  {!s.phone && !s.bio && !s.photo_uri && (
+                    <p className="text-[11px] text-amber-600 mt-0.5">Profile not completed yet</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedId(selectedId === s.id ? null : s.id)}
                   >
-                    {s.active ? "Active" : "Inactive"}
-                  </span>
-                )}
+                    <Eye className="w-4 h-4 mr-1" />
+                    {selectedId === s.id ? "Hide" : "Profile"}
+                  </Button>
+                  {!readOnly && (
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Switch checked={!!s.active} onCheckedChange={() => toggle(s)} />
+                      {s.active ? "Active" : "Inactive"}
+                    </label>
+                  )}
+                  {readOnly && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        s.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {s.active ? "Active" : "Inactive"}
+                    </span>
+                  )}
+                </div>
               </div>
+              {selectedId === s.id && (
+                <div className="pt-3">
+                  <SupervisorProfilePanel record={s} isAdmin={!readOnly} onUpdated={load} />
+                </div>
+              )}
             </div>
           ))}
         </div>

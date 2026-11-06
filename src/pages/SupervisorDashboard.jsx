@@ -8,6 +8,7 @@ import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
 import ShiftReportForm from "@/components/ShiftReportForm";
 import SupervisorNotifications from "@/components/SupervisorNotifications";
+import SupervisorProfileForm from "@/components/supervisor/SupervisorProfileForm";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
 import { ClipboardList, Wallet, Users, Armchair } from "lucide-react";
@@ -69,6 +70,7 @@ function SupervisorInner() {
           Notifications{unreadCount > 0 && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full bg-accent text-accent-foreground">{unreadCount}</span>}
         </TabButton>
         <TabButton active={tab === "report"} onClick={() => setTab("report")}>Shift Report</TabButton>
+        <TabButton active={tab === "profile"} onClick={() => setTab("profile")}>My Profile</TabButton>
       </div>
 
       {tab === "assigned" && (
@@ -93,6 +95,15 @@ function SupervisorInner() {
 
       {tab === "notifications" && <SupervisorNotifications userId={user.id} onUnreadChange={setUnreadCount} />}
       {tab === "report" && <ShiftReportForm supervisor={user} />}
+
+      {tab === "profile" && (
+        <div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Your photograph and contact details appear to passengers on the bookings assigned to you.
+          </p>
+          <SupervisorProfileForm user={user} />
+        </div>
+      )}
     </AppLayout>
   );
 }
