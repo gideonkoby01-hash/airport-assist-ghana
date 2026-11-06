@@ -1,0 +1,61 @@
+{
+  "name": "ReportingBaseline",
+  "type": "object",
+  "properties": {
+    "baseline_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The exact moment the Booking Value & Discounts reporting baseline was set. Only bookings created on or after this timestamp contribute to booking-value statistics."
+    },
+    "set_by_id": {
+      "type": "string",
+      "description": "User id of the administrator who set the baseline."
+    },
+    "set_by_name": {
+      "type": "string",
+      "description": "Name of the administrator who set the baseline."
+    },
+    "set_by_email": {
+      "type": "string",
+      "description": "Email of the administrator who set the baseline."
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional administrative note explaining the reset."
+    }
+  },
+  "required": [
+    "baseline_at"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "management"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
