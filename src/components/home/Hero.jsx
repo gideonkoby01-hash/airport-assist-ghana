@@ -13,8 +13,8 @@ export default function Hero() {
       <div className="relative min-h-[88vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/42d913358_appimg3.jpeg"
-            alt="Airport terminal concourse"
+            src="https://base44.app/api/apps/6acb9a25b7704929e1c4bf0b/files/mp/public/6acb9a25b7704929e1c4bf0b/c5f046da6_AirportAssistPorter.jpeg"
+            alt="Airport Assist porter with passengers and luggage at Accra airport"
             className="w-full h-full object-cover"
             fittingType="fill"
             focalPointX={0.5}
