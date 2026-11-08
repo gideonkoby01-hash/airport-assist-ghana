@@ -15,13 +15,14 @@ export default function Hero() {
           <Image
             src="https://base44.app/api/apps/6acb9a25b7704929e1c4bf0b/files/mp/public/6acb9a25b7704929e1c4bf0b/c5f046da6_AirportAssistPorter.jpeg"
             alt="Airport Assist porter with passengers and luggage at Accra airport"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-[58%_62%] sm:object-center"
             fittingType="fill"
-            focalPointX={0.5}
-            focalPointY={0.4}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0b213c]/90 via-[#0b213c]/65 to-[#0b213c]/25" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c]/70 to-transparent" />
+          {/* warm sunlight wash to complement the sunlit terminal */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_22%,rgba(212,175,55,0.28),transparent_58%)]" />
+          {/* readable veil: darker down the phone screen, lateral on larger screens */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0b213c]/92 via-[#0b213c]/80 to-[#0b213c]/60 sm:bg-gradient-to-r sm:from-[#0b213c]/90 sm:via-[#0b213c]/65 sm:to-[#0b213c]/25" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c]/75 to-transparent" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
