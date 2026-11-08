@@ -21,8 +21,8 @@ export default function Hero() {
           {/* warm sunlight wash to complement the sunlit terminal */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_22%,rgba(212,175,55,0.28),transparent_58%)]" />
           {/* readable veil: darker down the phone screen, lateral on larger screens */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0b213c]/92 via-[#0b213c]/80 to-[#0b213c]/60 sm:bg-gradient-to-r sm:from-[#0b213c]/90 sm:via-[#0b213c]/65 sm:to-[#0b213c]/25" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c]/75 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0b213c]/80 via-[#0b213c]/60 to-[#0b213c]/30 sm:bg-gradient-to-r sm:from-[#0b213c]/80 sm:via-[#0b213c]/50 sm:to-[#0b213c]/15" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c]/45 to-transparent" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
