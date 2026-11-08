@@ -9,6 +9,7 @@ import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import BookingFinancials from "@/components/BookingFinancials";
+import RatingsReviews from "@/components/ratings/RatingsReviews";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, AlertCircle, Bell } from "lucide-react";
 import ManagementNotifications from "@/components/ManagementNotifications";
@@ -139,6 +140,7 @@ function ManagementInner() {
         <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>All Bookings</TabButton>
         <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
+        <TabButton active={tab === "ratings"} onClick={() => setTab("ratings")}>Ratings &amp; Reviews</TabButton>
         <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
           Notifications
           {unreadCount > 0 && (
@@ -193,6 +195,7 @@ function ManagementInner() {
 
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
       {tab === "reports" && <ShiftReportViewer />}
+      {tab === "ratings" && <RatingsReviews />}
       {tab === "notifications" && (
         <ManagementNotifications userId={user.id} onUnreadChange={setUnreadCount} />
       )}

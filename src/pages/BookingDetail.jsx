@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import BookingActions from "@/components/BookingActions";
 import PassengerPhoto from "@/components/PassengerPhoto";
 import BookingSupervisor from "@/components/BookingSupervisor";
+import BookingRatingSection from "@/components/ratings/BookingRatingSection";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import {
   PACKAGE_LABELS,
@@ -180,6 +181,9 @@ export default function BookingDetail() {
 
           {/* Meet Your Supervisor */}
           <BookingSupervisor booking={booking} />
+
+          {/* Rate Your Experience — own completed bookings only */}
+          <BookingRatingSection booking={booking} user={user} />
 
           {/* Passenger identification photo */}
           <div className="bg-card rounded-2xl border border-border p-5">

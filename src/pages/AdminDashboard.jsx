@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/AuthContext";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import DiscountManager from "@/components/DiscountManager";
 import BookingFinancials from "@/components/BookingFinancials";
+import RatingsReviews from "@/components/ratings/RatingsReviews";
 import StatCard from "@/components/StatCard";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
@@ -132,6 +133,7 @@ function AdminInner() {
         <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>Staff Requests</TabButton>
         <TabButton active={tab === "discounts"} onClick={() => setTab("discounts")}>Discounts</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
+        <TabButton active={tab === "ratings"} onClick={() => setTab("ratings")}>Ratings &amp; Reviews</TabButton>
         <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
           Notifications
           {unreadCount > 0 && (
@@ -169,6 +171,7 @@ function AdminInner() {
       {tab === "requests" && <StaffRequests />}
       {tab === "discounts" && <DiscountManager />}
       {tab === "reports" && <ShiftReportViewer />}
+      {tab === "ratings" && <RatingsReviews />}
       {tab === "notifications" && (
         <ManagementNotifications userId={user.id} onUnreadChange={setUnreadCount} />
       )}
