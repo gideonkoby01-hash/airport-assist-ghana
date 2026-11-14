@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,7 +66,7 @@ export default function PackageManager() {
       });
       load();
     } catch (e) {
-      alert(e.message || "Failed to save package.");
+      notifyError(e.message || "Failed to save package.");
     } finally {
       setSaving(null);
     }

@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
+import { usePagedList } from "@/hooks/use-paged-list";
 import QuickSaleForm from "@/components/QuickSaleForm";
 import ShiftReportForm from "@/components/ShiftReportForm";
 import SupervisorNotifications from "@/components/SupervisorNotifications";
@@ -26,36 +27,41 @@ function SupervisorInner() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "assigned";
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams({ tab: t });
 
-  const load = async () => {
-    setLoading(true);
+  // The list loads a page at a time; the totals are summed by the database over every assigned booking.
+  const paged = usePagedList("Booking", { assigned_supervisor_id: user.id }, { pageSize: 50 });
+  const bookings = paged.items;
+  const loading = paged.loading;
+  const [totals, setTotals] = useState({ active: 0, collected: 0, outstanding: 0 });
+
+  const loadTotals = async () => {
     try {
-      const page = await api.entities.Booking.filter(
-        { assigned_supervisor_id: user.id },
-        { sort: "-created_date", limit: 100 }
-      );
-      setBookings(page.items || []);
+      const { rows } = await api.entities.Booking.aggregate({});
+      const live = ["confirmed", "assigned", "in_progress"];
+      setTotals({
+        active: rows.filter((r) => live.includes(r.status)).reduce((s, r) => s + Number(r.count || 0), 0),
+        collected: rows.reduce((s, r) => s + Number(r.sum_amount_collected || 0), 0),
+        outstanding: rows.reduce((s, r) => s + Number(r.sum_outstanding_balance || 0), 0),
+      });
     } catch {
-      setBookings([]);
-    } finally {
-      setLoading(false);
+      setTotals({ active: 0, collected: 0, outstanding: 0 });
     }
+  };
+  const load = async () => {
+    await paged.reload();
+    await loadTotals();
   };
 
   useEffect(() => {
-    load();
+    loadTotals();
     api.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
 
   }, []);
 
-  const active = bookings.filter((b) => ["confirmed", "assigned", "in_progress"].includes(b.status));
-  const collected = bookings.reduce((s, b) => s + (b.amount_collected || 0), 0);
-  const outstanding = bookings.reduce((s, b) => s + (b.outstanding_balance || 0), 0);
+  const { active, collected, outstanding } = totals;
 
   return (
     <AppLayout>
@@ -78,11 +84,11 @@ function SupervisorInner() {
       {tab === "assigned" && (
         <div className="space-y-6">
           <div className="grid sm:grid-cols-3 gap-4">
-            <StatCard label="Active Bookings" value={active.length} icon={ClipboardList} accent />
+            <StatCard label="Active Bookings" value={active} icon={ClipboardList} accent />
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(outstanding)} icon={Wallet} />
           </div>
-          <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings assigned to you yet." />
+          <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings assigned to you yet." hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
         </div>
       )}
 

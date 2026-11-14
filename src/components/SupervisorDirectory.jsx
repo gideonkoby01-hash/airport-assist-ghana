@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -62,7 +63,7 @@ export default function SupervisorDirectory({ readOnly = false }) {
       await api.entities.SupervisorDirectory.update(s.id, { active: !s.active });
       load();
     } catch (e) {
-      alert(e.message || "Failed to update supervisor.");
+      notifyError(e.message || "Failed to update supervisor.");
     }
   };
 

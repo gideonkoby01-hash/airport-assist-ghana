@@ -4,6 +4,7 @@ import { api } from "@/api/db";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import EmailIssues from "@/components/EmailIssues";
+import ExportPanel from "@/components/ExportPanel";
 import StaffManager from "@/components/StaffManager";
 import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
@@ -74,7 +75,7 @@ function AdminInner() {
         if (active) setLoadingReports(false);
       }
     })();
-    api.entities.User.filter({}).then((items) => setUserCount((items || []).length)).catch(() => {});
+    api.entities.User.count().then((c) => setUserCount(c || 0)).catch(() => {});
     api.entities.Lounge.count().then(setLoungeCount).catch(() => {});
     api.entities.Booking
       .aggregate({ groupBy: "status", sum: ["outstanding_balance"] })
@@ -162,6 +163,7 @@ function AdminInner() {
             <StatCard label="Lounges" value={loungeCount} icon={Armchair} />
           </div>
           <BookingFinancials />
+          <ExportPanel />
         </div>
       )}
 

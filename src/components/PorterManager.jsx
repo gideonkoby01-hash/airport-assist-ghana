@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import ConfirmAction from "@/components/ConfirmAction";
+import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,17 +116,16 @@ export default function PorterManager() {
       await api.entities.Porter.update(p.id, { active: !p.active });
       load();
     } catch (e) {
-      alert(e.message || "Failed to update porter.");
+      notifyError(e.message || "Failed to update porter.");
     }
   };
 
   const remove = async (p) => {
-    if (!confirm(`Delete porter "${p.full_name}"?`)) return;
     try {
       await api.entities.Porter.delete(p.id);
       load();
     } catch (e) {
-      alert(e.message || "Failed to delete porter.");
+      notifyError(e.message || "Failed to delete porter.");
     }
   };
 
@@ -195,12 +196,14 @@ export default function PorterManager() {
                       <Switch checked={!!p.active} onCheckedChange={() => toggle(p)} />
                       {p.active ? "Active" : "Inactive"}
                     </label>
-                    <button onClick={() => startEdit(p)} className="text-muted-foreground hover:text-foreground">
+                    <button aria-label={`Edit porter ${p.full_name}`} onClick={() => startEdit(p)} className="text-muted-foreground hover:text-foreground">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => remove(p)} className="text-rose-500 hover:text-rose-700">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ConfirmAction title={`Delete porter "${p.full_name}"?`} description="They will be removed from the porter list. Past bookings and reports keep their name." confirmLabel="Delete porter" destructive onConfirm={() => remove(p)}>
+                      <button aria-label={`Delete porter ${p.full_name}`} className="text-rose-500 hover:text-rose-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </ConfirmAction>
                   </div>
                 </div>
               )

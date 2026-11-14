@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ConfirmAction from "@/components/ConfirmAction";
+import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,21 +75,20 @@ export default function DiscountManager() {
       await api.functions.invoke("manageDiscountCode", { action: "toggle", id: record.id });
       await load();
     } catch (err) {
-      alert(err?.response?.data?.error || err.message || "Could not update that code.");
+      notifyError(err?.response?.data?.error || err.message || "Could not update that code.");
     } finally {
       setBusyId("");
     }
   };
 
   const remove = async (record) => {
-    if (!window.confirm(`Delete code ${record.code}? Codes that have been redeemed can only be deactivated.`)) return;
     setBusyId(record.id);
     try {
       const res = await api.functions.invoke("manageDiscountCode", { action: "delete", id: record.id });
       if (res?.data?.error) throw new Error(res.data.error);
       await load();
     } catch (err) {
-      alert(err?.response?.data?.error || err.message || "Could not delete that code.");
+      notifyError(err?.response?.data?.error || err.message || "Could not delete that code.");
     } finally {
       setBusyId("");
     }
@@ -220,9 +221,11 @@ export default function DiscountManager() {
                           <Button variant="ghost" size="icon" title="Activate / deactivate" onClick={() => toggle(c)} disabled={busy}>
                             <Power className={`w-4 h-4 ${c.active === false ? "text-muted-foreground" : "text-emerald-600"}`} />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Delete" onClick={() => remove(c)} disabled={busy}>
-                            <Trash2 className="w-4 h-4 text-rose-500" />
-                          </Button>
+                          <ConfirmAction title={`Delete code ${c.code}?`} description="Codes that have been redeemed cannot be deleted; deactivate those instead." confirmLabel="Delete code" destructive onConfirm={() => remove(c)}>
+                            <Button variant="ghost" size="icon" title="Delete" aria-label={`Delete code ${c.code}`} disabled={busy}>
+                              <Trash2 className="w-4 h-4 text-rose-500" />
+                            </Button>
+                          </ConfirmAction>
                         </div>
                       </td>
                     </tr>

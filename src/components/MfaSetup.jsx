@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ConfirmAction from "@/components/ConfirmAction";
 import { ShieldCheck, ShieldOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,6 @@ export default function MfaSetup({ onChange = undefined }) {
     if (onChange) onChange();
   });
   const turnOff = () => run(async () => {
-    if (!window.confirm("Turn off two-step verification? Your account will be protected by your password only.")) return;
     await disable(factors[0].id);
     await load();
   });
@@ -69,7 +69,15 @@ export default function MfaSetup({ onChange = undefined }) {
           </div>
         </div>
       ) : enabled ? (
-        <Button variant="outline" onClick={turnOff} disabled={busy}>Turn off</Button>
+        <ConfirmAction
+          title="Turn off two-step verification?"
+          description="Your account will be protected by your password only."
+          confirmLabel="Turn off"
+          destructive
+          onConfirm={turnOff}
+        >
+          <Button variant="outline" disabled={busy}>Turn off</Button>
+        </ConfirmAction>
       ) : (
         <Button onClick={start} disabled={busy}>{busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Set up authenticator app</Button>
       )}

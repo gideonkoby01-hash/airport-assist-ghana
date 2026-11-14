@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +61,7 @@ export default function StaffManager() {
       await api.entities.User.update(id, { role: newRole });
       setUsers((us) => us.map((u) => (u.id === id ? { ...u, role: newRole } : u)));
     } catch (e) {
-      alert(/last_admin/.test(e.message || "")
+      notifyError(/last_admin/.test(e.message || "")
         ? "That is the only active admin. Make someone else an admin first."
         : e.message || "Failed to update role.");
       load();
@@ -73,7 +74,7 @@ export default function StaffManager() {
       await api.functions.invoke("disableUser", { user_id: u.id, disabled });
       setUsers((us) => us.map((x) => (x.id === u.id ? { ...x, disabled } : x)));
     } catch (e) {
-      alert(e.message || "Could not change that account.");
+      notifyError(e.message || "Could not change that account.");
     }
   };
 
@@ -83,7 +84,7 @@ export default function StaffManager() {
       await api.functions.invoke("anonymiseUser", { user_id: u.id, confirm: true });
       setUsers((us) => us.filter((x) => x.id !== u.id));
     } catch (e) {
-      alert(e.message || "Could not delete that person's data.");
+      notifyError(e.message || "Could not delete that person's data.");
     }
   };
 

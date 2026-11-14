@@ -364,7 +364,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Passenger {i + 1}</span>
                 {passengers.length > 1 &&
-              <button type="button" onClick={() => removePassenger(i)} className="text-rose-500 hover:text-rose-700">
+              <button type="button" aria-label={`Remove passenger ${i + 1}`} onClick={() => removePassenger(i)} className="text-rose-500 hover:text-rose-700">
                     <Trash2 className="w-4 h-4" />
                   </button>
               }

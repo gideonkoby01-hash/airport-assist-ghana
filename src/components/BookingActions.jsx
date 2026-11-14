@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +85,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
       if (res?.data?.error) throw new Error(res.data.error);
       if (res?.data?.booking && onUpdated) onUpdated(res.data.booking);
     } catch (err) {
-      alert(err.message || "Failed to update status");
+      notifyError(err.message || "Failed to update status");
     } finally {
       setSavingStatus(false);
     }
@@ -92,30 +93,30 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const saveAdjustment = async () => {
     const amt = Number(adjAmount || 0);
-    if (!(amt > 0)) return alert("Enter an amount greater than zero.");
-    if (adjReason.trim().length < 3) return alert("Give a reason. It is kept on the record.");
+    if (!(amt > 0)) return notifyError("Enter an amount greater than zero.");
+    if (adjReason.trim().length < 3) return notifyError("Give a reason. It is kept on the record.");
     setSavingAdj(true);
     try {
       await callBooking("recordAdjustment", { type: adjType, amount: amt, method: adjType === "refund" ? adjMethod : undefined, reason: adjReason.trim() });
       setAdjAmount("");
       setAdjReason("");
     } catch (err) {
-      alert(err.message || "Could not record that.");
+      notifyError(err.message || "Could not record that.");
     } finally {
       setSavingAdj(false);
     }
   };
 
   const saveCorrection = async () => {
-    if (!fixStatus) return alert("Choose the correct status.");
-    if (fixReason.trim().length < 3) return alert("Give a reason. It is kept on the record.");
+    if (!fixStatus) return notifyError("Choose the correct status.");
+    if (fixReason.trim().length < 3) return notifyError("Give a reason. It is kept on the record.");
     setSavingFix(true);
     try {
       await callBooking("correctBookingStatus", { status: fixStatus, reason: fixReason.trim() });
       setFixStatus("");
       setFixReason("");
     } catch (err) {
-      alert(err.message || "Could not correct the status.");
+      notifyError(err.message || "Could not correct the status.");
     } finally {
       setSavingFix(false);
     }
@@ -123,20 +124,20 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const recordPayment = async () => {
     const amt = Number(payAmount || 0);
-    if (!(amt > 0)) return alert("Enter an amount greater than zero.");
+    if (!(amt > 0)) return notifyError("Enter an amount greater than zero.");
     setSavingPay(true);
     try {
       await callBooking("recordPayment", { amount: amt, method: payMethod });
       setPayAmount("");
     } catch (err) {
-      alert(err.message || "Failed to record payment");
+      notifyError(err.message || "Failed to record payment");
     } finally {
       setSavingPay(false);
     }
   };
 
   const addPorter = async () => {
-    if (!porterName.trim()) return alert("Enter the porter's name.");
+    if (!porterName.trim()) return notifyError("Enter the porter's name.");
     setSavingPorter(true);
     try {
       await callBooking("updateBookingOperations", {
@@ -147,7 +148,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
       setPorterName("");
       setPorterHandled(1);
     } catch (err) {
-      alert(err.message || "Failed to assign porter");
+      notifyError(err.message || "Failed to assign porter");
     } finally {
       setSavingPorter(false);
     }
@@ -157,7 +158,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
     try {
       await callBooking("updateBookingOperations", { action: "remove_porter", index: idx });
     } catch (err) {
-      alert(err.message || "Failed to remove porter");
+      notifyError(err.message || "Failed to remove porter");
     }
   };
 
@@ -166,14 +167,14 @@ export default function BookingActions({ booking, user, onUpdated }) {
     try {
       await callBooking("updateBookingOperations", { action: "set_lounge", lounge_used: lounge.trim() });
     } catch (err) {
-      alert(err.message || "Failed to record lounge");
+      notifyError(err.message || "Failed to record lounge");
     } finally {
       setSavingLounge(false);
     }
   };
 
   const assignSupervisor = async () => {
-    if (!assignId) return alert("Select a supervisor.");
+    if (!assignId) return notifyError("Select a supervisor.");
     setSavingAssign(true);
     try {
       const res = await api.functions.invoke("assignSupervisor", {
@@ -183,7 +184,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
       if (res?.data?.error) throw new Error(res.data.error);
       if (onUpdated && res?.data?.booking) onUpdated(res.data.booking);
     } catch (err) {
-      alert(err.message || "Failed to assign supervisor");
+      notifyError(err.message || "Failed to assign supervisor");
     } finally {
       setSavingAssign(false);
     }
@@ -260,7 +261,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
                     <span className="font-medium">{p.porter_name}</span> · {p.passengers_handled} passenger(s) ·{" "}
                     {formatGHS(p.commission)}
                   </span>
-                  <button onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
+                  <button aria-label="Remove porter" onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

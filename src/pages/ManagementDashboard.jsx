@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingList from "@/components/BookingList";
+import { usePagedList } from "@/hooks/use-paged-list";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
@@ -26,25 +27,15 @@ function ManagementInner() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "ops";
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const paged = usePagedList("Booking", {}, { pageSize: 50 });
+  const bookings = paged.items;
+  const loading = paged.loading;
   const [statusRows, setStatusRows] = useState([]);
   const [reports, setReports] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams({ tab: t });
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const page = await api.entities.Booking.filter({}, { sort: "-created_date", limit: 100 });
-      setBookings(page.items || []);
-    } catch {
-      setBookings([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadSummary = async () => {
     try {
@@ -96,7 +87,6 @@ function ManagementInner() {
   };
 
   useEffect(() => {
-    load();
     loadSummary();
     loadReports();
     loadUnread();
@@ -190,7 +180,7 @@ function ManagementInner() {
       )}
 
       {tab === "bookings" && (
-        <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." />
+        <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
       )}
 
       {tab === "supervisors" && <SupervisorDirectory readOnly />}

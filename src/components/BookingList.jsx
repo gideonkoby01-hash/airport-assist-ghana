@@ -4,7 +4,7 @@ import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import { PACKAGE_LABELS, formatGHS } from "@/lib/packages";
 import { Plane, Calendar, Users } from "lucide-react";
 
-export default function BookingList({ bookings, loading, emptyMessage = "No bookings yet." }) {
+export default function BookingList({ bookings, loading, emptyMessage = "No bookings yet.", hasMore = false, loadingMore = false, onLoadMore = undefined }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
@@ -59,6 +59,13 @@ export default function BookingList({ bookings, loading, emptyMessage = "No book
           </div>
         </Link>
       ))}
+      {hasMore && onLoadMore && (
+        <div className="text-center pt-2">
+          <button type="button" onClick={onLoadMore} disabled={loadingMore} className="text-sm text-primary font-medium hover:underline disabled:opacity-60">
+            {loadingMore ? "Loading…" : "Load older bookings"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { notifyError } from "@/lib/notify";
 import { Link } from "react-router-dom";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default function SupervisorNotifications({ userId, onUnreadChange }) {
       await api.entities.Notification.update(n.id, { read: true });
       setNotifications((ns) => ns.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
     } catch (e) {
-      alert(e.message || "Failed to update notification.");
+      notifyError(e.message || "Failed to update notification.");
     }
   };
 
@@ -48,7 +49,7 @@ export default function SupervisorNotifications({ userId, onUnreadChange }) {
       await api.entities.Notification.bulkUpdate(unread.map((n) => ({ id: n.id, read: true })));
       setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
     } catch (e) {
-      alert(e.message || "Failed to update notifications.");
+      notifyError(e.message || "Failed to update notifications.");
     }
   };
 

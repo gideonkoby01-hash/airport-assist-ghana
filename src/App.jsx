@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -17,14 +18,14 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
 import RoleRedirect from '@/components/RoleRedirect';
-import PassengerDashboard from '@/pages/PassengerDashboard';
-import SupervisorDashboard from '@/pages/SupervisorDashboard';
-import ManagementDashboard from '@/pages/ManagementDashboard';
-import AdminDashboard from '@/pages/AdminDashboard';
-import BookingDetail from '@/pages/BookingDetail';
-import PendingApproval from '@/pages/PendingApproval';
-import Security from '@/pages/Security';
-import Privacy from '@/pages/Privacy';
+const PassengerDashboard = lazy(() => import('@/pages/PassengerDashboard'));
+const SupervisorDashboard = lazy(() => import('@/pages/SupervisorDashboard'));
+const ManagementDashboard = lazy(() => import('@/pages/ManagementDashboard'));
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
+const BookingDetail = lazy(() => import('@/pages/BookingDetail'));
+const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
+const Security = lazy(() => import('@/pages/Security'));
+const Privacy = lazy(() => import('@/pages/Privacy'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError, navigateToLogin, mfaRequired, mfaEnrolRequired, accountDisabled } = useAuth();
@@ -54,8 +55,9 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Render the main app
+  // Render the main app. Dashboards and detail pages load on demand, so the public pages stay light.
   return (
+    <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div></div>}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -77,6 +79,7 @@ const AuthenticatedApp = () => {
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </Suspense>
   );
 };
 
