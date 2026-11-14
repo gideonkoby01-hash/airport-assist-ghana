@@ -1,34 +1,27 @@
 # AGENTS.md
 
-## Project Context
+## Project context
 
-This is a Base44 app repository. Treat it as user-owned application code, keep changes focused on the user's request, and preserve existing project conventions.
+Airport Assist Ghana: a React/Vite app on Supabase (Postgres, Auth, Storage, Edge Functions), hosted on Cloudflare Pages, sending email through Resend. Treat it as user-owned application code: keep changes focused on the request and follow existing conventions. See `README.md` for setup and `MIGRATION.md` for deployment.
 
-Start with `README.md` for local setup, environment variables, and publish workflow.
+The project was migrated from Base44. There is no Base44 code left except a few inert hooks in `src/components/ui/image*.js(x)`.
 
-## Base44 References
+## Key files
 
-- CLI overview: https://docs.base44.com/developers/references/cli/get-started/overview.md
-- Agent skills: https://docs.base44.com/developers/backend/overview/skills.md
+- `src/api/db.js`: the only place the frontend talks to Supabase data, functions and storage. Entities keep the old call shapes (`api.entities.Booking.filter(...)`).
+- `src/api/filters.js`: translates the small Mongo-style filters (`$or`, `$and`, `$in`, `$gte`, `$lte`, `$regex`) into PostgREST calls. Unit tested in `filters.test.mjs`.
+- `src/lib/AuthContext.jsx`: session, role from the `profiles` table, authenticator-app gate.
+- `supabase/migrations/`: schema and row-level security. Add a new migration file; never edit one that has been applied to a real project.
+- `supabase/functions/<name>/index.ts`: one Edge Function each. Shared code is in `supabase/functions/_shared/` (`auth.ts`, `http.ts`, `email.ts`, `notify.ts`, `bookingAccess.ts`, `discounts.ts`).
+- `.env.local`: local only, never commit secrets. `VITE_*` values are public by design; server secrets (`RESEND_API_KEY`, service role key) live in Supabase secrets only.
 
-If your agent supports Agent Skills, install or update Base44 skills before Base44-specific work:
+## Rules that matter
 
-```bash
-npx skills add base44/skills
-```
+- Browsers must not write `bookings`, `payments`, `discount_*`, `booking_ratings` or `profiles.role`. Do it in an Edge Function that checks the caller's role (`requireCaller(req, admin, [roles])`) and uses the service-role client. The row-level security tests in `supabase/tests/` enforce this; keep them passing.
+- Money changes go through SQL functions (`record_payment`, `claim_discount`), not read-modify-write in code.
+- Edge Functions return `HttpError` messages that are safe to show; anything else is logged and returned as a generic 500.
+- Email goes through `sendTransactionalEmail` (idempotent per `eventKey`, logged in `email_deliveries`). Edit templates in `supabase/emails/*.mjml`, then run `npm run build:emails` and commit the generated file.
 
-## Key Files
+## Before finishing code changes
 
-- `src/`: frontend application source.
-- `src/api/base44Client.js`: frontend Base44 SDK client.
-- `vite.config.js`: Vite config and Base44 Vite plugin setup.
-- `.env.local`: local-only environment values; never commit secrets.
-
-## Working Notes
-
-- Use `base44 dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
-- When docs or code mention the frontend being started automatically, that usually means the Base44 project config includes `site.serveCommand`, for example `"serveCommand": "npm run dev"` in `base44/config.jsonc`.
-- Use `npm run dev` only for frontend-only work against the hosted Base44 backend.
-- Prefer the existing Base44 CLI workflow over adding new npm scripts for Base44-specific tasks.
-- Reuse the existing SDK client and Vite plugin patterns before adding new Base44 integration paths.
-- Run the relevant checks from `package.json` before finishing code changes.
+Run what applies: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; for `supabase/functions` run `npm run test:functions` and `deno check supabase/functions/<name>/index.ts`; for `supabase/migrations` or policies run `npm run test:db` (needs a Postgres reachable through `PG*` variables).

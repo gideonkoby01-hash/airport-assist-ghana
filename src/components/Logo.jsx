@@ -1,8 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export const LOGO_URL =
-  "https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/c0f9204fa_AirportAssistAkwaabaServicesLogo.png";
+export const LOGO_URL = "/images/logo.webp";
 
 // Brand mark: the official Airport Assist - Akwaaba Services logo.
 export default function Logo({ className = undefined, showBar = true }) {

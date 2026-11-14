@@ -99,7 +99,7 @@ $$;
 
 -- ---------------------------------------------------------------------------
 -- Aggregates for the dashboards. SECURITY INVOKER, so RLS still limits the rows a caller can total.
--- Replaces base44 `entity.aggregate({ query, groupBy, sum })`.
+-- Replaces the Base44 `entity.aggregate({ query, groupBy, sum })` the dashboards used.
 -- ---------------------------------------------------------------------------
 create function public.aggregate_bookings(
   p_statuses text[] default null, p_created_from timestamptz default null

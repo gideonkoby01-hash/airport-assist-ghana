@@ -1,62 +1,75 @@
-# Base44 Project
+# Airport Assist Ghana
 
-Use this repository to run and edit the app locally, then publish changes back through Base44.
+Booking and operations app for Airport Assist Ghana (VIP meet-and-assist, fast-track and porter services at Kotoka International Airport).
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+| Part | Technology |
+|---|---|
+| Frontend | React 18 + Vite, Tailwind, shadcn/ui; hosted on Cloudflare Pages |
+| Database, auth, file storage, realtime | Supabase (PostgreSQL with row-level security) |
+| Backend logic | Supabase Edge Functions (Deno) in `supabase/functions` |
+| Transactional email | Resend, called from the Edge Functions |
 
-## Prerequisites
+Roles: `passenger`, `supervisor`, `management`, `admin` (and `pending` while a staff request awaits approval).
 
-1. Clone the repository using the project's Git URL.
-2. Navigate to the project directory.
-3. Install dependencies: `npm install`.
-4. Install the Base44 CLI: `npm install -g base44@latest`.
-5. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/) — the local Base44 backend runs on it.
+Going live? Follow **[MIGRATION.md](MIGRATION.md)**.
 
-Run `base44 --help` (or see the [CLI reference](https://docs.base44.com/developers/references/cli/commands/introduction)) for the full command surface.
+## Run it locally
 
-## Run Locally
-
-Three commands, from the project root:
-
-```bash
-base44 login   # one-time per machine
-base44 link    # one-time per clone
-base44 dev     # local backend + frontend together
-```
-
-Open the frontend URL that `base44 dev` prints (typically `http://localhost:5173`).
-
-Notes:
-
-- **Every fresh clone needs `base44 link`.** It writes `base44/.app.jsonc` (the app-id pointer), which is deliberately gitignored. Your app id is in the Builder URL (`app.base44.com/apps/<id>/...`); `base44 link --help` shows the non-interactive flags.
-- **`base44 dev` runs the frontend for you** (via `site.serveCommand` in this repo's `base44/config.jsonc`) — never run `npm run dev` yourself: alone it serves a UI with no backend behind it (`[base44] Proxy not enabled`, every `/api` call fails), and alongside `base44 dev` the second Vite silently takes the next port and you end up looking at the wrong one.
-- **The app must be published at least once for the UI to load under `base44 dev`.** The frontend boots by fetching app settings from the hosted app; before the first publish that fails and every page redirects to login. The local API works regardless.
-- Entities, functions, and auth run locally — entity data is **in-memory only**, wiped when `base44 dev` restarts. Everything else (Core integrations, OAuth login) is forwarded to your deployed app. Full breakdown: [Local development overview](https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview).
-
-## Frontend Only, Hosted Backend
-
-To work on just the frontend against your app's live hosted backend:
+You need Node 20.19+ (or 22), Docker, the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) and, for the function tests, [Deno](https://docs.deno.com/runtime/getting_started/installation/).
 
 ```bash
-base44 dev --remote
+npm install
+supabase start          # local Postgres, Auth, Storage, and an inbox for test emails
+supabase db reset       # applies supabase/migrations and supabase/seed.sql
+cp .env.example .env.local
 ```
 
-⚠️ In this mode writes go to your app's **production data** — plain `base44 dev` keeps everything local.
-
-## Publish Your Changes
-
-After pushing your changes to git, open the Base44 dashboard and publish the app:
+Put the `API URL` and `anon key` that `supabase status` prints into `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Then, in two terminals:
 
 ```bash
-base44 dashboard open
+supabase functions serve --env-file supabase/.env.local   # Edge Functions (see below for the env file)
+npm run dev                                               # the app, http://localhost:5173
 ```
 
-This repo syncs to Base44 through git, so publish from the dashboard rather than `base44 deploy` — a CLI deploy ships your local tree directly, bypassing the sync, and the deployed state silently diverges from the repo.
+`supabase/.env.local` (not committed) holds the function secrets for local use:
 
-## Docs & Support
+```
+RESEND_API_KEY=re_xxx            # optional locally: without it, emails are logged as failed, nothing else breaks
+EMAIL_FROM="Airport Assist Ghana <noreply@your-domain>"
+APP_URL=http://localhost:5173
+```
 
-GitHub integration: [https://docs.base44.com/developers/app-code/local-development/github](https://docs.base44.com/developers/app-code/local-development/github)
+Sign-up emails (the 6-digit code) arrive in the local inbox at `http://127.0.0.1:54324`. To make yourself an admin locally, register, then run in the Supabase Studio SQL editor: `update public.profiles set role = 'admin' where email = 'you@example.com';`
 
-Local development: [https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview](https://docs.base44.com/developers/backend/overview/local-dev/local-development-overview)
+## Checks
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+| Command | What it covers |
+|---|---|
+| `npm run lint` | ESLint on pages and components |
+| `npm run typecheck` | TypeScript check of the JS/JSX (`jsconfig.json`) |
+| `npm test` | Query-filter translation (`src/api/filters.js`) |
+| `npm run test:functions` | Deno tests for discount rules, booking access and email sending |
+| `npm run test:db` | Applies every migration to a scratch Postgres and runs the row-level-security, storage and function-payload SQL tests. Uses the `PG*` environment variables; no Docker needed |
+| `npm run build` | Production build into `dist/` |
+| `npm run build:emails` | Recompiles `supabase/emails/*.mjml` into the generated module the functions import |
+
+## Layout
+
+```
+src/                      React app
+  api/db.js               data layer: api.entities.*, api.functions.invoke, api.storage
+  api/supabaseClient.js   the Supabase browser client
+  lib/AuthContext.jsx     session, profile/role and two-step verification gate
+supabase/
+  migrations/             schema, row-level security, SQL functions, storage rules
+  functions/              Edge Functions; _shared/ holds auth, email and business rules
+  emails/                 email sources (MJML)
+  templates/              Supabase Auth email templates (signup code)
+  tests/                  SQL tests and the small Supabase stand-in they run on
+  seed.sql                the four service packages
+public/                   static files, _redirects and _headers for Cloudflare Pages
+```
+
+## How data access works
+
+Browsers can read what row-level security allows and little else: **bookings, payments, discount codes and ratings can only be written by Edge Functions**, which re-price every booking, move money in single database statements and check roles. Add new write paths as Edge Functions, not as open table policies.

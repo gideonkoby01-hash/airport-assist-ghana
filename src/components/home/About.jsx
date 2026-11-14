@@ -55,7 +55,7 @@ export default function About() {
           <div className="relative">
             <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
               <Image
-                src="https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/23a2cc5bd_Gemini_Generated_Image_pq62dnpq62dnpq62.jpeg"
+                src="/images/lounge.webp"
                 alt="Airport lounge and concierge service"
                 className="w-full h-full object-cover"
                 fittingType="fill"

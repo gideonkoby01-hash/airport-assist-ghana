@@ -1,4 +1,4 @@
--- Airport Assist Ghana: core schema, translated from base44/entities/*.jsonc.
+-- Airport Assist Ghana: core schema, translated from the former Base44 entity definitions.
 --
 -- Conventions kept from Base44 so the frontend and ported functions change as little as possible:
 --   * every table has id, created_date, updated_date and created_by_id

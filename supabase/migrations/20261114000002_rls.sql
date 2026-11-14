@@ -1,4 +1,4 @@
--- Row-level security, translated from the `rls` blocks in base44/entities/*.jsonc
+-- Row-level security, translated from the `rls` blocks of the former Base44 entity definitions
 -- (including the admin-only Booking/Payment writes added in the lock-down).
 --
 -- Browsers can only do what is allowed here. Everything privileged (creating a priced booking,

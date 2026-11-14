@@ -1,5 +1,8 @@
 # Audit: security, UI and performance
 
+> **Status note (migration to Supabase).** This report was written against the Base44 version of the app. Since then the app moved to Supabase, Cloudflare and Resend. Items 1 and 2 under Security (booking write rules, atomic payments) are fixed by design in the new schema and functions; item 3 (role self-update) cannot happen because `profiles.role` is writable only by admins; items 4, 6, 8 and 9 were fixed in the ported functions (staff request guard, unauthenticated notify path removed, crypto randomness, generic error messages); item 5 (no booking status state machine) is still open. Items about `index.html`, bundle size, accessibility and dependencies still apply. File paths such as `base44/functions/...` now live under `supabase/functions/...`.
+
+
 Scope: static review of `src/`, `base44/entities` (row-level security rules), `base44/functions`, `base44/shared`, `index.html` and dependencies, plus `npm audit`, lint, typecheck and build. Nothing was tested against the live Base44 backend, so items marked **verify** need a quick test with real accounts.
 
 ## Fixed in this branch

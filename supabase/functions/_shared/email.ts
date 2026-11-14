@@ -1,4 +1,5 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { appUrl } from './auth.ts';
 import { EMAIL_TEMPLATES } from './emailTemplates.generated.ts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,7 +13,9 @@ const escapeHtml = (v: unknown) =>
 export function renderTemplate(name: string, variables: Record<string, unknown>) {
   const template = EMAIL_TEMPLATES[name];
   if (!template) throw new Error(`Unknown email template: ${name}`);
-  const fill = (text: string) => text.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_, key) => escapeHtml(variables[key]));
+  // logo_url is available to every template: the site's own favicon.png, hosted on the production domain.
+  const values: Record<string, unknown> = { logo_url: `${appUrl()}/favicon.png`, ...variables };
+  const fill = (text: string) => text.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_, key) => escapeHtml(values[key]));
   return { subject: fill(template.subject), html: fill(template.html) };
 }
 

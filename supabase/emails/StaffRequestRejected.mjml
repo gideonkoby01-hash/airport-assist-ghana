@@ -19,7 +19,7 @@
     <mj-wrapper padding="28px 12px" background-color="#ffffff">
       <mj-section background-color="#0b213c" padding="24px 36px" border-radius="8px 8px 0 0">
         <mj-column>
-          <mj-image src="https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/34167ba77_logo.png" alt="Airport Assist Ghana" width="40px" align="center" padding="0 0 12px" />
+          <mj-image src="{{logo_url}}" alt="Airport Assist Ghana" width="40px" align="center" padding="0 0 12px" />
           <mj-text align="center" font-size="12px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#ffffff">Airport Assist Ghana</mj-text>
           <mj-text align="center" mj-class="goldbar" padding="6px 0 0">Access Request Update</mj-text>
         </mj-column>
