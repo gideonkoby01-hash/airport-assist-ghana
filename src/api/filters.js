@@ -10,6 +10,8 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.data = data;
+    // Same shape callers already read errors from (err.response.data.error).
+    this.response = { status, data: data && typeof data === 'object' && 'error' in data ? data : { error: this.message } };
   }
 }
 

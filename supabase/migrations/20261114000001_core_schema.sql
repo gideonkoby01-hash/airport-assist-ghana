@@ -141,7 +141,7 @@ create table public.bookings (
   booking_channel text not null check (booking_channel in ('online', 'walk_in')),
   passenger_user_id text
 );
-create index bookings_reference_idx on public.bookings (reference);
+create unique index bookings_reference_idx on public.bookings (reference);
 create index bookings_passenger_idx on public.bookings (passenger_user_id);
 create index bookings_supervisor_idx on public.bookings (assigned_supervisor_id);
 create index bookings_created_idx on public.bookings (created_date desc);

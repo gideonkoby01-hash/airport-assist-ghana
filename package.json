@@ -11,7 +11,9 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
     "test": "node --test src/api/filters.test.mjs",
-    "build:emails": "node scripts/build-emails.mjs"
+    "build:emails": "node scripts/build-emails.mjs",
+    "test:db": "bash supabase/tests/run_db_tests.sh",
+    "test:functions": "deno test --allow-env supabase/functions/_shared"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
