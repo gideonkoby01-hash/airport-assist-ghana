@@ -4,7 +4,7 @@ import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 // Management or admin assigns (or reassigns) a supervisor to a booking and alerts that supervisor.
 serve('assignSupervisor', async (req) => {
   const admin = adminClient();
-  await requireCaller(req, admin, ['management', 'admin']);
+  const caller = await requireCaller(req, admin, ['management', 'admin']);
 
   const { booking_id: bookingId, supervisor_user_id: supervisorId } = await readBody(req) as Record<string, string>;
   if (!bookingId || !supervisorId) throw new HttpError(400, 'booking_id and supervisor_user_id are required');
@@ -15,11 +15,14 @@ serve('assignSupervisor', async (req) => {
   const { data: booking } = await admin.from('bookings').select('*').eq('id', bookingId).maybeSingle();
   if (!booking) throw new HttpError(404, 'Booking not found');
 
+  if (['completed', 'cancelled', 'no_show'].includes(booking.status)) throw new HttpError(409, 'This booking is closed, so it cannot be assigned.');
+
   // Assigning the supervisor who already has it is not a new event: do not alert them again.
   if (booking.assigned_supervisor_id === supervisorId) return json({ ok: true, booking, duplicate: true, notified: 0 });
 
   const isReassignment = !!booking.assigned_supervisor_id;
   const { data: updated, error } = await admin.from('bookings').update({
+    updated_by_id: caller.id,
     assigned_supervisor_id: supervisorId,
     assigned_supervisor_name: entry.full_name || entry.email,
     status: booking.status === 'confirmed' ? 'assigned' : booking.status,

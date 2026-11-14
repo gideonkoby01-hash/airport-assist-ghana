@@ -14,6 +14,7 @@ export { ApiError };
 
 const TABLES = {
   AccountRequest: 'account_requests',
+  AuditLog: 'audit_log',
   Booking: 'bookings',
   BookingRating: 'booking_ratings',
   DiscountCode: 'discount_codes',

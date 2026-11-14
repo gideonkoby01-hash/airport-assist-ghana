@@ -31,6 +31,7 @@ insert into public.notifications (user_id, title, message) values
 create function pg_temp.as_user(uid text, r text) returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claim.sub', uid, true);
+  perform set_config('request.jwt.claims', '{"aal":"aal2"}', true);
   execute format('set local role %I', r);
 end $$;
 

@@ -6,6 +6,8 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MfaChallenge from '@/components/MfaChallenge';
+import MfaEnrolGate from '@/components/MfaEnrolGate';
+import AccountDisabled from '@/components/AccountDisabled';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
@@ -24,7 +26,7 @@ import PendingApproval from '@/pages/PendingApproval';
 import Security from '@/pages/Security';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError, navigateToLogin, mfaRequired } = useAuth();
+  const { isLoadingAuth, authError, navigateToLogin, mfaRequired, mfaEnrolRequired, accountDisabled } = useAuth();
 
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
@@ -37,6 +39,8 @@ const AuthenticatedApp = () => {
 
   // Password accepted but the second factor is still outstanding
   if (mfaRequired) return <MfaChallenge />;
+  if (accountDisabled) return <AccountDisabled />;
+  if (mfaEnrolRequired) return <MfaEnrolGate />;
 
   // Handle authentication errors
   if (authError) {

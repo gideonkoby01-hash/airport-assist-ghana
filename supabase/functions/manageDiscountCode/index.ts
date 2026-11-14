@@ -65,7 +65,7 @@ const CLASH = 'That code already exists. Codes are case-insensitive.';
 
 serve('manageDiscountCode', async (req) => {
   const admin = adminClient();
-  await requireCaller(req, admin, ['admin']);
+  const caller = await requireCaller(req, admin, ['admin']);
   const body = await readBody(req) as Record<string, any>;
   const action = String(body.action || '');
 
@@ -81,7 +81,7 @@ serve('manageDiscountCode', async (req) => {
   if (action === 'create') {
     const data = buildData(body, true);
     const { data: record, error } = await admin.from('discount_codes')
-      .insert({ ...data, active: body.active !== false, redemption_count: 0, total_discount_granted: 0, last_claim_token: '' })
+      .insert({ ...data, active: body.active !== false, redemption_count: 0, total_discount_granted: 0, last_claim_token: '', updated_by_id: caller.id })
       .select().single();
     if (error?.code === '23505') throw new HttpError(409, CLASH);
     if (error) throw error;
@@ -95,7 +95,7 @@ serve('manageDiscountCode', async (req) => {
     if (!current) throw new HttpError(404, 'Discount code not found');
 
     if (action === 'toggle') {
-      const { data: record, error } = await admin.from('discount_codes').update({ active: current.active === false }).eq('id', id).select().single();
+      const { data: record, error } = await admin.from('discount_codes').update({ active: current.active === false, updated_by_id: caller.id }).eq('id', id).select().single();
       if (error) throw error;
       return json({ record });
     }
@@ -115,7 +115,7 @@ serve('manageDiscountCode', async (req) => {
       throw new HttpError(409, 'The code value cannot be changed after it has been redeemed.');
     }
     const { data: record, error } = await admin.from('discount_codes')
-      .update({ ...data, active: typeof body.active === 'boolean' ? body.active : current.active !== false })
+      .update({ ...data, active: typeof body.active === 'boolean' ? body.active : current.active !== false, updated_by_id: caller.id })
       .eq('id', id).select().single();
     if (error?.code === '23505') throw new HttpError(409, 'Another code already uses that value.');
     if (error) throw error;

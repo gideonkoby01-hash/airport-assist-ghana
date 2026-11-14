@@ -8,7 +8,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // otherwise it is stored and applied by the signup trigger when they first register or accept the invite.
 serve('inviteStaff', async (req) => {
   const admin = adminClient();
-  await requireCaller(req, admin, ['admin']);
+  const caller = await requireCaller(req, admin, ['admin']);
 
   const body = await readBody(req);
   const email = String(body.email ?? '').trim().toLowerCase();
@@ -18,7 +18,7 @@ serve('inviteStaff', async (req) => {
 
   const { data: existing } = await admin.from('profiles').select('id').ilike('email', email).maybeSingle();
   if (existing) {
-    const { error } = await admin.from('profiles').update({ role }).eq('id', existing.id);
+    const { error } = await admin.from('profiles').update({ role, updated_by_id: caller.id }).eq('id', existing.id);
     if (error) throw error;
     return json({ ok: true, applied: true });
   }

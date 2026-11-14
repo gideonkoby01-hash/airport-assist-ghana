@@ -21,7 +21,7 @@ serve('submitStaffRequest', async (req) => {
   const { data: open } = await admin.from('account_requests').select('id').eq('user_id', user.id).eq('status', 'pending').limit(1);
   if (open && open.length > 0) return json({ ok: true, notified: 0, failed: [], already_pending: true });
 
-  const { error: holdError } = await admin.from('profiles').update({ role: 'pending', ...(fullName ? { full_name: fullName } : {}) }).eq('id', user.id);
+  const { error: holdError } = await admin.from('profiles').update({ role: 'pending', updated_by_id: user.id, ...(fullName ? { full_name: fullName } : {}) }).eq('id', user.id);
   if (holdError) throw holdError;
 
   const { data: request, error: requestError } = await admin

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,8 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   });
   const [passengers, setPassengers] = useState([{ ...emptyPassenger }]);
   const [submitting, setSubmitting] = useState(false);
+  // One key per form: if a submit is retried after a timeout, the server returns the first booking instead of a second.
+  const idempotencyKey = useRef(crypto.randomUUID());
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -162,6 +164,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       // Price, discount and totals are recalculated on the server: the browser
       // never sets the amount that is saved.
       const res = await api.functions.invoke("createBooking", {
+        idempotency_key: idempotencyKey.current,
         channel,
         package_code: pkg.code,
         flight_type: form.flight_type,
@@ -182,6 +185,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       if (data.error) throw new Error(data.error);
       if (!data.booking) throw new Error("The booking could not be saved. Please try again.");
       setCreated(data.booking);
+      idempotencyKey.current = crypto.randomUUID(); // the next booking is a new submission
       setAppliedDiscount(null);
       if (onCreated) onCreated(data.booking);
     } catch (err) {

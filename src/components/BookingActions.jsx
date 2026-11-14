@@ -13,14 +13,17 @@ import {
   formatGHS,
 } from "@/lib/packages";
 import { PaymentBadge } from "@/components/StatusBadge";
+import { acceptsPayments, isClosed, nextStatuses, ALL_STATUSES } from "@/lib/bookingRules";
 
-const STATUSES = ["confirmed", "assigned", "in_progress", "completed", "cancelled", "no_show"];
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
 export default function BookingActions({ booking, user, onUpdated }) {
   const role = user?.role || "passenger";
   const canOperate = ["supervisor", "management", "admin"].includes(role);
   const canAssignSupervisor = ["management", "admin"].includes(role);
+  const canAdjust = ["management", "admin"].includes(role);
+  const isAdmin = role === "admin";
+  const closed = isClosed(booking.status);
 
   const [supervisors, setSupervisors] = useState([]);
   const [loadingSupers, setLoadingSupers] = useState(false);
@@ -37,6 +40,16 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const [lounge, setLounge] = useState(booking.lounge_used || "");
   const [savingLounge, setSavingLounge] = useState(false);
+
+  const [adjType, setAdjType] = useState("refund");
+  const [adjAmount, setAdjAmount] = useState("");
+  const [adjMethod, setAdjMethod] = useState("cash");
+  const [adjReason, setAdjReason] = useState("");
+  const [savingAdj, setSavingAdj] = useState(false);
+
+  const [fixStatus, setFixStatus] = useState("");
+  const [fixReason, setFixReason] = useState("");
+  const [savingFix, setSavingFix] = useState(false);
 
   const [assignId, setAssignId] = useState(booking.assigned_supervisor_id || "");
   const [savingAssign, setSavingAssign] = useState(false);
@@ -74,6 +87,37 @@ export default function BookingActions({ booking, user, onUpdated }) {
       alert(err.message || "Failed to update status");
     } finally {
       setSavingStatus(false);
+    }
+  };
+
+  const saveAdjustment = async () => {
+    const amt = Number(adjAmount || 0);
+    if (!(amt > 0)) return alert("Enter an amount greater than zero.");
+    if (adjReason.trim().length < 3) return alert("Give a reason. It is kept on the record.");
+    setSavingAdj(true);
+    try {
+      await callBooking("recordAdjustment", { type: adjType, amount: amt, method: adjType === "refund" ? adjMethod : undefined, reason: adjReason.trim() });
+      setAdjAmount("");
+      setAdjReason("");
+    } catch (err) {
+      alert(err.message || "Could not record that.");
+    } finally {
+      setSavingAdj(false);
+    }
+  };
+
+  const saveCorrection = async () => {
+    if (!fixStatus) return alert("Choose the correct status.");
+    if (fixReason.trim().length < 3) return alert("Give a reason. It is kept on the record.");
+    setSavingFix(true);
+    try {
+      await callBooking("correctBookingStatus", { status: fixStatus, reason: fixReason.trim() });
+      setFixStatus("");
+      setFixReason("");
+    } catch (err) {
+      alert(err.message || "Could not correct the status.");
+    } finally {
+      setSavingFix(false);
     }
   };
 
@@ -236,23 +280,28 @@ export default function BookingActions({ booking, user, onUpdated }) {
           {/* Status */}
           <Panel icon={ClipboardList} title="Service Status">
             <div className="flex flex-col sm:flex-row gap-3">
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status} onValueChange={setStatus} disabled={closed}>
                 <SelectTrigger className="flex-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map((s) => (
+                  {[booking.status, ...nextStatuses(booking.status)].map((s) => (
                     <SelectItem key={s} value={s}>
                       {STATUS_LABELS[s]}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={saveStatus} disabled={savingStatus || status === booking.status}>
+              <Button onClick={saveStatus} disabled={savingStatus || status === booking.status || closed}>
                 {savingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 Update
               </Button>
             </div>
+            {closed && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                This booking is {STATUS_LABELS[booking.status].toLowerCase()} and cannot be changed. If it was marked by mistake, an admin can correct it.
+              </p>
+            )}
           </Panel>
 
           {/* Payment */}
@@ -282,7 +331,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={recordPayment} disabled={savingPay}>
+              <Button onClick={recordPayment} disabled={savingPay || !acceptsPayments(booking.status)}>
                 {savingPay ? <Loader2 className="w-4 h-4 animate-spin" /> : "Record"}
               </Button>
             </div>
@@ -301,6 +350,81 @@ export default function BookingActions({ booking, user, onUpdated }) {
               </div>
             </div>
           </Panel>
+
+          {canAdjust && (
+            <Panel icon={Wallet} title="Refund or write off">
+              <p className="text-xs text-muted-foreground mb-3">
+                A refund records money handed back. A write-off forgives a balance the passenger will not pay. Both stay on the record with your name and reason.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Type</Label>
+                  <Select value={adjType} onValueChange={setAdjType}>
+                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="refund">Refund</SelectItem>
+                      <SelectItem value="write_off">Write off</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Amount (GHS)</Label>
+                  <Input type="number" min={0} value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} placeholder="0.00" className="w-32" />
+                </div>
+                {adjType === "refund" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Paid back by</Label>
+                    <Select value={adjMethod} onValueChange={setAdjMethod}>
+                      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {METHODS.map((m) => (
+                          <SelectItem key={m} value={m}>{PAYMENT_METHOD_LABELS[m]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1 flex-1 min-w-[200px]">
+                  <Label className="text-xs">Reason</Label>
+                  <Input value={adjReason} onChange={(e) => setAdjReason(e.target.value)} placeholder="Why?" />
+                </div>
+                <Button onClick={saveAdjustment} disabled={savingAdj}>
+                  {savingAdj ? <Loader2 className="w-4 h-4 animate-spin" /> : "Record"}
+                </Button>
+              </div>
+              {Number(booking.written_off) > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">Written off so far: {formatGHS(booking.written_off)}</p>
+              )}
+            </Panel>
+          )}
+
+          {isAdmin && closed && (
+            <Panel icon={ClipboardList} title="Admin correction">
+              <p className="text-xs text-muted-foreground mb-3">
+                Use only to fix a status set by mistake. The reason is recorded in the audit log. Discounts released by a cancellation are not claimed again.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Correct status</Label>
+                  <Select value={fixStatus} onValueChange={setFixStatus}>
+                    <SelectTrigger className="w-44"><SelectValue placeholder="Choose" /></SelectTrigger>
+                    <SelectContent>
+                      {ALL_STATUSES.filter((x) => x !== booking.status).map((x) => (
+                        <SelectItem key={x} value={x}>{STATUS_LABELS[x]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 flex-1 min-w-[200px]">
+                  <Label className="text-xs">Reason</Label>
+                  <Input value={fixReason} onChange={(e) => setFixReason(e.target.value)} placeholder="What went wrong?" />
+                </div>
+                <Button variant="outline" onClick={saveCorrection} disabled={savingFix}>
+                  {savingFix ? <Loader2 className="w-4 h-4 animate-spin" /> : "Correct"}
+                </Button>
+              </div>
+            </Panel>
+          )}
 
           {/* Lounge */}
           <Panel icon={Armchair} title="Lounge Used">

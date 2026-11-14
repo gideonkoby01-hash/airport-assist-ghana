@@ -43,7 +43,7 @@ serve('updateBookingOperations', async (req) => {
     throw new HttpError(400, 'Unknown action');
   }
 
-  const { data: updated, error } = await admin.from('bookings').update(changes).eq('id', bookingId).select().single();
+  const { data: updated, error } = await admin.from('bookings').update({ ...changes, updated_by_id: user.id }).eq('id', bookingId).select().single();
   if (error) throw error;
   return json({ ok: true, booking: updated });
 });

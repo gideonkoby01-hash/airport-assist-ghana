@@ -10,7 +10,7 @@ insert into public.bookings (reference, package_code, num_passengers, total_valu
   ('R-FUTURE', 'full_arrival', 1, 1, 'arrival', 'online', to_char(current_date + 1,  'YYYY-MM-DD'), 'u1/future.jpg'),
   ('R-NOPIC',  'full_arrival', 1, 1, 'arrival', 'online', to_char(current_date - 40, 'YYYY-MM-DD'), ''),
   ('R-BADDATE','full_arrival', 1, 1, 'arrival', 'online', 'tomorrow',                                'u1/baddate.jpg');
-insert into public.supervisor_directory (user_id, email, photo_uri) values ('s1', 's@example.com', 'sup/profile.jpg');
+insert into public.supervisor_directory (user_id, email, photo_uri) values ('s1', 's@example.com', 's1/profile.jpg');
 
 -- storage: every file above, plus uploads that were never attached
 insert into storage.objects (bucket_id, name, created_at) values
@@ -18,7 +18,7 @@ insert into storage.objects (bucket_id, name, created_at) values
   ('private-files', 'u1/recent.jpg',   now() - interval '11 days'),
   ('private-files', 'u1/future.jpg',   now() - interval '1 day'),
   ('private-files', 'u1/baddate.jpg',  now() - interval '50 days'),
-  ('private-files', 'sup/profile.jpg', now() - interval '400 days'),
+  ('private-files', 's1/profile.jpg', now() - interval '400 days'),
   ('private-files', 'u1/abandoned-old.jpg', now() - interval '8 days'),
   ('private-files', 'u1/abandoned-new.jpg', now() - interval '1 day');
 

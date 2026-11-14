@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, UserPlus, ShieldCheck } from "lucide-react";
 import { roleLabel } from "@/lib/packages";
+import ConfirmAction from "@/components/ConfirmAction";
 
 const ROLES = ["passenger", "supervisor", "management", "admin"];
 
@@ -59,8 +60,30 @@ export default function StaffManager() {
       await api.entities.User.update(id, { role: newRole });
       setUsers((us) => us.map((u) => (u.id === id ? { ...u, role: newRole } : u)));
     } catch (e) {
-      alert(e.message || "Failed to update role.");
+      alert(/last_admin/.test(e.message || "")
+        ? "That is the only active admin. Make someone else an admin first."
+        : e.message || "Failed to update role.");
       load();
+    }
+  };
+
+  // Turn a person's access off (someone who left) or back on. History is kept.
+  const setDisabled = async (u, disabled) => {
+    try {
+      await api.functions.invoke("disableUser", { user_id: u.id, disabled });
+      setUsers((us) => us.map((x) => (x.id === u.id ? { ...x, disabled } : x)));
+    } catch (e) {
+      alert(e.message || "Could not change that account.");
+    }
+  };
+
+  // Honour a request to delete a person's data. Cannot be undone.
+  const eraseData = async (u) => {
+    try {
+      await api.functions.invoke("anonymiseUser", { user_id: u.id, confirm: true });
+      setUsers((us) => us.filter((x) => x.id !== u.id));
+    } catch (e) {
+      alert(e.message || "Could not delete that person's data.");
     }
   };
 
@@ -114,7 +137,8 @@ export default function StaffManager() {
                 <tr className="text-left text-xs uppercase text-muted-foreground border-b border-border">
                   <th className="py-2 pr-4">Email</th>
                   <th className="py-2 pr-4">Name</th>
-                  <th className="py-2">Role</th>
+                  <th className="py-2 pr-4">Role</th>
+                  <th className="py-2">Access</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,7 +146,7 @@ export default function StaffManager() {
                   <tr key={u.id} className="border-b border-border last:border-0">
                     <td className="py-2 pr-4 font-medium">{u.email}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{u.full_name || "—"}</td>
-                    <td className="py-2 w-44">
+                    <td className="py-2 pr-4 w-44">
                       <Select value={u.role || "passenger"} onValueChange={(r) => changeRole(u.id, r)}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
@@ -135,6 +159,30 @@ export default function StaffManager() {
                           ))}
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="py-2 whitespace-nowrap">
+                      {u.disabled ? (
+                        <Button size="sm" variant="outline" onClick={() => setDisabled(u, false)}>Enable</Button>
+                      ) : (
+                        <ConfirmAction
+                          title={`Disable ${u.email}?`}
+                          description="They will be signed out and lose access straight away. Their history is kept, and you can enable the account again."
+                          confirmLabel="Disable account"
+                          destructive
+                          onConfirm={() => setDisabled(u, true)}
+                        >
+                          <Button size="sm" variant="outline">Disable</Button>
+                        </ConfirmAction>
+                      )}
+                      <ConfirmAction
+                        title={`Delete the personal data of ${u.email}?`}
+                        description="Their name, contact details, ID photos, notifications and login are removed. Payment records stay but no longer name them. This cannot be undone."
+                        confirmLabel="Delete personal data"
+                        destructive
+                        onConfirm={() => eraseData(u)}
+                      >
+                        <Button size="sm" variant="ghost" className="text-destructive">Erase</Button>
+                      </ConfirmAction>
                     </td>
                   </tr>
                 ))}

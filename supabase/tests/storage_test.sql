@@ -25,6 +25,7 @@ values ('00000000-0000-0000-0000-0000000000c1', 'sup1@example.com', '00000000-00
 create function pg_temp.as_user(uid text) returns void language plpgsql as $$
 begin
   perform set_config('request.jwt.claim.sub', uid, true);
+  perform set_config('request.jwt.claims', '{"aal":"aal2"}', true);
   set local role authenticated;
 end $$;
 create function pg_temp.visible(label text, want text[]) returns void language plpgsql as $$

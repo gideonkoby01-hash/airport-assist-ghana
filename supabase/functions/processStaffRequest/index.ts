@@ -5,7 +5,7 @@ import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 // Admin approves or rejects a staff access request.
 serve('processStaffRequest', async (req) => {
   const admin = adminClient();
-  await requireCaller(req, admin, ['admin']);
+  const caller = await requireCaller(req, admin, ['admin']);
 
   const { request_id: requestId, action } = await readBody(req);
   if (typeof requestId !== 'string' || (action !== 'approve' && action !== 'reject')) throw new HttpError(400, 'Invalid request');
@@ -27,7 +27,7 @@ serve('processStaffRequest', async (req) => {
   if (!claimed?.length) throw new HttpError(400, 'Request already processed');
 
   if (approved && request.user_id) {
-    const { error } = await admin.from('profiles').update({ role: request.requested_role }).eq('id', request.user_id);
+    const { error } = await admin.from('profiles').update({ role: request.requested_role, updated_by_id: caller.id }).eq('id', request.user_id);
     if (error) throw error;
     if (request.requested_role === 'supervisor') {
       const { data: existing } = await admin.from('supervisor_directory').select('id').eq('user_id', request.user_id).limit(1);

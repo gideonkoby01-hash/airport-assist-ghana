@@ -26,6 +26,7 @@ serve('recordPayment', async (req) => {
     p_booking_id: bookingId, p_amount: amount, p_method: method, p_user_id: user.id, p_user_name: user.full_name || user.email || '',
   });
   if (error) {
+    if (error.message === 'booking_closed') throw new HttpError(409, 'This booking is cancelled or marked no-show, so payments can no longer be recorded.');
     if (error.message === 'overpayment') throw new HttpError(400, 'That is more than the outstanding balance. Refresh and check the balance.');
     if (error.message === 'booking_not_found') throw new HttpError(404, 'Booking not found');
     throw error;

@@ -18,6 +18,11 @@ async function needsSecondFactor() {
   return data.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
 }
 
+async function hasVerifiedFactor() {
+  const { data } = await supabase.auth.mfa.listFactors();
+  return (data?.totp?.length ?? 0) > 0;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,6 +30,9 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
+  // Admin and management must set up two-step verification before they can use their access.
+  const [mfaEnrolRequired, setMfaEnrolRequired] = useState(false);
+  const [accountDisabled, setAccountDisabled] = useState(false);
 
   const checkUserAuth = useCallback(async () => {
     setIsLoadingAuth(true);
@@ -35,6 +43,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
         setMfaRequired(false);
+        setMfaEnrolRequired(false);
+        setAccountDisabled(false);
         return;
       }
       if (await needsSecondFactor()) {
@@ -45,7 +55,11 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       setMfaRequired(false);
-      setUser(await loadUser(authUser));
+      const loaded = await loadUser(authUser);
+      setAccountDisabled(Boolean(loaded.disabled));
+      // A staff session that passed the check is already aal2; one with no factor yet must enrol first.
+      setMfaEnrolRequired(!loaded.disabled && ['admin', 'management'].includes(loaded.role) && !(await hasVerifiedFactor()));
+      setUser(loaded);
       setIsAuthenticated(true);
       setAuthError(null);
     } catch (error) {
@@ -94,6 +108,8 @@ export const AuthProvider = ({ children }) => {
         authError,
         authChecked,
         mfaRequired,
+        mfaEnrolRequired,
+        accountDisabled,
         logout,
         navigateToLogin,
         checkUserAuth,

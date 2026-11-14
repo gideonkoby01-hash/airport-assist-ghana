@@ -4,6 +4,7 @@ import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import BookingActions from "@/components/BookingActions";
+import BookingHistory from "@/components/BookingHistory";
 import PassengerPhoto from "@/components/PassengerPhoto";
 import BookingSupervisor from "@/components/BookingSupervisor";
 import BookingRatingSection from "@/components/ratings/BookingRatingSection";
@@ -203,6 +204,7 @@ export default function BookingDetail() {
 
           {/* Actions */}
           <BookingActions booking={booking} user={user} onUpdated={setBooking} />
+          {["management", "admin"].includes(user?.role) && <BookingHistory key={booking.updated_date} bookingId={booking.id} />}
         </div>
       )}
     </AppLayout>

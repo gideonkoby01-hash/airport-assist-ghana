@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { disable, enroll, listFactors, verify } from "@/lib/mfa";
 
 // Account security card: turn two-step verification (authenticator app) on or off.
-export default function MfaSetup() {
+export default function MfaSetup({ onChange = undefined }) {
   const [factors, setFactors] = useState(null);
   const [pending, setPending] = useState(null); // { factorId, qrCode, secret }
   const [code, setCode] = useState("");
@@ -28,6 +28,7 @@ export default function MfaSetup() {
     setPending(null);
     setCode("");
     await load();
+    if (onChange) onChange();
   });
   const turnOff = () => run(async () => {
     if (!window.confirm("Turn off two-step verification? Your account will be protected by your password only.")) return;

@@ -27,8 +27,17 @@ serve('updateBookingStatus', async (req) => {
   const previous = booking.status;
   if (newStatus === previous) return json({ ok: true, changed: false, previous_status: previous, new_status: newStatus, notified: 0 });
 
-  const { data: updated, error: updateError } = await admin.from('bookings').update({ status: newStatus }).eq('id', bookingId).select().single();
-  if (updateError) throw new HttpError(400, 'Failed to update booking');
+  const { data: updated, error: updateError } = await admin.from('bookings').update({ status: newStatus, updated_by_id: user.id }).eq('id', bookingId).select().single();
+  if (updateError) {
+    // The database enforces the lifecycle rules; turn its refusals into plain advice.
+    if (updateError.message.startsWith('invalid_status_transition')) {
+      throw new HttpError(409, `A ${LABELS[previous] ?? previous} booking cannot be changed to ${LABELS[newStatus]}. Ask an admin if it was marked wrongly.`);
+    }
+    if (updateError.message.startsWith('balance_outstanding')) {
+      throw new HttpError(409, 'This booking still has an unpaid balance. Record the payment first, or ask management to write the balance off.');
+    }
+    throw updateError;
+  }
 
   if (!NOTIFIABLE.includes(newStatus)) {
     return json({ ok: true, changed: true, previous_status: previous, new_status: newStatus, notified: 0, notifications: 'skipped_not_notifiable_transition', booking: updated });

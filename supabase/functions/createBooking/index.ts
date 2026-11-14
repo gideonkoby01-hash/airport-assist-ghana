@@ -3,6 +3,10 @@ import { STAFF_ROLES } from '../_shared/bookingAccess.ts';
 import { evaluateDiscount, normalizeCode, round2 } from '../_shared/discounts.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { notifyNewBooking } from '../_shared/notify.ts';
+import { checkFlight, isPhone } from '../_shared/validation.ts';
+
+// One message for every way a code can fail, so nobody can probe which codes exist or what state they are in.
+const DISCOUNT_INVALID = "That discount code isn't valid for your account or this booking. Check the code, or contact Airport Assist.";
 
 // AAG-YYMMDD-XXXX, with the random part from the crypto source.
 function makeReference(): string {
@@ -22,7 +26,27 @@ serve('createBooking', async (req) => {
 
   const body = await readBody(req) as Record<string, any>;
   const channel = body.channel === 'walk_in' ? 'walk_in' : 'online';
-  if (channel === 'walk_in' && !STAFF_ROLES.includes(user.role)) throw new HttpError(403, 'Only staff can create walk-in bookings.');
+  const isStaff = STAFF_ROLES.includes(user.role);
+  if (channel === 'walk_in' && !isStaff) throw new HttpError(403, 'Only staff can create walk-in bookings.');
+
+  // The same submission arriving twice (a retry after a timeout) returns the first booking instead of making a second.
+  const idempotencyKey = typeof body.idempotency_key === 'string' && body.idempotency_key.length >= 8 && body.idempotency_key.length <= 100
+    ? body.idempotency_key : null;
+  const ownerColumn = channel === 'online' ? 'passenger_user_id' : 'assigned_supervisor_id';
+  const existingBooking = async () => {
+    if (!idempotencyKey) return null;
+    const { data } = await admin.from('bookings').select('*').eq(ownerColumn, user.id).eq('idempotency_key', idempotencyKey).maybeSingle();
+    return data;
+  };
+  const repeat = await existingBooking();
+  if (repeat) return json({ booking: repeat, duplicate: true });
+
+  // Passengers: at most 10 new bookings an hour. Staff taking walk-ins are not limited.
+  if (!isStaff) {
+    const hits = await admin.rpc('hit_rate_limit', { p_key: `booking:${user.id}`, p_window_seconds: 3600 });
+    if (hits.error) throw hits.error;
+    if (hits.data > 10) throw new HttpError(429, 'You have made a lot of bookings in the last hour. Please try again later, or contact the Airport Assist desk.');
+  }
 
   const packageCode = String(body.package_code || '').trim();
   if (!packageCode) throw new HttpError(400, 'Please select a service package.');
@@ -48,6 +72,14 @@ serve('createBooking', async (req) => {
   if (!flightDate) throw new HttpError(400, 'Flight date is required.');
   if (!flightTime) throw new HttpError(400, 'Scheduled flight time is required.');
   if (!contact) throw new HttpError(400, 'A contact number is required.');
+  if (!isPhone(contact)) throw new HttpError(400, 'Enter a valid contact phone number, including the country code if it is not a Ghana number.');
+  const flightProblem = checkFlight(flightDate, flightTime, { now: Date.now(), minLeadHours: Number(Deno.env.get('MIN_LEAD_HOURS') ?? 2), isStaff });
+  if (flightProblem) throw new HttpError(400, flightProblem);
+  if (passengers.some((p) => !Number.isFinite(p.total_bags) || p.total_bags < 0 || p.total_bags > 50)) throw new HttpError(400, 'Bags per passenger must be between 0 and 50.');
+
+  // Photos live in the uploader's own folder; a booking may not point at anyone else's file.
+  const photoUri = String(body.passenger_photo_uri || '').trim().slice(0, 500);
+  if (photoUri && !photoUri.startsWith(`${user.id}/`)) throw new HttpError(400, 'That photo could not be used. Please upload it again.');
 
   const gross = round2(Number(pkg.price) * passengers.length);
 
@@ -69,10 +101,18 @@ serve('createBooking', async (req) => {
   };
 
   if (body.discount_code) {
+    // Guessing is throttled: after 10 failed attempts in 15 minutes the person must wait.
+    const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${user.id}`, p_window_seconds: 900 });
+    if ((tries.data ?? 0) >= 10) throw new HttpError(429, 'Too many discount code attempts. Please wait a few minutes and try again.');
+    const fail = async () => { await admin.rpc('hit_rate_limit', { p_key: `discount:${user.id}`, p_window_seconds: 900 }); throw new HttpError(400, DISCOUNT_INVALID); };
+
     const { data: record } = await admin.from('discount_codes').select('*').eq('code', normalizeCode(body.discount_code)).maybeSingle();
-    if (!record) throw new HttpError(400, 'That discount code does not exist.');
+    if (!record) return await fail();
     const result = evaluateDiscount({ record, userEmail: user.email, grossTotal: gross, usedByUser: await countUses(record.id) });
-    if (!result.ok) throw new HttpError(400, result.message);
+    if (!result.ok) {
+      console.log(`createBooking: discount ${record.code} refused for ${user.id}: ${result.message}`);
+      return await fail();
+    }
 
     // Atomic claim in one SQL statement: only succeeds while the code still has uses left.
     const { data: claim, error: claimError } = await admin.rpc('claim_discount', {
@@ -88,7 +128,7 @@ serve('createBooking', async (req) => {
     const perCustomer = Number(record.max_uses_per_customer) || 0;
     if (perCustomer > 0 && (await countUses(record.id)) >= perCustomer) {
       await release();
-      throw new HttpError(409, 'You have already used this discount code the maximum number of times.');
+      throw new HttpError(400, DISCOUNT_INVALID);
     }
   }
 
@@ -120,7 +160,9 @@ serve('createBooking', async (req) => {
     outstanding_balance: finalTotal,
     booking_channel: channel,
     passenger_user_id: channel === 'online' ? user.id : null,
-    passenger_photo_uri: String(body.passenger_photo_uri || '').trim().slice(0, 500),
+    passenger_photo_uri: photoUri,
+    idempotency_key: idempotencyKey,
+    updated_by_id: user.id,
     discount_amount: 0,
     discount_value: 0,
   };
@@ -150,6 +192,12 @@ serve('createBooking', async (req) => {
     const { data, error } = await admin.from('bookings').insert(payload).select().single();
     if (!error) { booking = data; break; }
     if (error.code !== '23505') { await release(); throw error; }
+    if (error.message?.includes('bookings_idempotency_idx')) {
+      // Two identical submissions raced: keep the first, give this one's discount back.
+      await release();
+      const first = await existingBooking();
+      if (first) return json({ booking: first, duplicate: true });
+    }
     payload.reference = makeReference();
   }
   if (!booking) { await release(); throw new HttpError(500, 'Could not create the booking. Please try again.'); }
