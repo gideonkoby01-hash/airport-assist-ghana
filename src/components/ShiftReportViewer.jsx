@@ -3,12 +3,17 @@ import { api } from "@/api/db";
 import { Loader2, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { formatGHS, SHIFT_LABELS } from "@/lib/packages";
 import ShiftReportSummary from "@/components/ShiftReportSummary";
+import ConfirmAction from "@/components/ConfirmAction";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function ShiftReportViewer() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
   const [err, setErr] = useState("");
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const load = async () => {
     setLoading(true);
@@ -19,6 +24,17 @@ export default function ShiftReportViewer() {
       setErr(e.message || "Failed to load reports.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Submitted reports are locked. If one is wrong, an admin removes it (recorded in the audit log) so it can be filed again.
+  const removeReport = async (id) => {
+    try {
+      await api.entities.ShiftReport.delete(id);
+      setReports((rs) => rs.filter((r) => r.id !== id));
+      setExpanded(null);
+    } catch (e) {
+      setErr(e.message || "Could not remove the report.");
     }
   };
 
@@ -77,6 +93,9 @@ export default function ShiftReportViewer() {
                 <p className="text-sm font-semibold">
                   {r.grand_total_paid != null ? formatGHS(r.grand_total_paid) : formatGHS(r.total_revenue || 0)}
                 </p>
+                {r.cash_variance != null && Number(r.cash_variance) !== 0 && (
+                  <p className="text-xs font-medium text-rose-600">Cash {Number(r.cash_variance) > 0 ? "over" : "short"} {formatGHS(Math.abs(r.cash_variance))}</p>
+                )}
                 {r.porter_total_commission != null && (
                   <p className="text-xs text-muted-foreground">Commission: {formatGHS(r.porter_total_commission)}</p>
                 )}
@@ -85,6 +104,19 @@ export default function ShiftReportViewer() {
             {isOpen && (
               <div className="border-t border-border p-5 bg-secondary/30">
                 <ShiftReportSummary report={r} />
+                {isAdmin && (
+                  <div className="mt-4">
+                    <ConfirmAction
+                      title="Remove this shift report?"
+                      description="The supervisor will be able to file this shift again from the current ledger. The removal is recorded in the audit log."
+                      confirmLabel="Remove report"
+                      destructive
+                      onConfirm={() => removeReport(r.id)}
+                    >
+                      <Button variant="outline" size="sm" className="text-destructive">Remove so it can be filed again</Button>
+                    </ConfirmAction>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
+import QuickSaleForm from "@/components/QuickSaleForm";
 import ShiftReportForm from "@/components/ShiftReportForm";
 import SupervisorNotifications from "@/components/SupervisorNotifications";
 import SupervisorProfileForm from "@/components/supervisor/SupervisorProfileForm";
@@ -65,6 +66,7 @@ function SupervisorInner() {
 
       <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
         <TabButton active={tab === "assigned"} onClick={() => setTab("assigned")}>Assigned Bookings</TabButton>
+        <TabButton active={tab === "quick"} onClick={() => setTab("quick")}>Quick Sale</TabButton>
         <TabButton active={tab === "walkin"} onClick={() => setTab("walkin")}>Walk-in Booking</TabButton>
         <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
           Notifications{unreadCount > 0 && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full bg-accent text-accent-foreground">{unreadCount}</span>}
@@ -83,6 +85,8 @@ function SupervisorInner() {
           <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings assigned to you yet." />
         </div>
       )}
+
+      {tab === "quick" && <QuickSaleForm onRecorded={load} />}
 
       {tab === "walkin" && (
         <div>

@@ -3,19 +3,11 @@ import { STAFF_ROLES } from '../_shared/bookingAccess.ts';
 import { evaluateDiscount, normalizeCode, round2 } from '../_shared/discounts.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { notifyNewBooking } from '../_shared/notify.ts';
+import { makeReference } from '../_shared/reference.ts';
 import { checkFlight, isPhone } from '../_shared/validation.ts';
 
 // One message for every way a code can fail, so nobody can probe which codes exist or what state they are in.
 const DISCOUNT_INVALID = "That discount code isn't valid for your account or this booking. Check the code, or contact Airport Assist.";
-
-// AAG-YYMMDD-XXXX, with the random part from the crypto source.
-function makeReference(): string {
-  const d = new Date();
-  const ymd = `${String(d.getUTCFullYear()).slice(-2)}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
-  return `AAG-${ymd}-${Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')}`;
-}
 
 // Creates a booking server-side. Package price, booking total and discount are all recomputed here:
 // a tampered browser payload cannot change the amount.

@@ -17,6 +17,7 @@ export default function ShiftReportSummary({ report }) {
     pos: meetAssist.filter((e) => e.payment_method === "pos").reduce((s, e) => s + (e.amount_paid || 0), 0),
     cash: meetAssist.filter((e) => e.payment_method === "cash").reduce((s, e) => s + (e.amount_paid || 0), 0),
     momo: meetAssist.filter((e) => e.payment_method === "momo").reduce((s, e) => s + (e.amount_paid || 0), 0),
+    account: meetAssist.filter((e) => e.payment_method === "account").reduce((s, e) => s + (e.amount_paid || 0), 0),
   };
 
   const meetAssistTotal =
@@ -97,6 +98,9 @@ export default function ShiftReportSummary({ report }) {
                   <div className="flex justify-between"><span>POS</span><span className="font-medium">{formatGHS(totalsByMethod.pos)}</span></div>
                   <div className="flex justify-between"><span>Cash</span><span className="font-medium">{formatGHS(totalsByMethod.cash)}</span></div>
                   <div className="flex justify-between"><span>MoMo</span><span className="font-medium">{formatGHS(totalsByMethod.momo)}</span></div>
+                  {totalsByMethod.account > 0 && (
+                    <div className="flex justify-between"><span>Account</span><span className="font-medium">{formatGHS(totalsByMethod.account)}</span></div>
+                  )}
                   <div className="flex justify-between border-t border-border pt-1 mt-1"><span className="font-semibold">Total</span><span className="font-semibold">{formatGHS(meetAssistTotal)}</span></div>
                 </div>
               </div>
@@ -170,6 +174,22 @@ export default function ShiftReportSummary({ report }) {
         <div className="bg-card rounded-xl border border-border p-5">
           <p className="text-xs font-semibold text-muted-foreground mb-1">Remarks</p>
           <p className="text-sm whitespace-pre-line">{report.remarks}</p>
+        </div>
+      )}
+
+      {report.cash_counted != null && (
+        <div className="bg-card rounded-xl border border-border p-5 text-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Cash check</h3>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <div><p className="text-xs text-muted-foreground">Expected cash</p><p className="font-semibold">{formatGHS(report.cash_expected)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Counted</p><p className="font-semibold">{formatGHS(report.cash_counted)}</p></div>
+            <div>
+              <p className="text-xs text-muted-foreground">Difference</p>
+              <p className={`font-semibold ${Number(report.cash_variance) === 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {Number(report.cash_variance) === 0 ? "Matches" : `${Number(report.cash_variance) > 0 ? "Over" : "Short"} by ${formatGHS(Math.abs(report.cash_variance))}`}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

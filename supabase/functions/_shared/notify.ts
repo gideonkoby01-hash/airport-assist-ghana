@@ -79,3 +79,35 @@ export async function notifyNewBooking(admin: SupabaseClient, bookingId: string)
   }
   return { ok: failed.length === 0 || notified > 0, recipients: users.length, notified, duplicates_skipped: duplicates, failed, passenger_email };
 }
+
+// Alerts every management and admin user that a shift report was submitted (once each).
+export async function notifyShiftReportSubmitted(admin: SupabaseClient, report: Record<string, any>) {
+  const users = await recipientsByRole(admin, ['management', 'admin']);
+  if (!users.length) return { ok: false, error: 'No Management or Admin recipients exist to notify', notified: 0, duplicates_skipped: 0, failed: [] };
+  const already = await alertedUserIds(admin, { shift_report_id: report.id, type: 'shift_report' });
+
+  const supervisorName = report.supervisor_name || 'Supervisor';
+  const variance = report.cash_variance == null ? '' : `\nCash variance: GHS ${Number(report.cash_variance).toFixed(2)}`;
+  const message = [
+    `Supervisor ${supervisorName} submitted a shift report.`,
+    `Reporting period: ${report.reporting_period_start || '—'}`,
+    `Shift: ${report.shift_type === 'night' ? 'Night Shift' : 'Morning Shift'}`,
+    `Total collected: GHS ${report.grand_total_paid != null ? report.grand_total_paid : '—'}${variance}`,
+    `Submitted: ${accraTime(report.created_date)}`,
+  ].join('\n');
+
+  let notified = 0;
+  let duplicates = 0;
+  const failed: { user_id: string; error: string }[] = [];
+  for (const u of users) {
+    if (already.has(u.id)) { duplicates++; continue; }
+    const { error } = await admin.from('notifications').insert({
+      user_id: u.id, title: 'Shift Report Submitted', message, read: false, type: 'shift_report', shift_report_id: report.id,
+      supervisor_id: report.supervisor_id || '', supervisor_name: supervisorName,
+      link_path: u.role === 'admin' ? '/admin?tab=reports' : '/management?tab=reports',
+    });
+    if (error) { console.error(`notifyShiftReportSubmitted: alert failed for ${u.id}: ${error.message}`); failed.push({ user_id: u.id, error: error.message }); }
+    else notified++;
+  }
+  return { ok: notified > 0 || failed.length === 0, notified, duplicates_skipped: duplicates, failed };
+}
