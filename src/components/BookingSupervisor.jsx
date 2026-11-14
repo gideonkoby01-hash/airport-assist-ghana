@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import SupervisorProfileCard, { SupervisorProfilePlaceholder } from "@/components/supervisor/SupervisorProfileCard";
 import { AlertCircle } from "lucide-react";
 
@@ -16,7 +16,7 @@ export default function BookingSupervisor({ booking }) {
     if (!booking?.id) return undefined;
     let active = true;
     setState((prev) => ({ ...prev, loading: true, error: "" }));
-    base44.functions
+    api.functions
       .invoke("getBookingSupervisor", { booking_id: booking.id })
       .then((res) => {
         if (!active) return;

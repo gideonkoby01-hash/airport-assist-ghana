@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +50,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     let active = true;
     (async () => {
       try {
-        const page = await base44.entities.ServicePackage.filter({ active: true }, { sort: "price" });
+        const page = await api.entities.ServicePackage.filter({ active: true }, { sort: "price" });
         if (active) setPackages(page.items?.length ? page.items : PACKAGE_DEFINITIONS);
       } catch {
         if (active) setPackages(PACKAGE_DEFINITIONS);
@@ -148,7 +148,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       if (photoFile) {
         setPhotoUploading(true);
         try {
-          const upload = await base44.integrations.Core.UploadPrivateFile({ file: photoFile });
+          const upload = await api.storage.uploadPrivateFile({ file: photoFile });
           passenger_photo_uri = upload.file_uri;
         } catch (err) {
           setPhotoUploading(false);
@@ -161,7 +161,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       }
       // Price, discount and totals are recalculated on the server: the browser
       // never sets the amount that is saved.
-      const res = await base44.functions.invoke("createBooking", {
+      const res = await api.functions.invoke("createBooking", {
         channel,
         package_code: pkg.code,
         flight_type: form.flight_type,

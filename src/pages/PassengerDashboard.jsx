@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
@@ -32,7 +32,7 @@ function PassengerInner() {
   const setTab = (t) => setSearchParams(t === "home" ? {} : { tab: t });
 
   useEffect(() => {
-    base44.entities.ServicePackage
+    api.entities.ServicePackage
       .filter({ active: true }, { sort: "price" })
       .then((page) => page.items?.length && setPackages(page.items))
       .catch(() => {});
@@ -41,7 +41,7 @@ function PassengerInner() {
   const loadBookings = async () => {
     setLoadingBk(true);
     try {
-      const page = await base44.entities.Booking.filter(
+      const page = await api.entities.Booking.filter(
         { $or: [{ passenger_user_id: user.id }, { created_by_id: user.id }] },
         { sort: "-created_date", limit: 50 }
       );
@@ -66,7 +66,7 @@ function PassengerInner() {
 
   useEffect(() => {
     const loadUnread = () =>
-      base44.entities.Notification.count({ user_id: user.id, read: false })
+      api.entities.Notification.count({ user_id: user.id, read: false })
         .then((c) => setUnreadCount(c || 0))
         .catch(() => {});
     loadUnread();

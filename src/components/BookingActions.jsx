@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +44,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   useEffect(() => {
     if (canAssignSupervisor) {
       setLoadingSupers(true);
-      base44.entities.SupervisorDirectory.filter({ active: true }, { sort: "full_name" })
+      api.entities.SupervisorDirectory.filter({ active: true }, { sort: "full_name" })
         .then((page) => setSupervisors(page.items || []))
         .catch(() => setSupervisors([]))
         .finally(() => setLoadingSupers(false));
@@ -54,7 +54,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   // Staff edits go through backend functions: browsers cannot write bookings directly,
   // and the server (not this form) works out balances and commissions.
   const callBooking = async (fn, payload) => {
-    const res = await base44.functions.invoke(fn, { booking_id: booking.id, ...payload });
+    const res = await api.functions.invoke(fn, { booking_id: booking.id, ...payload });
     if (res?.data?.error) throw new Error(res.data.error);
     const updated = res?.data?.booking;
     if (updated && onUpdated) onUpdated(updated);
@@ -64,7 +64,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const saveStatus = async () => {
     setSavingStatus(true);
     try {
-      const res = await base44.functions.invoke("updateBookingStatus", {
+      const res = await api.functions.invoke("updateBookingStatus", {
         booking_id: booking.id,
         new_status: status,
       });
@@ -132,7 +132,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
     if (!assignId) return alert("Select a supervisor.");
     setSavingAssign(true);
     try {
-      const res = await base44.functions.invoke("assignSupervisor", {
+      const res = await api.functions.invoke("assignSupervisor", {
         booking_id: booking.id,
         supervisor_user_id: assignId,
       });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/packages";
@@ -17,7 +17,7 @@ export default function PassengerNotifications({ userId, onUnreadChange }) {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.Notification.filter(
+      const page = await api.entities.Notification.filter(
         { user_id: userId },
         { sort: "-created_date", limit: 50 }
       );
@@ -43,7 +43,7 @@ export default function PassengerNotifications({ userId, onUnreadChange }) {
   const markRead = async (n) => {
     if (n.read) return;
     try {
-      await base44.entities.Notification.update(n.id, { read: true });
+      await api.entities.Notification.update(n.id, { read: true });
       setNotifications((ns) => ns.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
     } catch (e) {
       alert(e.message || "Failed to update notification.");
@@ -54,7 +54,7 @@ export default function PassengerNotifications({ userId, onUnreadChange }) {
     const unread = notifications.filter((n) => !n.read);
     if (unread.length === 0) return;
     try {
-      await base44.entities.Notification.bulkUpdate(unread.map((n) => ({ id: n.id, read: true })));
+      await api.entities.Notification.bulkUpdate(unread.map((n) => ({ id: n.id, read: true })));
       setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
     } catch (e) {
       alert(e.message || "Failed to update notifications.");

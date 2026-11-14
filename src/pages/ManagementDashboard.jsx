@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
@@ -37,7 +37,7 @@ function ManagementInner() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.Booking.filter({}, { sort: "-created_date", limit: 100 });
+      const page = await api.entities.Booking.filter({}, { sort: "-created_date", limit: 100 });
       setBookings(page.items || []);
     } catch {
       setBookings([]);
@@ -48,7 +48,7 @@ function ManagementInner() {
 
   const loadSummary = async () => {
     try {
-      const byStatus = await base44.entities.Booking.aggregate({
+      const byStatus = await api.entities.Booking.aggregate({
         groupBy: "status",
         sum: ["total_value", "amount_collected", "outstanding_balance"],
         sort: "-count",
@@ -63,7 +63,7 @@ function ManagementInner() {
       let items = [];
       let cursor;
       do {
-        const page = await base44.entities.ShiftReport.filter(
+        const page = await api.entities.ShiftReport.filter(
           {},
           {
             sort: "-created_date",
@@ -90,7 +90,7 @@ function ManagementInner() {
 
   const loadUnread = async () => {
     try {
-      const c = await base44.entities.Notification.count({ user_id: user.id, read: false });
+      const c = await api.entities.Notification.count({ user_id: user.id, read: false });
       setUnreadCount(c || 0);
     } catch {}
   };

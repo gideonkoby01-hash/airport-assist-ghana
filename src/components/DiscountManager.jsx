@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,7 +32,7 @@ export default function DiscountManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.DiscountCode.filter({}, { sort: "-created_date", limit: 200 });
+      const page = await api.entities.DiscountCode.filter({}, { sort: "-created_date", limit: 200 });
       setCodes(page.items || []);
     } catch {
       setCodes([]);
@@ -70,7 +70,7 @@ export default function DiscountManager() {
   const toggle = async (record) => {
     setBusyId(record.id);
     try {
-      await base44.functions.invoke("manageDiscountCode", { action: "toggle", id: record.id });
+      await api.functions.invoke("manageDiscountCode", { action: "toggle", id: record.id });
       await load();
     } catch (err) {
       alert(err?.response?.data?.error || err.message || "Could not update that code.");
@@ -83,7 +83,7 @@ export default function DiscountManager() {
     if (!window.confirm(`Delete code ${record.code}? Codes that have been redeemed can only be deactivated.`)) return;
     setBusyId(record.id);
     try {
-      const res = await base44.functions.invoke("manageDiscountCode", { action: "delete", id: record.id });
+      const res = await api.functions.invoke("manageDiscountCode", { action: "delete", id: record.id });
       if (res?.data?.error) throw new Error(res.data.error);
       await load();
     } catch (err) {

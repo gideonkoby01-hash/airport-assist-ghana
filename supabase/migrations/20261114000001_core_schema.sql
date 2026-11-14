@@ -301,10 +301,9 @@ create table public.staff_role_assignments (
   created_date timestamptz not null default now(),
   updated_date timestamptz not null default now(),
   created_by_id text default auth.uid()::text,
-  email text not null,
+  email text not null unique check (email = lower(email)),
   role text not null check (role in ('passenger', 'supervisor', 'management', 'admin'))
 );
-create unique index staff_role_assignments_email_idx on public.staff_role_assignments (lower(email));
 
 create table public.notifications (
   id uuid primary key default gen_random_uuid(),

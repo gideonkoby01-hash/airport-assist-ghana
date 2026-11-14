@@ -164,11 +164,11 @@ insert into public.email_deliveries (event_key, template_name, status) values ('
 select pg_temp.expect_count('failed attempt can be retried', $q$select 1 from public.email_deliveries where event_key='e2'$q$, 2);
 
 -- staff invite applied at signup --------------------------------------------------------
-insert into public.staff_role_assignments (email, role) values ('Invited@Example.com', 'supervisor');
+insert into public.staff_role_assignments (email, role) values ('invited@example.com', 'supervisor');
 reset role;
-insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000e1', 'invited@example.com');
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000e1', 'Invited@Example.com');
 select pg_temp.expect_count('invite applied case-insensitively',
-  $q$select 1 from public.profiles where email = 'invited@example.com' and role = 'supervisor'$q$, 1);
+  $q$select 1 from public.profiles where lower(email) = 'invited@example.com' and role = 'supervisor'$q$, 1);
 select pg_temp.expect_count('invite consumed', $q$select 1 from public.staff_role_assignments$q$, 0);
 
 rollback;

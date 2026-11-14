@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
@@ -34,7 +34,7 @@ function SupervisorInner() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.Booking.filter(
+      const page = await api.entities.Booking.filter(
         { assigned_supervisor_id: user.id },
         { sort: "-created_date", limit: 100 }
       );
@@ -48,7 +48,7 @@ function SupervisorInner() {
 
   useEffect(() => {
     load();
-    base44.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
+    api.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
 
   }, []);
 

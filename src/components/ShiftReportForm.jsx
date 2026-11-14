@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,14 +50,14 @@ export default function ShiftReportForm({ supervisor }) {
 
   const loadPorters = async () => {
     try {
-      const page = await base44.entities.Porter.filter({ active: true }, { sort: "full_name" });
+      const page = await api.entities.Porter.filter({ active: true }, { sort: "full_name" });
       setPorters(page.items || []);
     } catch {}
   };
 
   const loadSupervisorName = async () => {
     try {
-      const page = await base44.entities.SupervisorDirectory.filter({ user_id: supervisor.id });
+      const page = await api.entities.SupervisorDirectory.filter({ user_id: supervisor.id });
       const entry = (page.items || [])[0];
       if (entry?.full_name) setSupervisorFullName(entry.full_name);
     } catch {}
@@ -65,7 +65,7 @@ export default function ShiftReportForm({ supervisor }) {
 
   const loadReports = async () => {
     try {
-      const page = await base44.entities.ShiftReport.filter(
+      const page = await api.entities.ShiftReport.filter(
         { supervisor_id: supervisor.id },
         { sort: "-created_date", limit: 20 }
       );
@@ -192,7 +192,7 @@ export default function ShiftReportForm({ supervisor }) {
     }
     setSaving(true);
     try {
-      const dup = await base44.entities.ShiftReport.filter({
+      const dup = await api.entities.ShiftReport.filter({
         supervisor_id: supervisor.id,
         reporting_period_start: periodStart,
         shift_type: shiftType
@@ -204,12 +204,12 @@ export default function ShiftReportForm({ supervisor }) {
         setSaving(false);
         return;
       }
-      const rep = await base44.entities.ShiftReport.create(buildPayload());
+      const rep = await api.entities.ShiftReport.create(buildPayload());
       setSubmittedReport(rep);
       loadReports();
       // Alert Management/Admin (best effort: a failure never undoes the submission).
       try {
-        const res = await base44.functions.invoke("notifyShiftReport", { shift_report_id: rep.id });
+        const res = await api.functions.invoke("notifyShiftReport", { shift_report_id: rep.id });
         if (res?.data?.error) throw new Error(res.data.error);
       } catch {
         setNotifyWarning("Your report was submitted, but the staff alert could not be sent. Please inform management.");

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import RatingsSummary from "@/components/ratings/RatingsSummary";
 import RatingsFilters from "@/components/ratings/RatingsFilters";
 import RatingsTable from "@/components/ratings/RatingsTable";
@@ -61,7 +61,7 @@ export default function RatingsReviews() {
   const loadSummary = async () => {
     setLoadingSummary(true);
     try {
-      const result = await base44.entities.BookingRating.aggregate({ groupBy: "overall_rating" });
+      const result = await api.entities.BookingRating.aggregate({ groupBy: "overall_rating" });
       const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       let total = 0;
       let sum = 0;
@@ -93,7 +93,7 @@ export default function RatingsReviews() {
       let nextCursor;
       let pages = 0;
       do {
-        const page = await base44.entities.BookingRating.filter(
+        const page = await api.entities.BookingRating.filter(
           {},
           { sort: "-submitted_at", limit: 100, cursor: nextCursor, fields: ["supervisor_user_id", "supervisor_name"] }
         );
@@ -123,7 +123,7 @@ export default function RatingsReviews() {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const page = await base44.entities.BookingRating.filter(buildQuery(filters), {
+        const page = await api.entities.BookingRating.filter(buildQuery(filters), {
           sort: filters.sort,
           limit: 50,
         });
@@ -152,7 +152,7 @@ export default function RatingsReviews() {
     if (!cursor) return;
     setLoadingMore(true);
     try {
-      const page = await base44.entities.BookingRating.filter(buildQuery(filters), {
+      const page = await api.entities.BookingRating.filter(buildQuery(filters), {
         sort: filters.sort,
         limit: 50,
         cursor,

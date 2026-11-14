@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,7 @@ export default function PorterManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.Porter.filter({}, { sort: "full_name" });
+      const page = await api.entities.Porter.filter({}, { sort: "full_name" });
       setPorters(page.items || []);
     } catch (e) {
       setErr(e.message || "Failed to load porters.");
@@ -44,7 +44,7 @@ export default function PorterManager() {
     }
     setSaving(true);
     try {
-      const dup = await base44.entities.Porter.filter({
+      const dup = await api.entities.Porter.filter({
         phone_number: normalizePhone(phone),
         active: true,
       });
@@ -52,7 +52,7 @@ export default function PorterManager() {
         setErr("An active porter with this phone number already exists.");
         return;
       }
-      await base44.entities.Porter.create({
+      await api.entities.Porter.create({
         full_name: name.trim(),
         phone_number: normalizePhone(phone),
         active: true,
@@ -89,7 +89,7 @@ export default function PorterManager() {
     }
     const normalized = normalizePhone(editPhone);
     try {
-      const dup = await base44.entities.Porter.filter({
+      const dup = await api.entities.Porter.filter({
         phone_number: normalized,
         active: true,
       });
@@ -98,7 +98,7 @@ export default function PorterManager() {
         setEditErr("Another active porter uses this phone number.");
         return;
       }
-      await base44.entities.Porter.update(p.id, {
+      await api.entities.Porter.update(p.id, {
         full_name: editName.trim(),
         phone_number: normalized,
       });
@@ -111,7 +111,7 @@ export default function PorterManager() {
 
   const toggle = async (p) => {
     try {
-      await base44.entities.Porter.update(p.id, { active: !p.active });
+      await api.entities.Porter.update(p.id, { active: !p.active });
       load();
     } catch (e) {
       alert(e.message || "Failed to update porter.");
@@ -121,7 +121,7 @@ export default function PorterManager() {
   const remove = async (p) => {
     if (!confirm(`Delete porter "${p.full_name}"?`)) return;
     try {
-      await base44.entities.Porter.delete(p.id);
+      await api.entities.Porter.delete(p.id);
       load();
     } catch (e) {
       alert(e.message || "Failed to delete porter.");

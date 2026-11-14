@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatGHS } from "@/lib/packages";
 import {
@@ -19,7 +19,7 @@ export default function DiscountDetailDialog({ code, open, onOpenChange }) {
   useEffect(() => {
     if (!open || !code) return;
     setLoading(true);
-    base44.entities.DiscountRedemption.filter(
+    api.entities.DiscountRedemption.filter(
       { discount_code_id: code.id },
       { sort: "-redeemed_at", limit: 100 }
     )

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Loader2, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { formatGHS, SHIFT_LABELS } from "@/lib/packages";
 import ShiftReportSummary from "@/components/ShiftReportSummary";
@@ -13,7 +13,7 @@ export default function ShiftReportViewer() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.ShiftReport.filter({}, { sort: "-created_date", limit: 100 });
+      const page = await api.entities.ShiftReport.filter({}, { sort: "-created_date", limit: 100 });
       setReports(page.items || []);
     } catch (e) {
       setErr(e.message || "Failed to load reports.");

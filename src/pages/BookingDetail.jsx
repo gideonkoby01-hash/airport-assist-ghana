@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import BookingActions from "@/components/BookingActions";
@@ -25,7 +25,7 @@ export default function BookingDetail() {
 
   const load = async () => {
     try {
-      const b = await base44.entities.Booking.get(id);
+      const b = await api.entities.Booking.get(id);
       setBooking(b);
     } catch (err) {
       setError(err.message || "Booking not found or you do not have access.");
@@ -43,7 +43,7 @@ export default function BookingDetail() {
   // the supervisor section updates without the passenger reloading the page.
   useEffect(() => {
     if (!id) return undefined;
-    const unsubscribe = base44.entities.Booking.subscribe((event) => {
+    const unsubscribe = api.entities.Booking.subscribe((event) => {
       if (event?.type === "update" && event?.data?.id === id) {
         setBooking((prev) => (prev ? { ...prev, ...event.data } : prev));
       }

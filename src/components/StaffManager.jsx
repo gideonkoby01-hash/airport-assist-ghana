@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ export default function StaffManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const items = await base44.entities.User.filter({});
+      const items = await api.entities.User.filter({});
       setUsers((items || []).sort((a, b) => (a.email || "").localeCompare(b.email || "")));
     } catch (e) {
       setErr(e.message || "Failed to load users.");
@@ -40,17 +40,10 @@ export default function StaffManager() {
     if (!email.trim()) return setErr("Enter an email address.");
     setInviting(true);
     try {
-      // The platform only accepts "user" or "admin" as an invite role. Invite
-      // with the closest platform role, then store the desired app-specific
-      // role so it is applied automatically when the user logs in.
-      const platformRole = role === "admin" ? "admin" : "user";
-      await base44.users.inviteUser(email.trim(), platformRole);
-      if (role !== platformRole) {
-        await base44.entities.StaffRoleAssignment.upsert(
-          [{ email: email.trim().toLowerCase(), role }],
-          { key: "email" }
-        );
-      }
+      // The inviteStaff function emails the invitation and records the role to apply:
+      // immediately for someone who already has an account, at signup otherwise.
+      const res = await api.functions.invoke("inviteStaff", { email: email.trim(), role });
+      if (res?.data?.error) throw new Error(res.data.error);
       setMsg(`Invitation sent to ${email.trim()} as ${roleLabel(role)}.`);
       setEmail("");
       load();
@@ -63,7 +56,7 @@ export default function StaffManager() {
 
   const changeRole = async (id, newRole) => {
     try {
-      await base44.entities.User.update(id, { role: newRole });
+      await api.entities.User.update(id, { role: newRole });
       setUsers((us) => us.map((u) => (u.id === id ? { ...u, role: newRole } : u)));
     } catch (e) {
       alert(e.message || "Failed to update role.");

@@ -1,8 +1,10 @@
 -- Minimal stand-in for the parts of Supabase that the migrations depend on, so the schema and RLS
 -- can be tested on a plain PostgreSQL 15+ server (no Docker). Not used on real Supabase.
-create role anon nologin;
-create role authenticated nologin;
-create role service_role nologin bypassrls;
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
+end $$;
 grant usage on schema public to anon, authenticated, service_role;
 
 create schema auth;

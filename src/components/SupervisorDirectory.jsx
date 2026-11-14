@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import SupervisorProfilePanel from "@/components/supervisor/SupervisorProfilePanel";
@@ -15,7 +15,7 @@ export default function SupervisorDirectory({ readOnly = false }) {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.SupervisorDirectory.filter({}, { sort: "full_name" });
+      const page = await api.entities.SupervisorDirectory.filter({}, { sort: "full_name" });
       setSupervisors(page.items || []);
     } catch (e) {
       toast({ title: "Error", description: e.message || "Failed to load supervisors.", variant: "destructive" });
@@ -31,15 +31,15 @@ export default function SupervisorDirectory({ readOnly = false }) {
   const sync = async () => {
     setSyncing(true);
     try {
-      const userPage = await base44.entities.User.filter({ role: "supervisor" });
+      const userPage = await api.entities.User.filter({ role: "supervisor" });
       const users = userPage.items || userPage || [];
-      const dirPage = await base44.entities.SupervisorDirectory.filter({});
+      const dirPage = await api.entities.SupervisorDirectory.filter({});
       const existingIds = new Set((dirPage.items || []).map((d) => d.user_id));
       const missing = users.filter((u) => u.id && !existingIds.has(u.id));
       if (missing.length === 0) {
         toast({ title: "Already synced", description: "All supervisors are already in the directory." });
       } else {
-        await base44.entities.SupervisorDirectory.bulkCreate(
+        await api.entities.SupervisorDirectory.bulkCreate(
           missing.map((u) => ({
             user_id: u.id,
             full_name: u.full_name || "",
@@ -59,7 +59,7 @@ export default function SupervisorDirectory({ readOnly = false }) {
 
   const toggle = async (s) => {
     try {
-      await base44.entities.SupervisorDirectory.update(s.id, { active: !s.active });
+      await api.entities.SupervisorDirectory.update(s.id, { active: !s.active });
       load();
     } catch (e) {
       alert(e.message || "Failed to update supervisor.");

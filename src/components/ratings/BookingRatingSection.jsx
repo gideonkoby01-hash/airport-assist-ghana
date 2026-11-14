@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import StarRatingInput from "@/components/ratings/StarRatingInput";
@@ -30,7 +30,7 @@ export default function BookingRatingSection({ booking, user }) {
     }
     (async () => {
       try {
-        const page = await base44.entities.BookingRating.filter(
+        const page = await api.entities.BookingRating.filter(
           { booking_id: booking.id },
           { sort: "-submitted_at", limit: 1 }
         );
@@ -54,7 +54,7 @@ export default function BookingRatingSection({ booking, user }) {
     }
     setSubmitting(true);
     try {
-      const res = await base44.functions.invoke("submitBookingRating", {
+      const res = await api.functions.invoke("submitBookingRating", {
         booking_id: booking.id,
         overall_rating: stars,
         feedback: feedback.trim(),
