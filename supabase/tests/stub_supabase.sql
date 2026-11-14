@@ -29,7 +29,8 @@ create table storage.objects (
   id uuid primary key default gen_random_uuid(),
   bucket_id text references storage.buckets (id),
   name text,
-  owner uuid default auth.uid()
+  owner uuid default auth.uid(),
+  created_at timestamptz default now()
 );
 alter table storage.objects enable row level security;
 create function storage.foldername(name text) returns text[] language sql immutable as

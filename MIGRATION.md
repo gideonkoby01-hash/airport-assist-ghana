@@ -49,7 +49,46 @@ supabase secrets set APP_URL=https://airportassistghana.com        # your final 
 supabase functions deploy
 ```
 
-This deploys every folder in `supabase/functions` (booking, payment, discount, staff-request, notification and invitation functions). Check: Supabase > Edge Functions lists 15 functions.
+This deploys every folder in `supabase/functions` (booking, payment, discount, staff-request, notification and invitation functions). Check: Supabase > Edge Functions lists 16 functions.
+
+### 3b. ID photo retention (30 days)
+
+Passenger ID photos are deleted 30 days after the flight date by the `purgeIdPhotos` function, which a daily database job calls. Set it up once:
+
+1. Generate a long random secret (for example `openssl rand -hex 32`) and store it for the function and for the job:
+
+```bash
+supabase secrets set CRON_SECRET=<the secret>
+supabase secrets set PHOTO_RETENTION_DAYS=30
+```
+
+2. Redeploy so the function picks them up: `supabase functions deploy purgeIdPhotos`.
+3. **Try it without deleting anything first** (replace the project ref and secret):
+
+```bash
+curl -s -X POST "https://<project-ref>.supabase.co/functions/v1/purgeIdPhotos" \
+  -H "x-cron-secret: <the secret>" -H "Content-Type: application/json" -d '{"dry_run": true}'
+```
+
+It returns how many files it would delete and why. On a new system this is `0`.
+4. Schedule it. Supabase dashboard > Database > Extensions: enable `pg_cron` and `pg_net`. Then in the SQL editor (this stores the secret in Supabase Vault and runs the job every day at 03:15, which is 03:15 in Ghana because Ghana uses GMT all year):
+
+```sql
+select vault.create_secret('<the secret>', 'cron_secret');
+
+select cron.schedule(
+  'purge-id-photos', '15 3 * * *',
+  $$ select net.http_post(
+       url := 'https://<project-ref>.supabase.co/functions/v1/purgeIdPhotos',
+       headers := jsonb_build_object(
+         'Content-Type', 'application/json',
+         'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
+       body := '{}'::jsonb) $$);
+```
+
+5. Check the next day: Edge Functions > purgeIdPhotos > Logs shows a line starting `purgeIdPhotos:` with the counts, and `select * from cron.job_run_details order by start_time desc limit 5;` shows `succeeded`.
+
+The privacy notice must tell passengers that ID photos are kept for 30 days after the flight date. Backups may hold older photos until the backup itself expires.
 
 ## 4. Supabase Auth settings
 

@@ -37,6 +37,8 @@ npm run dev                                               # the app, http://loca
 RESEND_API_KEY=re_xxx            # optional locally: without it, emails are logged as failed, nothing else breaks
 EMAIL_FROM="Airport Assist Ghana <noreply@your-domain>"
 APP_URL=http://localhost:5173
+CRON_SECRET=any-long-random-string        # protects the ID-photo purge function
+PHOTO_RETENTION_DAYS=30
 ```
 
 Sign-up emails (the 6-digit code) arrive in the local inbox at `http://127.0.0.1:54324`. To make yourself an admin locally, register, then run in the Supabase Studio SQL editor: `update public.profiles set role = 'admin' where email = 'you@example.com';`

@@ -27,3 +27,7 @@ enabled = true
 client_id = "env(GOOGLE_CLIENT_ID)"
 secret = "env(GOOGLE_CLIENT_SECRET)"
 skip_nonce_check = false
+
+# Called by the database scheduler with a shared secret, not by a signed-in user.
+[functions.purgeIdPhotos]
+verify_jwt = false

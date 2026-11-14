@@ -4,6 +4,14 @@ Reviewer's stance: software engineer and system designer. Scope: the code on bra
 
 **What this is and is not.** It is a static review: I read the code, ran the unit, SQL and type checks, and screenshotted the public pages. Nothing has run against a live Supabase, Resend or Cloudflare account, and I do not know your real booking volume, staffing or accounting rules. Where a recommendation depends on a business decision, it says so. Severity means "what goes wrong if you ignore it", not "how bad the code is".
 
+### Decisions recorded from the owner
+
+| Question | Answer | Consequence |
+|---|---|---|
+| Are walk-in meet-and-assist sales always bookings? | **No. Some are only typed into shift reports.** | F1 changes: the report cannot simply be generated from the ledger. See the revised F1 and the "quick sale" design. |
+| Keep passenger ID photos? | **Yes, for 30 days.** | Built: `purgeIdPhotos` deletes them 30 days after the flight date (see F7 and section 8). The clock-start choice below needs your confirmation. |
+| Volume | **About 50 bookings per day.** | The simple architecture is the right one. Sizing and plan choices are in section 8. |
+
 ---
 
 ## 1. Verdict
@@ -133,7 +141,14 @@ Effort: S under a day, M a few days, L a week or more.
 2. Force `supervisor_id` and `supervisor_name` from the caller. Remove client inserts and updates on `shift_reports`.
 3. Lock reports on submit. Only admin can issue a logged correction.
 4. Point management and admin totals at the ledger; show shift-report variance beside it.
-**Needs your decision.** Do supervisors collect payment for porter-only walk-ins and meet-and-assist at the desk (entered in reports today but possibly never as bookings)? If yes, every such sale must also become a booking and payment, otherwise the ledger will be incomplete.
+**Decision made: some walk-in sales exist only in shift reports.** That is exactly how money goes missing without a trace, so the fix is to stop the report being a place where sales are created:
+
+1. **Add a "Quick sale" for the desk** (recommended). One short form for walk-in meet-and-assist and porter sales: service, number of passengers, amount, payment method, optional name and phone. No flight number or flight time required, which is the likely reason supervisors skip the booking form today. A single function creates a minimal booking (`booking_channel = walk_in`, status `completed`) and its payment ledger row together. Every sale then has an id, a timestamp, an owner and an audit entry.
+2. The shift report is then **built by the system from the ledger**, as described above. The supervisor only counts cash and adds remarks.
+3. If you still want report-only entries, allow them as a separate, clearly labelled block ("Unbooked sales"): each line needs a count and a reason, they are stored as immutable rows when the report is submitted, they are **never added to the ledger totals**, and management sees them as a separate unverified figure with the supervisor's name. Treat any growth in that block as an operational warning.
+4. Historic reports stay as they are; only new reports follow the new rules.
+
+**Still to confirm:** how many sales per day are report-only today (this shows how much revenue is currently untraceable), and whether those sales capture any passenger detail you would want to keep.
 
 ### F2. Critical: no booking lifecycle
 **Evidence.** `updateBookingStatus/index.ts` validates only that the status is one of six values. `recordPayment` checks role and amount but not booking status. Cancelling does not call `release_discount` and does not touch `amount_collected`. `BookingActions.jsx` offers all six statuses at all times.
@@ -168,10 +183,11 @@ Effort: S under a day, M a few days, L a week or more.
 **Evidence.** The app has no privacy notice, terms, or consent text. It collects names, phone numbers, nationality, flight details and a photo of passenger identification. There is no retention rule, no deletion job and no process for a person asking to see or delete their data.
 **Risk.** Legal exposure under Ghana's Data Protection Act, 2012 (Act 843), which, as I understand it, expects data controllers to register with the Data Protection Commission and to state purpose, retention and rights. **Confirm this and the exact obligations with a Ghanaian lawyer; this is not legal advice.**
 **Fix.**
-1. Add a privacy notice and terms page, linked from the footer and the booking form, with an explicit consent line at booking.
-2. Decide whether you need the ID photo at all. If yes, delete it a fixed number of days after the booking completes (a scheduled function), and say so in the notice.
+1. Add a privacy notice and terms page, linked from the footer and the booking form, with an explicit consent line at booking. It must say: ID photos are kept for 30 days after your flight date, then deleted.
+2. **Retention (built, 30 days).** The `purgeIdPhotos` Edge Function runs daily, deletes the photo file of every booking whose flight date is more than 30 days ago, clears the booking's reference (`passenger_photo_uri`) and stamps `passenger_photo_deleted_at`. It also deletes uploads that were never attached to a booking after 7 days. It has a dry-run mode and is tested (SQL and Deno). The period is the `PHOTO_RETENTION_DAYS` setting. **Confirm the clock:** I started it from the **flight date**, not the upload date, because people book weeks ahead and an upload-based clock would delete the photo before the service. If you meant 30 days from upload, it is a one-line change.
 3. Log who views ID photos (signed-URL creation goes through one place, `createFileSignedUrl`, so it can write an audit row).
 4. Write a short procedure for access and deletion requests, and a function that anonymises a user (see F13).
+5. Remember that backups can hold deleted photos for as long as your backup retention. Note this in the privacy notice if backups keep them longer than 30 days.
 
 ### F8. High: operational blind spots
 **Evidence.** A failed email becomes a row in `email_deliveries` with status `failed` that nobody is shown and nothing retries. Bounces and complaints are not received (no Resend webhook). There is no error tracking, no uptime check and no alert on function errors. Supabase function logs are short-lived on lower plans.
@@ -259,12 +275,28 @@ Effort: S under a day, M a few days, L a week or more.
 
 **Later, driven by use:** online payment, tax and period close (F19), offline tolerance and accessibility polish (F18).
 
-## 7. Questions only you can answer
+## 7. Questions
 
-1. Are walk-in sales and meet-and-assist entries always created as bookings, or sometimes only typed into shift reports? (Decides F1.)
-2. What is the cancellation and refund policy, and who may waive it? (Decides F2, F14.)
-3. Do you need to keep passenger ID photos, and for how long? (Decides F7.)
-4. Which channel do supervisors actually read in the field: WhatsApp, SMS or calls? (Decides F9.)
-5. Roughly how many bookings per day now, and how many do you expect in a year? (Confirms that the simple architecture is enough.)
-6. Who is the second admin, and who owns the Supabase, Cloudflare and Resend accounts? (F6, F10.)
-7. How do VAT and receipts have to work for your business? (F19.)
+**Answered by the owner:** walk-in sales are sometimes report-only (F1 revised); ID photos are kept 30 days (F7, built); about 50 bookings per day (section 8).
+
+**Still open:**
+1. How many sales per day are report-only today, and what detail does the supervisor have about them?
+2. Does the 30-day clock start at the **flight date** (as built) or at upload?
+3. What is the cancellation and refund policy, and who may waive it? (F2, F14)
+4. Which channel do supervisors actually read in the field: WhatsApp, SMS or calls? (F9)
+5. Who is the second admin, and who owns the Supabase, Cloudflare and Resend accounts? (F6, F10)
+6. How do VAT and receipts have to work for your business? (F19)
+
+---
+
+## 8. Sizing at about 50 bookings a day
+
+| Measure | Estimate | What it means |
+|---|---|---|
+| Bookings per year | about 18,000 | A few dozen MB of rows a year. A single small Postgres instance is far more than enough. No caching, queues or extra services. |
+| Peak load | roughly 4 bookings an hour over a 12-hour day, plus staff browsing | Trivial for Supabase and for Edge Functions. |
+| ID photos stored | 50 a day for 30 days is about 1,500 files at any time. **At the 5 MB upload limit that is up to 7.5 GB**; typical phone photos of 2–4 MB give 3–6 GB | **More than the Free plan's storage and close to what a small plan allows.** Shrink the picture in the browser before upload (about 1,600 px wide, JPEG at 80%, roughly 300 KB) and the steady state is about 450 MB. This is the one sizing risk; do it before launch. |
+| Email | about 50 booking confirmations a day, plus sign-up codes, password resets and staff emails | Check Resend's current free-plan daily and monthly limits against this. You are likely to need a paid plan, and sign-up codes must not be blocked by a limit. |
+| Database plan | n/a | Use a paid Supabase plan: the Free plan pauses after inactivity and has no point-in-time recovery, which F10 requires. |
+
+The audit's priorities do not change with volume, but their urgency does: at 50 bookings a day with some sales outside the ledger, the daily money to reconcile is real, so F1 and F2 come first.
