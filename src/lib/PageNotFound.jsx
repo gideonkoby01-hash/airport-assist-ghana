@@ -13,7 +13,7 @@ export default function PageNotFound({}) {
             try {
                 const { data } = await supabase.auth.getUser();
                 return { user: data.user, isAuthenticated: Boolean(data.user) };
-            } catch (error) {
+            } catch {
                 return { user: null, isAuthenticated: false };
             }
         }

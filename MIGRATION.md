@@ -41,7 +41,23 @@ supabase secrets set EMAIL_FROM="Airport Assist Ghana <noreply@mail.airportassis
 supabase secrets set APP_URL=https://airportassistghana.com        # your final site address, no trailing slash
 ```
 
-`APP_URL` is used for the links inside emails and for invitation redirects, so set it to the real production address.
+`APP_URL` is used for the links inside emails and for invitation redirects, so set it to the real production address. It is also the only website the functions will talk to (add preview sites to `ALLOWED_ORIGINS`, comma separated, if you test on them).
+
+Optional settings, with the values used if you do not set them:
+
+```bash
+supabase secrets set MIN_LEAD_HOURS=2              # online bookings need this many hours' notice
+supabase secrets set UNASSIGNED_ALERT_MINUTES=15   # alert management when a booking has no supervisor after this long
+supabase secrets set PHOTO_RETENTION_DAYS=30       # see 3b
+```
+
+### 2b. Resend webhook (delivered, bounced, spam)
+
+So the Admin > Email screen can show emails that bounced:
+
+1. After step 3 (the functions must be deployed first), in Resend > Webhooks > Add endpoint: URL `https://<project-ref>.supabase.co/functions/v1/resendWebhook`, events `email.delivered`, `email.bounced`, `email.complained`.
+2. Copy the endpoint's **signing secret** (starts `whsec_`) and store it: `supabase secrets set RESEND_WEBHOOK_SECRET=whsec_xxxxxxxx`, then `supabase functions deploy resendWebhook`.
+3. Check: send a test booking email; a few seconds later its row in `email_deliveries` changes from `sent` to `delivered`. (The signature check follows Resend's documented scheme but has only been tested against its own implementation, so confirm this once.)
 
 ## 3. Deploy the Edge Functions
 
@@ -49,7 +65,7 @@ supabase secrets set APP_URL=https://airportassistghana.com        # your final 
 supabase functions deploy
 ```
 
-This deploys every folder in `supabase/functions` (booking, payment, discount, staff-request, notification and invitation functions). Check: Supabase > Edge Functions lists 16 functions.
+This deploys every folder in `supabase/functions` (booking, payment, discount, shift report, staff, notification, email and scheduler functions). Check: Supabase > Edge Functions lists 31 functions. `supabase/config.toml` turns off sign-in checking for the five that are called by a scheduler, by Resend or by an uptime monitor (`purgeIdPhotos`, `retryFailedEmails`, `escalateUnassigned`, `resendWebhook`, `health`); each of those protects itself with a secret or reveals nothing.
 
 ### 3b. ID photo retention (30 days)
 
@@ -90,15 +106,44 @@ select cron.schedule(
 
 The privacy notice must tell passengers that ID photos are kept for 30 days after the flight date. Backups may hold older photos until the backup itself expires.
 
+### 3c. Scheduled jobs
+
+Three small jobs keep the system tidy. They use the same `CRON_SECRET` as 3b (the Vault secret named `cron_secret` is already stored). With `pg_cron` and `pg_net` enabled, run once in the SQL editor (replace the project ref):
+
+```sql
+-- every 15 minutes: send again any email that failed (up to 3 tries in all)
+select cron.schedule('retry-failed-emails', '*/15 * * * *', $$ select net.http_post(
+  url := 'https://<project-ref>.supabase.co/functions/v1/retryFailedEmails',
+  headers := jsonb_build_object('Content-Type', 'application/json',
+    'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
+  body := '{}'::jsonb) $$);
+
+-- every 5 minutes: alert management about a booking still without a supervisor after 15 minutes (once per booking)
+select cron.schedule('escalate-unassigned', '*/5 * * * *', $$ select net.http_post(
+  url := 'https://<project-ref>.supabase.co/functions/v1/escalateUnassigned',
+  headers := jsonb_build_object('Content-Type', 'application/json',
+    'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')),
+  body := '{}'::jsonb) $$);
+```
+
+Check after an hour: `select jobname, status, start_time from cron.job_run_details order by start_time desc limit 10;` shows `succeeded`.
+
+**Shift hours.** Shift reports cover the morning shift 06:00 to 18:00 and the night shift 18:00 to 06:00 the next morning (Ghana time). If your shifts differ, change them before anyone files a report:
+
+```sql
+update public.app_settings set value = '07:00' where key = 'shift_morning_start';
+update public.app_settings set value = '19:00' where key = 'shift_night_start';
+```
+
 ## 4. Supabase Auth settings
 
 In Supabase > **Authentication**:
 
 - **URL Configuration**: Site URL = `https://airportassistghana.com` (your production address). Redirect URLs: add `https://airportassistghana.com/**`, and for Cloudflare preview deployments `https://*.pages.dev/**` if you want to test them.
-- **Sign In / Providers > Email**: "Confirm email" **on**; minimum password length 8.
+- **Sign In / Providers > Email**: "Confirm email" **on**; minimum password length **10**.
 - **Emails > Templates > Confirm signup**: replace the body with the contents of `supabase/templates/confirmation.html` and set the subject to `Your Airport Assist Ghana verification code`. The registration screen asks for the 6-digit code, which only appears if the template contains `{{ .Token }}`.
 - **Emails > SMTP Settings**: turn on custom SMTP so sign-up codes and password-reset emails go through Resend instead of Supabase's very limited built-in sender (it allows only a few emails per hour and will block real sign-ups). Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender = the same address as `EMAIL_FROM`.
-- **Multi-Factor**: TOTP (authenticator app) enabled. SMS codes are not supported by this app.
+- **Multi-Factor**: TOTP (authenticator app) enabled. SMS codes are not supported by this app. The app **requires** it for admin and management accounts.
 - **Providers > Google**: see step 5.
 
 ## 5. Google sign-in (optional)
@@ -129,9 +174,13 @@ These `VITE_` values are public by design; the data is protected by the database
 update public.profiles set role = 'admin' where email = 'you@example.com';
 ```
 
-3. Sign out and in again. You land on the Admin dashboard. From there, **Staff Accounts** invites supervisors and management by email (the invite email lets them set a password); people who register themselves and ask for staff access appear under **Staff Requests** for approval.
+3. Sign out and in again. Admin and management accounts must use two-step verification, so you are first asked to set up an authenticator app (scan the QR code, enter the 6-digit code), then to sign in once more with a code. After that you land on the Admin dashboard. From there, **Staff Accounts** invites supervisors and management by email (the invite email lets them set a password); people who register themselves and ask for staff access appear under **Staff Requests** for approval.
 
-Turn on two-step verification for admin accounts: sidebar > Account security.
+**Make a second admin straight away** (invite a trusted person as Admin). The system refuses to demote, disable or delete the last active admin, and a lost phone with no second admin means working in the Supabase SQL editor.
+
+**If an admin is locked out** (lost phone): another admin removes their authenticator in the Supabase dashboard (Authentication > Users > the person > remove factors). If nobody can get in, as a last resort run `update public.app_settings set value = 'false' where key = 'require_staff_mfa';` in the SQL editor, sign in, then set it back to `'true'`.
+
+**Who left?** Admin > Staff Accounts > **Disable** removes their access at once (history is kept). Use **Erase** only to delete someone's personal data on request (see `docs/DATA_REQUESTS.md`).
 
 ## 8. Check everything before switching over
 
@@ -143,8 +192,13 @@ Use a private window and a second email address for the passenger.
 - [ ] Create a discount code (Admin), apply it as the right email: price drops; a different email is refused
 - [ ] Assign a supervisor; as that supervisor change the status and record a part payment, then the rest: the balance reaches 0 and a second payment is refused
 - [ ] A passenger cannot see another passenger's booking or open `/admin`
-- [ ] Rate a completed booking as the passenger; submit a shift report as a supervisor; reporting totals look right
-- [ ] Turn on two-step verification, sign out, sign in with the app code
+- [ ] Rate a completed booking as the passenger
+- [ ] As a supervisor: record a **Quick sale** (cash), then open Shift Report for today: the sale is in it, the cash check expects that amount, and after you submit the report cannot be edited
+- [ ] A cancelled booking refuses payments; completing a booking with money owing is refused with a clear message; management can record a refund or a write-off with a reason, and it shows in the booking History
+- [ ] A passenger can cancel their own unpaid booking, and print a receipt for a paid one
+- [ ] Two-step verification: admin and management are made to set it up and sign in with the code
+- [ ] The privacy notice opens from the home page footer and the booking form needs the consent box ticked
+- [ ] Admin > Email shows no problems; Admin > Summary > Export downloads a payments CSV that opens correctly in Excel
 - [ ] Supabase > Edge Functions > Logs show no unexpected errors; Resend > Emails shows the sends as delivered
 
 ## 9. Switch over
@@ -156,12 +210,23 @@ Use a private window and a second email address for the passenger.
 
 **Rollback:** point the domain back at Base44. Nothing on the new side is shared with it.
 
+## 10. After go-live: monitoring, backups, security headers
+
+- **Uptime**: point a monitor (UptimeRobot, Better Stack, or similar) at `https://<project-ref>.supabase.co/functions/v1/health` and at your site, alerting a phone, not only email. `health` answers 200 only when the functions and the database both work.
+- **Errors**: this guide does not set up an error tracker (Sentry or similar) because that needs your account. Until then, Edge Functions > Logs is the place to look; every failure shows a short reference code that the person saw on screen.
+- **Backups**: use a paid Supabase plan with point-in-time recovery. Rehearse a restore into a second (staging) project once before launch and again every three months. Write down how much data loss you can accept (suggested: one hour) and how fast you must be back (suggested: four hours).
+- **Content-Security-Policy**: `public/_headers` sends it in report-only mode. After a week of normal use with no policy messages in the browser console on the main screens, rename `Content-Security-Policy-Report-Only` to `Content-Security-Policy` in that file and deploy.
+- **CI**: `.github/workflows/ci.yml` runs lint, types, tests, the build, the function checks and the database tests on every pull request. It has not yet run on GitHub; open a pull request and look at the Actions tab.
+- **Integrity check**: once a month an admin can call the `integrityCheck` function (or run `select * from data_integrity_check();`); every count should be 0.
+
 ## Known limits and follow-ups
+
+See `docs/PLATFORM_AUDIT.md` section "Status after the fixes" for the finding-by-finding list. In short:
 
 - **No data was migrated** by design. If you later need old bookings, export them from Base44 and import into `bookings` with a one-off script.
 - **SMS verification codes are not available**, only authenticator apps. Adding SMS needs a phone provider (Twilio or similar) configured in Supabase.
-- The per-customer discount limit can still be exceeded by two simultaneous bookings from the same customer (same weakness as before the migration).
-- No Content-Security-Policy header yet, and booking statuses have no state machine (see `AUDIT.md`).
-- `src/lib` and `src/api` are outside the ESLint and TypeScript checks configured in `eslint.config.js` and `jsconfig.json`.
 - Four stock photos on the home page still load from Unsplash, and a fallback image from Wix; replace them if you want no third-party image hosts.
 - Supabase's free plan pauses projects after a week of inactivity and has no automatic backups. For a live business, use the Pro plan and enable daily backups.
+- **Not built, because they need an account, a provider or a decision from you:** SMS or WhatsApp alerts, online card or mobile-money payment, a cancellation and refund policy for the website to apply automatically, passenger self-service changes to a booking, VAT/levy fields and tax-invoice numbering, and a monthly period close.
+- The per-customer discount limit can still be exceeded by two simultaneous bookings from the same customer.
+- Flight date and time are validated but still stored as text; foreign keys between tables are not enforced (the integrity check watches for broken links instead).

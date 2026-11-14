@@ -37,7 +37,7 @@ npm run dev                                               # the app, http://loca
 RESEND_API_KEY=re_xxx            # optional locally: without it, emails are logged as failed, nothing else breaks
 EMAIL_FROM="Airport Assist Ghana <noreply@your-domain>"
 APP_URL=http://localhost:5173
-CRON_SECRET=any-long-random-string        # protects the ID-photo purge function
+CRON_SECRET=any-long-random-string        # protects the scheduled functions (photo purge, email retry, escalation)
 PHOTO_RETENTION_DAYS=30
 ```
 
@@ -47,11 +47,11 @@ Sign-up emails (the 6-digit code) arrive in the local inbox at `http://127.0.0.1
 
 | Command | What it covers |
 |---|---|
-| `npm run lint` | ESLint on pages and components |
+| `npm run lint` | ESLint on pages, components, `src/lib`, `src/api` and hooks |
 | `npm run typecheck` | TypeScript check of the JS/JSX (`jsconfig.json`) |
-| `npm test` | Query-filter translation (`src/api/filters.js`) |
-| `npm run test:functions` | Deno tests for discount rules, booking access and email sending |
-| `npm run test:db` | Applies every migration to a scratch Postgres and runs the row-level-security, storage and function-payload SQL tests. Uses the `PG*` environment variables; no Docker needed |
+| `npm test` | Unit tests: query filters, booking lifecycle rules, history timeline, receipts, CSV |
+| `npm run test:functions` | Deno tests for discount rules, booking access, input validation, email sending and retry, webhook signatures, CORS and error handling |
+| `npm run test:db` | Applies every migration to a scratch Postgres and runs the SQL tests (security rules, storage, lifecycle and money, audit log, two-step verification, shift reports, email bookkeeping). Uses the `PG*` environment variables; no Docker needed |
 | `npm run build` | Production build into `dist/` |
 | `npm run build:emails` | Recompiles `supabase/emails/*.mjml` into the generated module the functions import |
 
@@ -69,6 +69,8 @@ supabase/
   templates/              Supabase Auth email templates (signup code)
   tests/                  SQL tests and the small Supabase stand-in they run on
   seed.sql                the four service packages
+.github/workflows/ci.yml  lint, types, tests, build, function checks, database tests
+docs/                     PLATFORM_AUDIT.md (findings and status), DATA_REQUESTS.md
 public/                   static files, _redirects and _headers for Cloudflare Pages
 ```
 

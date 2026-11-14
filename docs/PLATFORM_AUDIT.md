@@ -14,6 +14,34 @@ Reviewer's stance: software engineer and system designer. Scope: the code on bra
 
 ---
 
+## Status after the fixes
+
+Every finding was worked on. **Fixed** means built, covered by automated tests that pass, and documented. **Partly** means the part that can be done in code is done and the rest needs an account, a provider or a decision from you. Nothing here has run against a live Supabase, Resend or Cloudflare account yet, so the first deployment is a rehearsal (see `MIGRATION.md`).
+
+| ID | Result | What was done | What is left, and who it needs |
+|---|---|---|---|
+| F1 | Fixed | Desk sales are **Quick sales** (booking + payment in one step, price from the package, lower only with a reason). Shift reports are built from the payments ledger; supervisors add only the cash counted and a remark; the system works out the variance; filed reports are locked (admin can remove one so it can be filed again). | Shift hours are assumed to be 06:00 and 18:00: change them in settings if yours differ. Porter commission on a report comes from the porters recorded on bookings. Report-only sales can no longer be typed in; if desk staff find Quick sale too slow, tell me what they need rather than reopening the report. |
+| F2 | Fixed | Status changes follow a state machine enforced by the database; completing needs a zero balance; cancelling zeroes what is owed and gives the discount back; no payments on cancelled or no-show bookings; refunds and write-offs are ledger entries with a reason; admin can correct a closed booking with a reason. | The cancellation and refund **policy** (who may waive, fees) is still yours to decide; the system records what management does. |
+| F3 | Fixed | One message for every discount failure, and 10 failed tries in 15 minutes locks the person out for the rest of the window. | |
+| F4 | Fixed | Idempotency key on bookings and quick sales (a retry returns the first one); passengers limited to 10 new bookings an hour. | |
+| F5 | Fixed | Insert-only audit log (bookings, payments, roles, packages, discounts, reports, staff invites and more) with a booking History timeline for management and admin; staff views of ID photos are logged. | There is no screen for browsing the whole audit log yet; admins read it in Supabase (`select * from audit_log`). |
+| F6 | Fixed | Admin and management only get their powers after two-step verification (and must set it up first); accounts can be disabled; the last admin cannot be demoted, disabled or deleted; a documented break-glass setting. | Appoint a **second admin** (a people decision). |
+| F7 | Partly | Privacy notice page, consent recorded with each online booking, ID photos deleted 30 days after the flight date, deletion of a person's data, written procedure (`docs/DATA_REQUESTS.md`), photo views logged. | The privacy text is a **draft**: a Ghanaian lawyer must confirm it, and you must check your registration with the Data Protection Commission. Decide how long payment records are kept and put it in the notice. |
+| F8 | Partly | Failed emails retry automatically (3 tries) and from an Admin > Email screen; Resend webhook records delivered, bounced and spam; `health` endpoint for uptime monitors. | An **error tracker** and an **uptime monitor** with a phone alert need your accounts; the guide says where to point them. The webhook signature check has not been tried against real Resend. |
+| F9 | Partly | The supervisor gets an **email** when assigned or reassigned and the passenger is told who their supervisor is; a booking with no supervisor after 15 minutes alerts management once, in the app and by email. | **SMS or WhatsApp** needs a provider and an account (Twilio, WhatsApp Business, a Ghanaian SMS gateway). Not built. |
+| F10 | Partly | A CI workflow runs lint, types, tests, build, function checks and the database tests; ESLint now covers the auth and data code; email templates are checked for staleness. | The workflow has **not yet run on GitHub**. No staging project, no Playwright end-to-end tests (they need the local Supabase stack to be written and trusted), and no restore rehearsal yet: those need accounts and an afternoon. |
+| F11 | Fixed | Photo paths must sit in the uploader's own folder, checked in the function and by a database constraint. | |
+| F12 | Partly | Real dates and 24-hour times, not in the past, 2 hours' notice for online bookings (staff exempt), phone number format, bag limits. | Flight date and time are still stored as text, not a timestamp column, and there are no foreign keys; a migration for those is a larger change with little benefit at this size. |
+| F13 | Partly | `anonymiseUser` clears personal data and keeps money records; `integrityCheck` reports broken links and figures that disagree with the ledger. | Enforced foreign keys are not added (see F12). |
+| F14 | Partly | A passenger can cancel their own booking while nothing has been paid, and print a receipt once something has. | Changing flight details, online payment (Paystack, Flutterwave or mobile-money checkout) and automatic refunds need decisions and a gateway account. The receipt is not a tax invoice. |
+| F15 | Fixed | Browser access limited to your site, request size capped, every error carries a short reference code. | |
+| F16 | Mostly | Content-Security-Policy in report-only mode (no violations found on the public pages), password minimum raised to 10. | Switch the policy from report-only to enforcing after a week of normal use (steps in the guide). The sign-in token still lives in the browser's local storage, which is the library's default. |
+| F17 | Fixed | Booking lists load a page at a time; totals are counted by the database; user count uses a count; dashboards load on demand (largest script 827 kB to 255 kB). | Notification and rating lists are still capped at 50 to 100 rows. |
+| F18 | Mostly | Blocking pop-ups replaced by messages and confirmation dialogs; icon buttons labelled. | No offline tolerance for supervisors in poor signal, and no automated accessibility scan has been run. |
+| F19 | Partly | Admin can download the payments ledger and the bookings as a spreadsheet (CSV) for the accountant. | VAT and levy fields, receipt numbering, and a monthly period close need your accountant's rules. |
+
+---
+
 ## 1. Verdict
 
 The platform is a sound base for a small, single-site service business. The security model is better than most apps of this size: browsers cannot write prices, payments or roles, money moves in single database statements, and the rules are tested. The weaknesses are not in the plumbing. They are in **how the business process is modelled**:
@@ -24,7 +52,7 @@ The platform is a sound base for a small, single-site service business. The secu
 4. **Operations depend on people having the app open.** A supervisor is told about an assignment only inside the app.
 5. **Go-live needs safety nets that do not exist yet**: monitoring, retries for failed email, backups you have restored once, a staging environment and CI.
 
-Fix the ten items in section 4 before real passengers and real cash go through it. Everything after that can follow in order of value.
+Fix the ten items in section 4 before real passengers and real cash go through it. Everything after that can follow in order of value. (The "Status after the fixes" section above shows where each stands.)
 
 ---
 

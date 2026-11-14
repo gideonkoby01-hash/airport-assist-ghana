@@ -21,6 +21,8 @@ const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, 
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 
+// `user` and `supervisor` are still passed by the callers; the server now decides who a booking belongs to.
+// eslint-disable-next-line unused-imports/no-unused-vars
 export default function BookingForm({ channel = "online", user, supervisor = undefined, onCreated }) {
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
@@ -495,7 +497,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         <Button type="submit" size="lg" disabled={submitting || !selectedPkg} className="bg-accent text-accent-foreground hover:bg-accent/90">
           {submitting ?
           <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}
             </> :
           channel === "walk_in" ?
           "Save walk-in booking" :
