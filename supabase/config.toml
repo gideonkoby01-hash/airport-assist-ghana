@@ -6,7 +6,7 @@ project_id = "airport-assist-ghana"
 site_url = "http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173/reset-password", "http://localhost:5173/portal"]
 enable_signup = true
-minimum_password_length = 8
+minimum_password_length = 10
 
 [auth.email]
 enable_signup = true
@@ -30,4 +30,18 @@ skip_nonce_check = false
 
 # Called by the database scheduler with a shared secret, not by a signed-in user.
 [functions.purgeIdPhotos]
+verify_jwt = false
+
+[functions.retryFailedEmails]
+verify_jwt = false
+
+[functions.escalateUnassigned]
+verify_jwt = false
+
+# Resend calls this; the Svix signature is the proof.
+[functions.resendWebhook]
+verify_jwt = false
+
+# Uptime monitors call this.
+[functions.health]
 verify_jwt = false

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   });
   const [passengers, setPassengers] = useState([{ ...emptyPassenger }]);
   const [submitting, setSubmitting] = useState(false);
+  const [consented, setConsented] = useState(false);
   // One key per form: if a submit is retried after a timeout, the server returns the first booking instead of a second.
   const idempotencyKey = useRef(crypto.randomUUID());
   const [error, setError] = useState("");
@@ -124,6 +126,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   };
 
   const validate = () => {
+    if (channel === "online" && !consented) return "Please confirm that you have read the privacy notice.";
     if (!form.package_code) return "Please select a service package.";
     if (!form.flight_number.trim()) return "Flight number is required.";
     if (!form.flight_date) return "Flight date is required.";
@@ -165,6 +168,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       // never sets the amount that is saved.
       const res = await api.functions.invoke("createBooking", {
         idempotency_key: idempotencyKey.current,
+        consent: channel === "online" ? true : undefined,
         channel,
         package_code: pkg.code,
         flight_type: form.flight_type,
@@ -454,6 +458,16 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       />
 
       <PaymentInformation />
+
+      {channel === "online" && (
+        <label className="flex items-start gap-3 text-sm bg-card rounded-xl border border-border p-4">
+          <input type="checkbox" className="mt-1" checked={consented} onChange={(e) => setConsented(e.target.checked)} />
+          <span>
+            I have read the <Link to="/privacy" target="_blank" className="text-primary underline">privacy notice</Link> and agree that
+            Airport Assist Ghana may use my details to provide this service. I understand the photo of my ID is kept for 30 days after my flight and then deleted.
+          </span>
+        </label>
+      )}
 
       {/* Summary */}
       <div className="bg-primary text-primary-foreground rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

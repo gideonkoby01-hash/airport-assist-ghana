@@ -5,6 +5,9 @@ import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import BookingActions from "@/components/BookingActions";
 import BookingHistory from "@/components/BookingHistory";
+import BookingReceipt from "@/components/BookingReceipt";
+import ConfirmAction from "@/components/ConfirmAction";
+import { Button } from "@/components/ui/button";
 import PassengerPhoto from "@/components/PassengerPhoto";
 import BookingSupervisor from "@/components/BookingSupervisor";
 import BookingRatingSection from "@/components/ratings/BookingRatingSection";
@@ -32,6 +35,18 @@ export default function BookingDetail() {
       setError(err.message || "Booking not found or you do not have access.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const isOwner = Boolean(user?.id && booking && [booking.passenger_user_id, booking.created_by_id].includes(user.id));
+  const [cancelError, setCancelError] = useState("");
+  const cancelBooking = async () => {
+    setCancelError("");
+    try {
+      const res = await api.functions.invoke("cancelMyBooking", { booking_id: booking.id });
+      if (res?.data?.booking) setBooking(res.data.booking);
+    } catch (e) {
+      setCancelError(e.message || "Could not cancel the booking.");
     }
   };
 
@@ -94,6 +109,33 @@ export default function BookingDetail() {
               </div>
             </div>
           </div>
+
+          {isOwner && ["confirmed", "assigned"].includes(booking.status) && (
+            <div className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">Need to cancel?</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {Number(booking.amount_collected) > 0
+                    ? "A payment has been taken for this booking. Please contact the Airport Assist desk to cancel and arrange a refund."
+                    : "You can cancel for free before the service starts."}
+                </p>
+                {cancelError && <p className="text-xs text-destructive mt-1" role="alert">{cancelError}</p>}
+              </div>
+              {Number(booking.amount_collected) <= 0 && (
+                <ConfirmAction
+                  title={`Cancel booking ${booking.reference}?`}
+                  description="The booking will be cancelled and any discount you used will be given back. This cannot be undone."
+                  confirmLabel="Cancel booking"
+                  destructive
+                  onConfirm={cancelBooking}
+                >
+                  <Button variant="outline">Cancel booking</Button>
+                </ConfirmAction>
+              )}
+            </div>
+          )}
+
+          {isOwner && <BookingReceipt booking={booking} />}
 
           {Number(booking.discount_amount || 0) > 0 && (
             <div className="bg-card rounded-2xl border border-border p-5">

@@ -33,6 +33,9 @@ serve('createBooking', async (req) => {
   const repeat = await existingBooking();
   if (repeat) return json({ booking: repeat, duplicate: true });
 
+  // Online bookings record consent to the privacy notice (what is collected, why, and that ID photos are kept for 30 days).
+  if (channel === 'online' && body.consent !== true) throw new HttpError(400, 'Please confirm that you have read the privacy notice.');
+
   // Passengers: at most 10 new bookings an hour. Staff taking walk-ins are not limited.
   if (!isStaff) {
     const hits = await admin.rpc('hit_rate_limit', { p_key: `booking:${user.id}`, p_window_seconds: 3600 });
@@ -154,6 +157,7 @@ serve('createBooking', async (req) => {
     passenger_user_id: channel === 'online' ? user.id : null,
     passenger_photo_uri: photoUri,
     idempotency_key: idempotencyKey,
+    consent_at: channel === 'online' ? new Date().toISOString() : null,
     updated_by_id: user.id,
     discount_amount: 0,
     discount_value: 0,

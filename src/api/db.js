@@ -195,10 +195,10 @@ const storage = {
     return { file_uri: path };
   },
 
-  async createFileSignedUrl(/** @type {{ file_uri: string, expires_in?: number }} */ { file_uri, expires_in = 300 }) {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(file_uri, expires_in);
-    if (error) fail(error);
-    return { signed_url: data.signedUrl };
+  // Goes through the getFileUrl function so staff views of other people's files are logged.
+  async createFileSignedUrl(/** @type {{ file_uri: string }} */ { file_uri }) {
+    const { data } = await functions.invoke('getFileUrl', { path: file_uri });
+    return { signed_url: data.signed_url };
   },
 };
 

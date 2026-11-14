@@ -1,4 +1,6 @@
-import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
+import { bookingOwnerId } from '../_shared/bookingAccess.ts';
+import { sendTransactionalEmail } from '../_shared/email.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 
 // Management or admin assigns (or reassigns) a supervisor to a booking and alerts that supervisor.
@@ -43,6 +45,35 @@ serve('assignSupervisor', async (req) => {
     type: isReassignment ? 'reassignment' : 'assignment',
   });
   if (notifyError) console.error('assignSupervisor: supervisor alert failed:', notifyError.message);
+
+  // Email the supervisor (they may not have the app open at the airport) and tell the passenger who will look after them.
+  // Best effort: the assignment is already saved.
+  const flightLine = `${booking.airline || ''} ${booking.flight_number || ''}`.trim() || '—';
+  const travelLine = flightInfo || '—';
+  const stamp = updated.updated_date;
+  try {
+    await sendTransactionalEmail(admin, {
+      eventKey: `assignment:${bookingId}:${supervisorId}:${stamp}`, templateName: 'SupervisorAssigned', to: entry.email, userId: supervisorId, relatedEntityId: bookingId,
+      variables: {
+        first_name: (entry.full_name || '').trim().split(/\s+/)[0] || 'there', action_word: isReassignment ? 'reassigned' : 'assigned', reference: booking.reference,
+        service: booking.package_name || booking.package_code, flight_line: flightLine, travel_line: travelLine,
+        passengers_line: `${booking.num_passengers || 0} passenger(s)`, cta_url: `${appUrl()}/bookings/${bookingId}`,
+      },
+    });
+    const ownerId = bookingOwnerId(booking);
+    if (booking.booking_channel === 'online' && ownerId) {
+      const { data: owner } = await admin.from('profiles').select('id,email,full_name').eq('id', ownerId).maybeSingle();
+      await sendTransactionalEmail(admin, {
+        eventKey: `passenger_assigned:${bookingId}:${supervisorId}:${stamp}`, templateName: 'PassengerSupervisorAssigned', to: owner?.email, userId: ownerId, relatedEntityId: bookingId,
+        variables: {
+          first_name: (booking.passengers?.[0]?.name || owner?.full_name || '').trim().split(/\s+/)[0] || 'there', supervisor_name: entry.full_name || 'Your supervisor',
+          reference: booking.reference, flight_line: flightLine, travel_line: travelLine, cta_url: `${appUrl()}/bookings/${bookingId}`,
+        },
+      });
+    }
+  } catch (e) {
+    console.error('assignSupervisor: assignment emails failed:', e instanceof Error ? e.message : e);
+  }
 
   return json({ ok: true, booking: updated });
 });

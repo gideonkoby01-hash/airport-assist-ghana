@@ -71,7 +71,11 @@ export default function SiteFooter() {
 
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
           <p>© {new Date().getFullYear()} Airport Assist Ghana. All rights reserved.</p>
-          <p>Accra International Airport, Accra, Ghana</p>
+          <p>
+            <Link to="/privacy" className="hover:text-[#d4af37] underline-offset-2 hover:underline">Privacy notice</Link>
+            <span className="mx-2">·</span>
+            Accra International Airport, Accra, Ghana
+          </p>
         </div>
       </div>
     </footer>

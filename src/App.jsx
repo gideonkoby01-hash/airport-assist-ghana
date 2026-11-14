@@ -24,6 +24,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import BookingDetail from '@/pages/BookingDetail';
 import PendingApproval from '@/pages/PendingApproval';
 import Security from '@/pages/Security';
+import Privacy from '@/pages/Privacy';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError, navigateToLogin, mfaRequired, mfaEnrolRequired, accountDisabled } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* Public company homepage — no sign-in required */}

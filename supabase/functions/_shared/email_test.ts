@@ -83,3 +83,62 @@ Deno.test('an invalid recipient is skipped without calling Resend', async () => 
     assertEquals(admin.rows[0].status, 'skipped');
   } finally { f.restore(); }
 });
+
+// ---- retry ---------------------------------------------------------------------------------------------
+import { retryDelivery } from './email.ts';
+
+function fakeRetryAdmin(row: Record<string, unknown> | null, opts: { claimed?: boolean; claimError?: { code: string } } = {}) {
+  const updates: Record<string, unknown>[] = [];
+  const admin = {
+    updates,
+    from: (_t: string) => ({
+      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: row }) }) }),
+      update: (patch: Record<string, unknown>) => {
+        updates.push(patch);
+        const result = patch.status === 'queued'
+          ? { data: opts.claimed === false ? [] : [{ id: 'r1' }], error: opts.claimError ?? null }
+          : { data: null, error: null };
+        const chain: Record<string, unknown> = { then: (r: (v: unknown) => unknown) => Promise.resolve(result).then(r) };
+        chain.eq = () => chain;
+        chain.select = () => Promise.resolve(result);
+        return chain;
+      },
+    }),
+  };
+  return admin;
+}
+const failedRow = { id: 'r1', event_key: 'e9', template_name: 'StaffRequestReceived', to_email: 'a@b.com', variables: vars, attempts: 1, status: 'failed' };
+
+Deno.test('retry: a failed email is sent again and its recipient is erased once accepted', async () => {
+  const f = stubFetch(200); const admin = fakeRetryAdmin(failedRow);
+  try {
+    const r = await retryDelivery(admin as never, 'r1');
+    assertEquals(r?.status, 'sent');
+    assertEquals(f.calls.length, 1);
+    assertEquals(admin.updates[0].status, 'queued');
+    assertEquals(admin.updates[0].attempts, 2);
+    const last = admin.updates[admin.updates.length - 1];
+    assertEquals([last.status, last.to_email, last.variables, last.provider_id], ['sent', null, null, 'em_1']);
+  } finally { f.restore(); }
+});
+
+Deno.test('retry: rows that are not failed, or have no recipient, or were claimed by someone else, are left alone', async () => {
+  const f = stubFetch(200);
+  try {
+    assertEquals(await retryDelivery(fakeRetryAdmin({ ...failedRow, status: 'sent' }) as never, 'r1'), null);
+    assertEquals(await retryDelivery(fakeRetryAdmin({ ...failedRow, to_email: null }) as never, 'r1'), null);
+    assertEquals(await retryDelivery(fakeRetryAdmin(failedRow, { claimed: false }) as never, 'r1'), null);
+    assertEquals((await retryDelivery(fakeRetryAdmin(failedRow, { claimError: { code: '23505' } }) as never, 'r1'))?.status, 'duplicate');
+    assertEquals(f.calls.length, 0);
+  } finally { f.restore(); }
+});
+
+Deno.test('retry: a second failure stays failed and keeps the recipient for the next attempt', async () => {
+  const f = stubFetch(500); const admin = fakeRetryAdmin(failedRow);
+  try {
+    assertEquals((await retryDelivery(admin as never, 'r1'))?.status, 'failed');
+    const last = admin.updates[admin.updates.length - 1];
+    assertEquals(last.status, 'failed');
+    assertEquals('to_email' in last, false);
+  } finally { f.restore(); }
+});
