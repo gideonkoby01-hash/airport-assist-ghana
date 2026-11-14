@@ -1,5 +1,6 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { appUrl } from './auth.ts';
+import { getSecret, loadSettings } from './config.ts';
 import { EMAIL_TEMPLATES } from './emailTemplates.generated.ts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -63,9 +64,9 @@ async function deliver(
   const settle = (patch: Record<string, unknown>) =>
     admin.from('email_deliveries').update({ ...patch, last_attempt_at: new Date().toISOString() }).eq('id', id);
   try {
-    const apiKey = Deno.env.get('RESEND_API_KEY');
-    const from = Deno.env.get('EMAIL_FROM');
-    if (!apiKey || !from) throw new Error('RESEND_API_KEY or EMAIL_FROM is not configured');
+    const apiKey = await getSecret(admin, 'RESEND_API_KEY');
+    const from = (await loadSettings(admin)).str('email_from');
+    if (!apiKey || !from) throw new Error('Email is not set up: add the Resend API key and the sender address in Admin > Settings.');
     const { subject, html } = renderTemplate(m.templateName, m.variables);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',

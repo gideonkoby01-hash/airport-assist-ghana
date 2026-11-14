@@ -1,4 +1,5 @@
 import { adminClient, appUrl, recipientsByRole } from '../_shared/auth.ts';
+import { loadSettings } from '../_shared/config.ts';
 import { requireCronSecret } from '../_shared/cron.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
 import { json, serve } from '../_shared/http.ts';
@@ -8,7 +9,7 @@ import { json, serve } from '../_shared/http.ts';
 serve('escalateUnassigned', async (req) => {
   await requireCronSecret(req);
   const admin = adminClient();
-  const minutes = Number(Deno.env.get('UNASSIGNED_ALERT_MINUTES') ?? 15);
+  const minutes = (await loadSettings(admin)).num('unassigned_alert_minutes');
   const before = new Date(Date.now() - minutes * 60_000).toISOString();
   const today = new Date(Date.now() - 24 * 3_600_000).toISOString().slice(0, 10);
 

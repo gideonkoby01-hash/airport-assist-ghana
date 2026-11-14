@@ -9,16 +9,16 @@ import { Loader2, Save, UserPlus, Trash2, Wallet, Users, Armchair, ClipboardList
 import {
   STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
-  PORTER_COMMISSION_PER_PASSENGER,
-  porterCommission,
   formatGHS,
 } from "@/lib/packages";
 import { PaymentBadge } from "@/components/StatusBadge";
+import { useSettings } from "@/lib/SettingsContext";
 import { acceptsPayments, isClosed, nextStatuses, ALL_STATUSES } from "@/lib/bookingRules";
 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
 export default function BookingActions({ booking, user, onUpdated }) {
+  const commissionPerPassenger = Number(useSettings().settings.porter_commission_per_passenger);
   const role = user?.role || "passenger";
   const canOperate = ["supervisor", "management", "admin"].includes(role);
   const canAssignSupervisor = ["management", "admin"].includes(role);
@@ -243,7 +243,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
               />
             </div>
             <div className="text-sm text-muted-foreground pb-2">
-              Commission: <span className="font-semibold text-foreground">{formatGHS(porterCommission(Number(porterHandled || 0)))}</span>
+              Commission: <span className="font-semibold text-foreground">{formatGHS(commissionPerPassenger * Number(porterHandled || 0))}</span>
             </div>
             <Button onClick={addPorter} disabled={savingPorter}>
               {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
@@ -251,7 +251,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {formatGHS(PORTER_COMMISSION_PER_PASSENGER)} commission per passenger handled.
+            {formatGHS(commissionPerPassenger)} commission per passenger handled.
           </p>
           {booking.porters?.length > 0 && (
             <div className="mt-3 space-y-2">

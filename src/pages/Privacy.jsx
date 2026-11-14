@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useSettings } from "@/lib/SettingsContext";
 
-const CONTACT = import.meta.env.VITE_CONTACT_EMAIL || "";
 const UPDATED = "14 November 2026";
 
 function Section({ title, children }) {
@@ -17,6 +17,9 @@ function Section({ title, children }) {
 // Plain-language privacy notice. DRAFT: have a Ghanaian lawyer confirm it against the Data Protection Act, 2012
 // (Act 843) and your registration with the Data Protection Commission before relying on it.
 export default function Privacy() {
+  const { settings } = useSettings();
+  const CONTACT = settings.contact_email;
+  const NAME = settings.company_name;
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-10">
@@ -24,7 +27,7 @@ export default function Privacy() {
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to the home page
         </Link>
         <h1 className="text-3xl font-bold text-foreground">Privacy notice</h1>
-        <p className="text-sm text-muted-foreground mt-1">Airport Assist Ghana, Akwaaba Services. Last updated {UPDATED}.</p>
+        <p className="text-sm text-muted-foreground mt-1">{NAME}, Akwaaba Services. Last updated {UPDATED}.</p>
 
         <Section title="Who we are">
           <p>

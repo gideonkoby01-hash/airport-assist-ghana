@@ -2,13 +2,20 @@
 import { assertEquals, assertStringIncludes, assertFalse } from 'jsr:@std/assert@1';
 import { renderTemplate, sendTransactionalEmail } from './email.ts';
 
+// Configuration reads (settings and saved keys) as an admin who has saved nothing: the environment is used.
+const configSelect = (table: string) =>
+  table === 'app_settings'
+    ? Promise.resolve({ data: [], error: null })
+    : { eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }) };
+
 // Minimal stand-in for the Supabase client: records rows and can simulate a duplicate claim.
 function fakeAdmin(opts: { duplicate?: boolean } = {}) {
   const rows: Record<string, unknown>[] = [];
   const updates: Record<string, unknown>[] = [];
   const admin = {
     rows, updates,
-    from: () => ({
+    from: (table: string) => ({
+      select: () => configSelect(table),
       insert: (row: Record<string, unknown>) => {
         const result = opts.duplicate && row.status === 'queued'
           ? { data: null, error: { code: '23505', message: 'duplicate key' } }
@@ -34,6 +41,8 @@ function stubFetch(status: number) {
 
 Deno.env.set('RESEND_API_KEY', 're_test');
 Deno.env.set('EMAIL_FROM', 'Airport Assist Ghana <noreply@example.com>');
+import { clearConfigCache } from './config.ts';
+clearConfigCache();
 const vars = { first_name: 'Ama', role_label: 'Supervisor', submitted_line: 'now', cta_url: 'https://app.example/login' };
 
 Deno.test('template variables are filled and HTML-escaped', () => {
@@ -91,8 +100,8 @@ function fakeRetryAdmin(row: Record<string, unknown> | null, opts: { claimed?: b
   const updates: Record<string, unknown>[] = [];
   const admin = {
     updates,
-    from: (_t: string) => ({
-      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: row }) }) }),
+    from: (t: string) => ({
+      select: () => (t === 'email_deliveries' ? { eq: () => ({ maybeSingle: () => Promise.resolve({ data: row }) }) } : configSelect(t)),
       update: (patch: Record<string, unknown>) => {
         updates.push(patch);
         const result = patch.status === 'queued'

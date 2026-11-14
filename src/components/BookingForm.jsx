@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSettings } from "@/lib/SettingsContext";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   const [passengers, setPassengers] = useState([{ ...emptyPassenger }]);
   const [submitting, setSubmitting] = useState(false);
   const [consented, setConsented] = useState(false);
+  const { settings } = useSettings();
+  // Online booking can be paused from Admin > Settings. Staff at the desk are never blocked.
+  const paused = channel === "online" && settings.online_bookings_enabled === "false";
   // One key per form: if a submit is retried after a timeout, the server returns the first booking instead of a second.
   const idempotencyKey = useRef(crypto.randomUUID());
   const [error, setError] = useState("");
@@ -203,6 +207,15 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       setSubmitting(false);
     }
   };
+
+  if (paused) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-6 text-sm" role="status">
+        <p className="font-semibold mb-1">Online booking is paused</p>
+        <p>{settings.online_bookings_message}</p>
+      </div>
+    );
+  }
 
   if (created) {
     return (
@@ -494,7 +507,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             </div>
           )}
         </div>
-        <Button type="submit" size="lg" disabled={submitting || !selectedPkg} className="bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button type="submit" size="lg" disabled={submitting || !selectedPkg || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
           {submitting ?
           <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}

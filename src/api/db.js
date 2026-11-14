@@ -202,6 +202,15 @@ const storage = {
   },
 };
 
+// Settings shown on the public website (contact details, whether online booking is open). Readable before sign-in.
+const settings = {
+  async getPublic() {
+    const { data, error } = await supabase.rpc('get_public_settings');
+    if (error) fail(error);
+    return data || {};
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage };
+export const api = { entities, functions, storage, settings };

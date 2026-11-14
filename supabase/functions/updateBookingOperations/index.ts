@@ -1,9 +1,8 @@
 import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { loadSettings } from '../_shared/config.ts';
 import { canOperateBooking } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 
-// Matches PORTER_COMMISSION_PER_PASSENGER in src/lib/packages.js.
-const PORTER_COMMISSION_PER_PASSENGER = 30;
 
 // Operational edits staff make from the booking page: the lounge used and the porter list.
 // Commission is calculated here so a browser cannot choose its own payout. Pricing, discount,
@@ -32,7 +31,7 @@ serve('updateBookingOperations', async (req) => {
       const handled = Number(body.passengers_handled);
       if (!name) throw new HttpError(400, "Enter the porter's name.");
       if (!Number.isInteger(handled) || handled < 1 || handled > 50) throw new HttpError(400, 'Passengers handled must be a whole number from 1 to 50.');
-      porters.push({ porter_name: name, passengers_handled: handled, commission: PORTER_COMMISSION_PER_PASSENGER * handled });
+      porters.push({ porter_name: name, passengers_handled: handled, commission: (await loadSettings(admin)).num('porter_commission_per_passenger') * handled });
     } else {
       const index = Number(body.index);
       if (!Number.isInteger(index) || index < 0 || index >= porters.length) throw new HttpError(400, 'That porter is no longer on this booking.');

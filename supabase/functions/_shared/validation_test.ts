@@ -19,7 +19,9 @@ Deno.test('online bookings: past, too soon, fine, too far ahead', () => {
   assertEquals(checkFlight('2026-11-13', '10:00', online)?.includes('already passed'), true);
   assertEquals(checkFlight('2026-11-14', '13:00', online)?.includes('2 hours'), true);
   assertEquals(checkFlight('2026-11-14', '14:30', online), null);
-  assertEquals(checkFlight('2028-01-01', '10:00', online)?.includes('one year'), true);
+  assertEquals(checkFlight('2028-01-01', '10:00', online)?.includes('366 days'), true);
+  assertEquals(checkFlight('2027-02-14', '10:00', { ...online, maxAdvanceDays: 30 })?.includes('30 days'), true);
+  assertEquals(checkFlight('2026-12-01', '10:00', { ...online, maxAdvanceDays: 30 }), null);
 });
 
 Deno.test('staff may book imminent or just-gone flights but not old ones', () => {

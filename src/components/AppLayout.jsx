@@ -36,6 +36,7 @@ const NAV = {
     { label: "Lounges", to: "/admin", tab: "lounges" },
     { label: "Shift Reports", to: "/admin", tab: "reports" },
     { label: "Email", to: "/admin", tab: "email" },
+    { label: "Settings", to: "/admin", tab: "settings" },
     { label: "Ratings & Reviews", to: "/admin", tab: "ratings" },
   ],
 };

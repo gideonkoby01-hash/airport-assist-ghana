@@ -51,6 +51,21 @@ supabase secrets set UNASSIGNED_ALERT_MINUTES=15   # alert management when a boo
 supabase secrets set PHOTO_RETENTION_DAYS=30       # see 3b
 ```
 
+### 2a. Admin Settings page (API keys and code-level settings)
+
+Most of the settings in this guide can be changed later from **Admin > Settings** instead of the terminal: the Resend API key and webhook secret, the sender address, business contact details, booking rules, shift hours, escalation time, porter commission, and the photo retention period. Each field says what it does and whether its current value was saved there, comes from a server setting, or is the built-in default. Saved values win over server settings, which win over defaults, and a change reaches every function within seconds. Every change is recorded in the audit log (API keys by name and last four characters only, never the value).
+
+One thing must be set in the terminal first, because the page stores API keys **encrypted** and needs a key that lives outside the database:
+
+```bash
+supabase secrets set SETTINGS_ENCRYPTION_KEY=$(openssl rand -base64 32)
+supabase functions deploy adminSettings
+```
+
+Keep a safe copy of that value (a password manager). If it is lost or changed, saved API keys become unreadable and must be entered again (nothing else is affected). Until it is set, the page shows a notice and the "Save key" buttons stay off; the `supabase secrets set RESEND_API_KEY=...` commands below keep working either way.
+
+Not editable on the page, on purpose: the website address (`APP_URL`, `ALLOWED_ORIGINS`: a wrong value would lock everyone out of the page itself), the scheduler secret, the Supabase service key, Google sign-in and the sign-up email SMTP password (the sign-in service needs those itself). The page lists where each of these lives.
+
 ### 2b. Resend webhook (delivered, bounced, spam)
 
 So the Admin > Email screen can show emails that bounced:
@@ -65,7 +80,7 @@ So the Admin > Email screen can show emails that bounced:
 supabase functions deploy
 ```
 
-This deploys every folder in `supabase/functions` (booking, payment, discount, shift report, staff, notification, email and scheduler functions). Check: Supabase > Edge Functions lists 31 functions. `supabase/config.toml` turns off sign-in checking for the five that are called by a scheduler, by Resend or by an uptime monitor (`purgeIdPhotos`, `retryFailedEmails`, `escalateUnassigned`, `resendWebhook`, `health`); each of those protects itself with a secret or reveals nothing.
+This deploys every folder in `supabase/functions` (booking, payment, discount, shift report, staff, notification, email and scheduler functions). Check: Supabase > Edge Functions lists 32 functions. `supabase/config.toml` turns off sign-in checking for the five that are called by a scheduler, by Resend or by an uptime monitor (`purgeIdPhotos`, `retryFailedEmails`, `escalateUnassigned`, `resendWebhook`, `health`); each of those protects itself with a secret or reveals nothing.
 
 ### 3b. ID photo retention (30 days)
 

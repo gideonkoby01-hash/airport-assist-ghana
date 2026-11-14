@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PACKAGE_DEFINITIONS, PAYMENT_METHOD_LABELS, PORTER_COMMISSION_PER_PASSENGER, formatGHS } from "@/lib/packages";
+import { PACKAGE_DEFINITIONS, PAYMENT_METHOD_LABELS, formatGHS } from "@/lib/packages";
+import { useSettings } from "@/lib/SettingsContext";
 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
 // A walk-in sale at the desk. It becomes a booking with its payment in one step, so it appears in the shift report
 // and the books like every other sale. The price comes from the package; it can be lowered with a reason, never raised.
 export default function QuickSaleForm({ onRecorded = undefined }) {
+  const commissionPerPassenger = Number(useSettings().settings.porter_commission_per_passenger);
   const [packages, setPackages] = useState(PACKAGE_DEFINITIONS);
   const [porters, setPorters] = useState([]);
   const [code, setCode] = useState("");
@@ -194,7 +196,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
             <div className="space-y-1.5">
               <Label htmlFor="qs-porter-pax">Passengers handled</Label>
               <Input id="qs-porter-pax" type="number" min={1} max={50} value={porterPax} onChange={(e) => setPorterPax(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Commission {formatGHS(PORTER_COMMISSION_PER_PASSENGER * (Number(porterPax) || 0))}</p>
+              <p className="text-xs text-muted-foreground">Commission {formatGHS(commissionPerPassenger * (Number(porterPax) || 0))}</p>
             </div>
           )}
         </div>

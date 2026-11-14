@@ -16,7 +16,7 @@ export function parseFlightTime(date: string, time: string): number | null {
 
 // Returns a message to show the user, or null when the flight is acceptable.
 // Staff booking at the desk may enter flights that are imminent or just gone; passengers need notice.
-export function checkFlight(date: string, time: string, opts: { now: number; minLeadHours: number; isStaff: boolean }): string | null {
+export function checkFlight(date: string, time: string, opts: { now: number; minLeadHours: number; isStaff: boolean; maxAdvanceDays?: number }): string | null {
   const at = parseFlightTime(date, time);
   if (at === null) return 'Enter the flight date and time as a real date and a 24-hour time (for example 14:30).';
   const hours = (at - opts.now) / 3_600_000;
@@ -25,7 +25,8 @@ export function checkFlight(date: string, time: string, opts: { now: number; min
   if (hours < opts.minLeadHours) {
     return `Online bookings need at least ${opts.minLeadHours} hours' notice. For a sooner flight please contact the Airport Assist desk.`;
   }
-  if (hours > 24 * 366) return 'Bookings can be made up to one year ahead.';
+  const days = opts.maxAdvanceDays ?? 366;
+  if (hours > 24 * days) return `Bookings can be made up to ${days} days ahead.`;
   return null;
 }
 

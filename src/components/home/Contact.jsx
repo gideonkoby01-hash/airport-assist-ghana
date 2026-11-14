@@ -1,32 +1,21 @@
 import React from "react";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { addressLines, phoneNumbers, useSettings } from "@/lib/SettingsContext";
 
-const CONTACTS = [
-  {
-    icon: Phone,
-    label: "Call us",
-    lines: ["+233 537 755 063", "+233 246 222 777"],
-    href: "tel:+233537755063",
-  },
-  {
-    icon: Mail,
-    label: "Email us",
-    lines: ["moehamedi@gmail.com"],
-    href: "mailto:moehamedi@gmail.com",
-  },
-  {
-    icon: MapPin,
-    label: "Visit us",
-    lines: ["39 Ring Road East, Nyaniba", "GL-030-6750"],
-  },
-  {
-    icon: Clock,
-    label: "Availability",
-    lines: ["24 hours a day", "7 days a week"],
-  },
-];
+function buildContacts(settings) {
+  const phones = phoneNumbers(settings.contact_phone);
+  const telHref = phones[0] ? `tel:${phones[0].replace(/[^\d+]/g, "")}` : undefined;
+  return [
+    { icon: Phone, label: "Call us", lines: phones, href: telHref },
+    { icon: Mail, label: "Email us", lines: [settings.contact_email], href: `mailto:${settings.contact_email}` },
+    { icon: MapPin, label: "Visit us", lines: addressLines(settings.contact_address) },
+    { icon: Clock, label: "Availability", lines: ["24 hours a day", "7 days a week"] },
+  ];
+}
 
 export default function Contact() {
+  const { settings } = useSettings();
+  const CONTACTS = buildContacts(settings);
   return (
     <section id="contact" className="py-20 lg:py-28 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

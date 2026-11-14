@@ -1,12 +1,11 @@
 import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { loadSettings } from '../_shared/config.ts';
 import { round2 } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { makeReference } from '../_shared/reference.ts';
 import { isPhone } from '../_shared/validation.ts';
 
 const METHODS = ['cash', 'mobile_money', 'card', 'corporate_account'];
-// Matches PORTER_COMMISSION_PER_PASSENGER in src/lib/packages.js.
-const PORTER_COMMISSION_PER_PASSENGER = 30;
 
 const MESSAGES: Record<string, string> = {
   package_unavailable: 'That service is not available.',
@@ -41,6 +40,7 @@ serve('createQuickSale', async (req) => {
   const repeat = await first();
   if (repeat) return json({ ok: true, booking: repeat, duplicate: true });
 
+  const commission = (await loadSettings(admin)).num('porter_commission_per_passenger');
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data, error } = await admin.rpc('create_quick_sale', {
       p_user_id: user.id, p_user_name: user.full_name || user.email || '', p_reference: makeReference(),
@@ -48,7 +48,7 @@ serve('createQuickSale', async (req) => {
       p_name: String(body.name || '').trim().slice(0, 120), p_phone: phone,
       p_override_amount: override, p_override_reason: String(body.override_reason || '').trim().slice(0, 200), p_method: method,
       p_porter_name: String(body.porter_name || '').trim().slice(0, 120), p_porter_passengers: Math.trunc(Number(body.porter_passengers)) || null,
-      p_commission_per_passenger: PORTER_COMMISSION_PER_PASSENGER, p_idempotency_key: key,
+      p_commission_per_passenger: commission, p_idempotency_key: key,
     });
     if (!error) return json({ ok: true, booking: data });
     if (error.code === '23505') {

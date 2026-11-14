@@ -28,6 +28,9 @@ The project was migrated from Base44. There is no Base44 code left except a few 
 - A sale is a booking with a ledger payment (`createQuickSale` / `createBooking` + `recordPayment`). Shift reports are built from the ledger (`build_shift_report`); never add a way to type sales into a report.
 - Show problems with `notifyError` (`src/lib/notify.js`) and confirm destructive actions with `ConfirmAction`; do not use `alert()` or `confirm()`.
 
+- Configuration lives in one list, `supabase/functions/_shared/settingsRegistry.ts` (label, help text, type, range, default, and the old environment variable name). To add a setting: add it there, read it in a function with `loadSettings(admin)` (`settings.num('key')`), and the Admin > Settings page shows and validates it with no screen change. Do not call `Deno.env.get` for new tunable values. Settings shown on the public website also need an entry in `src/lib/publicSettings.js` (a test keeps the two in step).
+- API keys: read with `getSecret(admin, 'NAME')` (saved encrypted on the Settings page, else the environment). Add a new key to `SECRETS` in the registry. Never return a key to the browser or write one to a log or the audit log.
+
 ## Before finishing code changes
 
 Run what applies: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; for `supabase/functions` run `npm run test:functions` and `deno check supabase/functions/<name>/index.ts` (CI runs all of these); for `supabase/migrations` or policies run `npm run test:db` (needs a Postgres reachable through `PG*` variables).

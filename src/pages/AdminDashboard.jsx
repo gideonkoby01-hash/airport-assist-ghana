@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
+import AdminSettings from "@/components/AdminSettings";
 import EmailIssues from "@/components/EmailIssues";
 import ExportPanel from "@/components/ExportPanel";
 import StaffManager from "@/components/StaffManager";
@@ -137,6 +138,7 @@ function AdminInner() {
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
         <TabButton active={tab === "ratings"} onClick={() => setTab("ratings")}>Ratings &amp; Reviews</TabButton>
         <TabButton active={tab === "email"} onClick={() => setTab("email")}>Email</TabButton>
+        <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>Settings</TabButton>
         <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
           Notifications
           {unreadCount > 0 && (
@@ -169,6 +171,7 @@ function AdminInner() {
 
       {tab === "staff" && <StaffManager />}
       {tab === "email" && <EmailIssues />}
+      {tab === "settings" && <AdminSettings />}
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}

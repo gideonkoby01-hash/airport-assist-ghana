@@ -41,7 +41,7 @@ CRON_SECRET=any-long-random-string        # protects the scheduled functions (ph
 PHOTO_RETENTION_DAYS=30
 ```
 
-Sign-up emails (the 6-digit code) arrive in the local inbox at `http://127.0.0.1:54324`. To make yourself an admin locally, register, then run in the Supabase Studio SQL editor: `update public.profiles set role = 'admin' where email = 'you@example.com';`
+Most configuration (API keys, business details, booking and shift rules, retention) is edited in the app under **Admin > Settings** once you are an admin; see `MIGRATION.md` section 2a. Sign-up emails (the 6-digit code) arrive in the local inbox at `http://127.0.0.1:54324`. To make yourself an admin locally, register, then run in the Supabase Studio SQL editor: `update public.profiles set role = 'admin' where email = 'you@example.com';`
 
 ## Checks
 
@@ -49,8 +49,8 @@ Sign-up emails (the 6-digit code) arrive in the local inbox at `http://127.0.0.1
 |---|---|
 | `npm run lint` | ESLint on pages, components, `src/lib`, `src/api` and hooks |
 | `npm run typecheck` | TypeScript check of the JS/JSX (`jsconfig.json`) |
-| `npm test` | Unit tests: query filters, booking lifecycle rules, history timeline, receipts, CSV |
-| `npm run test:functions` | Deno tests for discount rules, booking access, input validation, email sending and retry, webhook signatures, CORS and error handling |
+| `npm test` | Unit tests: query filters, booking lifecycle rules, history timeline, receipts, CSV, public settings |
+| `npm run test:functions` | Deno tests for discount rules, booking access, input validation, email sending and retry, webhook signatures, CORS and error handling, key encryption, the settings list and the Settings page logic |
 | `npm run test:db` | Applies every migration to a scratch Postgres and runs the SQL tests (security rules, storage, lifecycle and money, audit log, two-step verification, shift reports, email bookkeeping). Uses the `PG*` environment variables; no Docker needed |
 | `npm run build` | Production build into `dist/` |
 | `npm run build:emails` | Recompiles `supabase/emails/*.mjml` into the generated module the functions import |

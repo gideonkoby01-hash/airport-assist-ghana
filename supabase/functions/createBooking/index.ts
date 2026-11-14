@@ -1,4 +1,5 @@
 import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { loadSettings } from '../_shared/config.ts';
 import { STAFF_ROLES } from '../_shared/bookingAccess.ts';
 import { evaluateDiscount, normalizeCode, round2 } from '../_shared/discounts.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
@@ -20,6 +21,9 @@ serve('createBooking', async (req) => {
   const channel = body.channel === 'walk_in' ? 'walk_in' : 'online';
   const isStaff = STAFF_ROLES.includes(user.role);
   if (channel === 'walk_in' && !isStaff) throw new HttpError(403, 'Only staff can create walk-in bookings.');
+  const settings = await loadSettings(admin);
+  // The admin can pause online booking (Admin > Settings). Staff at the desk are never blocked.
+  if (channel === 'online' && !isStaff && !settings.bool('online_bookings_enabled')) throw new HttpError(503, settings.str('online_bookings_message'));
 
   // The same submission arriving twice (a retry after a timeout) returns the first booking instead of making a second.
   const idempotencyKey = typeof body.idempotency_key === 'string' && body.idempotency_key.length >= 8 && body.idempotency_key.length <= 100
@@ -40,7 +44,7 @@ serve('createBooking', async (req) => {
   if (!isStaff) {
     const hits = await admin.rpc('hit_rate_limit', { p_key: `booking:${user.id}`, p_window_seconds: 3600 });
     if (hits.error) throw hits.error;
-    if (hits.data > 10) throw new HttpError(429, 'You have made a lot of bookings in the last hour. Please try again later, or contact the Airport Assist desk.');
+    if (hits.data > settings.num('booking_limit_per_hour')) throw new HttpError(429, 'You have made a lot of bookings in the last hour. Please try again later, or contact the Airport Assist desk.');
   }
 
   const packageCode = String(body.package_code || '').trim();
@@ -68,7 +72,7 @@ serve('createBooking', async (req) => {
   if (!flightTime) throw new HttpError(400, 'Scheduled flight time is required.');
   if (!contact) throw new HttpError(400, 'A contact number is required.');
   if (!isPhone(contact)) throw new HttpError(400, 'Enter a valid contact phone number, including the country code if it is not a Ghana number.');
-  const flightProblem = checkFlight(flightDate, flightTime, { now: Date.now(), minLeadHours: Number(Deno.env.get('MIN_LEAD_HOURS') ?? 2), isStaff });
+  const flightProblem = checkFlight(flightDate, flightTime, { now: Date.now(), minLeadHours: settings.num('min_lead_hours'), maxAdvanceDays: settings.num('max_advance_days'), isStaff });
   if (flightProblem) throw new HttpError(400, flightProblem);
   if (passengers.some((p) => !Number.isFinite(p.total_bags) || p.total_bags < 0 || p.total_bags > 50)) throw new HttpError(400, 'Bags per passenger must be between 0 and 50.');
 
@@ -97,9 +101,10 @@ serve('createBooking', async (req) => {
 
   if (body.discount_code) {
     // Guessing is throttled: after 10 failed attempts in 15 minutes the person must wait.
-    const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${user.id}`, p_window_seconds: 900 });
-    if ((tries.data ?? 0) >= 10) throw new HttpError(429, 'Too many discount code attempts. Please wait a few minutes and try again.');
-    const fail = async () => { await admin.rpc('hit_rate_limit', { p_key: `discount:${user.id}`, p_window_seconds: 900 }); throw new HttpError(400, DISCOUNT_INVALID); };
+    const windowSeconds = settings.num('discount_attempt_window_minutes') * 60;
+    const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${user.id}`, p_window_seconds: windowSeconds });
+    if ((tries.data ?? 0) >= settings.num('discount_attempt_limit')) throw new HttpError(429, 'Too many discount code attempts. Please wait a few minutes and try again.');
+    const fail = async () => { await admin.rpc('hit_rate_limit', { p_key: `discount:${user.id}`, p_window_seconds: windowSeconds }); throw new HttpError(400, DISCOUNT_INVALID); };
 
     const { data: record } = await admin.from('discount_codes').select('*').eq('code', normalizeCode(body.discount_code)).maybeSingle();
     if (!record) return await fail();
