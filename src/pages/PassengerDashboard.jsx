@@ -42,7 +42,7 @@ function PassengerInner() {
     setLoadingBk(true);
     try {
       const page = await base44.entities.Booking.filter(
-        { created_by_id: user.id },
+        { $or: [{ passenger_user_id: user.id }, { created_by_id: user.id }] },
         { sort: "-created_date", limit: 50 }
       );
       const items = page.items || [];

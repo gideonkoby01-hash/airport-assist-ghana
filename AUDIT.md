@@ -12,14 +12,14 @@ Scope: static review of `src/`, `base44/entities` (row-level security rules), `b
 
 ### High
 
-1. **Row-level security lets clients bypass the server-side pricing and payment logic.**
-   - `Booking` create is allowed for `passenger`, `user`, `supervisor`, `management`, `admin`. `createBooking` recomputes price and discount server-side, but a passenger can call `base44.entities.Booking.create({...})` directly with any `total_value`, `discount_*`, `status`, `payment_status` or `assigned_supervisor_id`.
-   - `Booking` update is allowed for the assigned supervisor on every field, so a supervisor can edit totals, discounts and payments directly.
-   - Fix: make `createBooking` write with `asServiceRole` and restrict entity create/update to `admin`. Move payment, porter, lounge and assignment edits into functions with a field allowlist.
+1. **Row-level security let clients bypass the server-side pricing and payment logic. Fixed on this branch.**
+   - Before: passengers could call `Booking.create` directly with any price, discount or status, and assigned supervisors could edit any field with `Booking.update`.
+   - Now: `Booking` create, update and delete are admin-only in `entities/Booking.jsonc`. `createBooking` writes with the service role. Status changes (`updateBookingStatus`), payments (`recordPayment`) and porter/lounge edits (`updateBookingOperations`) are backend functions that check the caller's role and, for supervisors, that the booking is assigned to them.
+   - Passengers are identified by a new `passenger_user_id` field set by `createBooking`, because the service role does not stamp the real user as `created_by_id`. Read access, ownership checks and the confirmation email use it, with `created_by_id` as a fallback for older bookings (`shared/bookingAccess.ts`).
 
-2. **Payments are a client-side read-modify-write** (`BookingActions.jsx:79`): `amount_collected = booking.amount_collected + amt` from possibly stale state, written back with `Booking.update`. Two supervisors, or a double tap, lose or duplicate money, and there is no ledger. Fix: a `recordPayment` function that appends to a payments array and recalculates the balance server-side with an atomic `$inc`.
+2. **Payments were a client-side read-modify-write. Fixed on this branch.** `recordPayment` rejects non-positive amounts and amounts above the outstanding balance, increments `amount_collected` and `outstanding_balance` atomically, confirms its own write landed (returns 409 if another payment got there first), derives `payment_status`, and writes an immutable `Payment` row (new entity) for every payment. A simulated test of two simultaneous payments accepts exactly one.
 
-3. **Verify: `User.role` self-update.** `entities/User.jsonc` has no RLS block. Confirm with a passenger account that `base44.entities.User.update(<own id>, { role: 'admin' })` is rejected. If it is allowed, this is a full privilege escalation.
+3. **Verify: `User.role` self-update. Not changed, needs a test.** `entities/User.jsonc` has no RLS block. With a passenger account, run `base44.entities.User.update('<own user id>', { role: 'admin' })` in the browser console. It must be rejected. If it succeeds, this is a full privilege escalation and the User entity needs an admin-only update rule.
 
 ### Medium
 
@@ -61,6 +61,6 @@ Every function calls `auth.me()` and checks role before acting. Prices and disco
 ## Suggested order
 
 1. Confirm item 3 (role self-update) with a test account today.
-2. Lock down Booking RLS and move payments server-side (items 1 and 2).
+2. Test the new booking, payment and operations flows under `base44 dev`, then publish the frontend and backend together (the old frontend cannot write bookings under the new rules).
 3. Guard `submitStaffRequest` and add a status state machine.
 4. Remove unused dependencies, add route code-splitting, fix `index.html` and the contrast issue.

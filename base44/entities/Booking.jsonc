@@ -197,6 +197,14 @@
         "online",
         "walk_in"
       ]
+    },
+    "passenger_user_id": {
+      "type": "string",
+      "description": "User id of the passenger account that made this booking. Set by the createBooking function; used for passenger read access and ownership checks."
+    },
+    "last_payment_token": {
+      "type": "string",
+      "description": "Server-only marker written by recordPayment so a payment can confirm that its own write landed."
     }
   },
   "required": [
@@ -216,6 +224,9 @@
           "created_by_id": "{{user.id}}"
         },
         {
+          "data.passenger_user_id": "{{user.id}}"
+        },
+        {
           "data.assigned_supervisor_id": "{{user.id}}"
         },
         {
@@ -231,50 +242,14 @@
       ]
     },
     "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "passenger"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "supervisor"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "management"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "user"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "update": {
-      "$or": [
-        {
-          "data.assigned_supervisor_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "management"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
       "user_condition": {

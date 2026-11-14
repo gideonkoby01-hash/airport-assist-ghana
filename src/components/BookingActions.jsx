@@ -51,9 +51,13 @@ export default function BookingActions({ booking, user, onUpdated }) {
     }
   }, [canAssignSupervisor]);
 
-  const patch = async (data) => {
-    const updated = await base44.entities.Booking.update(booking.id, data);
-    if (onUpdated) onUpdated(updated);
+  // Staff edits go through backend functions: browsers cannot write bookings directly,
+  // and the server (not this form) works out balances and commissions.
+  const callBooking = async (fn, payload) => {
+    const res = await base44.functions.invoke(fn, { booking_id: booking.id, ...payload });
+    if (res?.data?.error) throw new Error(res.data.error);
+    const updated = res?.data?.booking;
+    if (updated && onUpdated) onUpdated(updated);
     return updated;
   };
 
@@ -75,19 +79,10 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const recordPayment = async () => {
     const amt = Number(payAmount || 0);
-    if (amt < 0) return alert("Amount cannot be negative.");
-    const collected = Number(booking.amount_collected || 0) + amt;
-    const total = Number(booking.total_value || 0);
-    const outstanding = Math.max(0, total - collected);
-    const paymentStatus = collected >= total ? "paid" : collected > 0 ? "partially_paid" : "unpaid";
+    if (!(amt > 0)) return alert("Enter an amount greater than zero.");
     setSavingPay(true);
     try {
-      await patch({
-        amount_collected: collected,
-        outstanding_balance: outstanding,
-        payment_status: paymentStatus,
-        payment_method: payMethod,
-      });
+      await callBooking("recordPayment", { amount: amt, method: payMethod });
       setPayAmount("");
     } catch (err) {
       alert(err.message || "Failed to record payment");
@@ -98,16 +93,13 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const addPorter = async () => {
     if (!porterName.trim()) return alert("Enter the porter's name.");
-    const handled = Number(porterHandled || 0);
-    const newPorter = {
-      porter_name: porterName.trim(),
-      passengers_handled: handled,
-      commission: porterCommission(handled),
-    };
-    const porters = [...(booking.porters || []), newPorter];
     setSavingPorter(true);
     try {
-      await patch({ porters });
+      await callBooking("updateBookingOperations", {
+        action: "add_porter",
+        porter_name: porterName.trim(),
+        passengers_handled: Number(porterHandled || 0),
+      });
       setPorterName("");
       setPorterHandled(1);
     } catch (err) {
@@ -118,9 +110,8 @@ export default function BookingActions({ booking, user, onUpdated }) {
   };
 
   const removePorter = async (idx) => {
-    const porters = (booking.porters || []).filter((_, i) => i !== idx);
     try {
-      await patch({ porters });
+      await callBooking("updateBookingOperations", { action: "remove_porter", index: idx });
     } catch (err) {
       alert(err.message || "Failed to remove porter");
     }
@@ -129,7 +120,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const saveLounge = async () => {
     setSavingLounge(true);
     try {
-      await patch({ lounge_used: lounge.trim() });
+      await callBooking("updateBookingOperations", { action: "set_lounge", lounge_used: lounge.trim() });
     } catch (err) {
       alert(err.message || "Failed to record lounge");
     } finally {
