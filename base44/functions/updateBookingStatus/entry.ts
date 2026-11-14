@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { getStaffRecipients } from '../../shared/notifyHelpers.ts';
+import { bookingOwnerId, canOperateBooking } from '../../shared/bookingAccess.ts';
 
 // Called by staff (via the booking actions panel) to change a booking's
 // service status. The new status is persisted FIRST (user-scoped -> respects
@@ -30,16 +31,20 @@ export default async function(req) {
       .catch((e) => (e.status === 404 ? null : Promise.reject(e)));
     if (!booking) return Response.json({ error: 'Booking not found' }, { status: 404 });
 
+    // Authorization lives here now that browsers cannot update bookings directly:
+    // management and admin always, a supervisor only for a booking assigned to them.
+    if (!canOperateBooking(user, booking)) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
     const previous_status = booking.status;
     // No change -> no update, no notification.
     if (new_status === previous_status) {
       return Response.json({ ok: true, changed: false, previous_status, new_status, notified: 0 });
     }
 
-    // Persist the new status first (user-scoped -> respects Booking update RLS).
+    // Persist the new status first.
     let updated;
     try {
-      updated = await base44.entities.Booking.update(booking_id, { status: new_status });
+      updated = await base44.asServiceRole.entities.Booking.update(booking_id, { status: new_status });
     } catch (e) {
       return Response.json({ error: (e && e.message) || 'Failed to update booking' }, { status: 400 });
     }
@@ -99,8 +104,9 @@ export default async function(req) {
     // passenger only ever receives their own booking's information).
     const staff = await getStaffRecipients(base44);
     let passenger = null;
-    if (booking.created_by_id) {
-      const creator = await base44.asServiceRole.entities.User.get(booking.created_by_id)
+    const ownerId = bookingOwnerId(booking);
+    if (ownerId) {
+      const creator = await base44.asServiceRole.entities.User.get(ownerId)
         .catch((e) => (e.status === 404 ? null : Promise.reject(e)));
       if (creator && ['passenger', 'user'].includes(creator.role || '')) passenger = creator;
     }

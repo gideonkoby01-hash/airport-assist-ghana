@@ -8,7 +8,7 @@ import { Pencil } from "lucide-react";
  * Profile viewer used in the Admin Console and Management area.
  * Admins may switch into editing; everyone else sees the profile read-only.
  */
-export default function SupervisorProfilePanel({ record, isAdmin = false, onUpdated }) {
+export default function SupervisorProfilePanel({ record, isAdmin = false, onUpdated = undefined }) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {

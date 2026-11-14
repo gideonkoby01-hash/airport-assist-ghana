@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, X, ChevronRight } from "lucide-react";
 import Logo from "@/components/Logo";

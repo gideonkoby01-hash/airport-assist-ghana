@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { getStaffRecipients } from '../../shared/notifyHelpers.ts';
 import { sendTransactionalEmail, logSkippedEmail } from '../../shared/emailDelivery.ts';
+import { bookingOwnerId } from '../../shared/bookingAccess.ts';
 
 // Called by the "New Booking Management Notify" workflow whenever a Booking is
 // created, and manually by Admin/Management. Authorization is enforced
@@ -30,7 +31,7 @@ export default async function(req) {
     let authMode = null;
     if (user && (user.role === 'admin' || user.role === 'management')) {
       authMode = 'staff';
-    } else if (user && booking.created_by_id && booking.created_by_id === user.id) {
+    } else if (user && bookingOwnerId(booking) && bookingOwnerId(booking) === user.id) {
       authMode = 'creator';
     } else if (!user) {
       const ageMs = booking.created_date ? Date.now() - new Date(booking.created_date).getTime() : -1;
@@ -104,9 +105,9 @@ export default async function(req) {
     // to the registered account that made the booking). Best effort: a mail
     // failure is logged and reported but never fails this notification flow.
     let passenger_email = null;
-    if (booking.booking_channel === 'online' && booking.created_by_id) {
+    if (booking.booking_channel === 'online' && bookingOwnerId(booking)) {
       try {
-        const creator = await base44.asServiceRole.entities.User.get(booking.created_by_id)
+        const creator = await base44.asServiceRole.entities.User.get(bookingOwnerId(booking))
           .catch((e) => (e.status === 404 ? null : Promise.reject(e)));
         const contactName =
           (booking.passengers && booking.passengers[0] && booking.passengers[0].name) ||
@@ -143,7 +144,7 @@ export default async function(req) {
             base44,
             'booking_confirmation:' + booking_id,
             'BookingConfirmation',
-            booking.created_by_id,
+            bookingOwnerId(booking),
             booking_id,
             'No registered account or email for the booking creator'
           );

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { bookingOwnerId } from '../../shared/bookingAccess.ts';
 
 const PACKAGE_LABELS = {
   full_arrival: 'Full Arrival Assist',
@@ -33,7 +34,7 @@ export default async function (req) {
     );
     if (!booking) return Response.json({ error: 'Booking not found.' }, { status: 404 });
 
-    if (booking.created_by_id !== user.id) {
+    if (bookingOwnerId(booking) !== user.id) {
       return Response.json({ error: 'You can only rate a booking on your own account.' }, { status: 403 });
     }
     if (booking.status !== 'completed') {

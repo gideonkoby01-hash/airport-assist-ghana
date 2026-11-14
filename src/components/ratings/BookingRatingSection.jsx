@@ -18,7 +18,7 @@ export default function BookingRatingSection({ booking, user }) {
   const [error, setError] = useState("");
   const [thankYou, setThankYou] = useState(false);
 
-  const isOwner = Boolean(booking?.created_by_id && user?.id && booking.created_by_id === user.id);
+  const isOwner = Boolean(user?.id && [booking?.passenger_user_id, booking?.created_by_id].includes(user.id));
 
   useEffect(() => {
     let active = true;

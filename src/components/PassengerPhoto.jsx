@@ -124,8 +124,8 @@ export default function PassengerPhoto({ fileUri }) {
                 alt="Passenger identification (full size)"
                 onLoad={(e) =>
                   setNatural({
-                    w: e.target.naturalWidth,
-                    h: e.target.naturalHeight,
+                    w: e.currentTarget.naturalWidth,
+                    h: e.currentTarget.naturalHeight,
                   })
                 }
                 onClick={() =>

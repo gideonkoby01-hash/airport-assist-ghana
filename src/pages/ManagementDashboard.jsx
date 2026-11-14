@@ -100,7 +100,7 @@ function ManagementInner() {
     loadSummary();
     loadReports();
     loadUnread();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Single source of truth: sum every submitted shift report (matches Admin Dashboard).

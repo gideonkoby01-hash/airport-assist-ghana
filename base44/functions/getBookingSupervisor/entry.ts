@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { bookingOwnerId } from '../../shared/bookingAccess.ts';
 
 // Returns the supervisor profile for ONE booking, and only to someone allowed
 // to see that booking. Authorization comes from the user-scoped read of the
@@ -24,7 +25,7 @@ export default async function(req) {
     // Defence in depth: passengers may only read their own booking, and only
     // staff roles may read bookings they are not the creator of.
     const isStaff = ['supervisor', 'management', 'admin'].includes(user.role);
-    if (!isStaff && booking.created_by_id !== user.id) {
+    if (!isStaff && bookingOwnerId(booking) !== user.id) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 

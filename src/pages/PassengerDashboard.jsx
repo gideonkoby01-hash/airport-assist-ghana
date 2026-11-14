@@ -9,7 +9,7 @@ import BookingList from "@/components/BookingList";
 import PassengerNotifications from "@/components/PassengerNotifications";
 import StatCard from "@/components/StatCard";
 import { PACKAGE_DEFINITIONS, formatGHS } from "@/lib/packages";
-import { Plane, Ticket, CheckCircle2, XCircle, Sparkles } from "lucide-react";
+import { Plane, Ticket, CheckCircle2, XCircle } from "lucide-react";
 
 export default function PassengerDashboard() {
   return (
@@ -42,7 +42,7 @@ function PassengerInner() {
     setLoadingBk(true);
     try {
       const page = await base44.entities.Booking.filter(
-        { created_by_id: user.id },
+        { $or: [{ passenger_user_id: user.id }, { created_by_id: user.id }] },
         { sort: "-created_date", limit: 50 }
       );
       const items = page.items || [];
@@ -61,7 +61,7 @@ function PassengerInner() {
 
   useEffect(() => {
     loadBookings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   useEffect(() => {

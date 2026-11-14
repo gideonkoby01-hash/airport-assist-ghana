@@ -10,7 +10,6 @@ import PaymentInformation from "@/components/PaymentInformation";
 import DiscountCodeInput from "@/components/DiscountCodeInput";
 import {
   PACKAGE_DEFINITIONS,
-  PACKAGE_LABELS,
   computeTotal,
   formatGHS,
   packageByCode } from
@@ -21,7 +20,7 @@ const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, 
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 
-export default function BookingForm({ channel = "online", user, supervisor, onCreated }) {
+export default function BookingForm({ channel = "online", user, supervisor = undefined, onCreated }) {
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
   const [form, setForm] = useState({

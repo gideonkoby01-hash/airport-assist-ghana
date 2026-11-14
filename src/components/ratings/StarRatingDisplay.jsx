@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { STAR_LABELS } from "@/lib/ratings";
 
 // Read-only star display. Used in booking details, tables and detail dialogs.
-export default function StarRatingDisplay({ value = 0, size = "sm", showLabel = false, className }) {
+export default function StarRatingDisplay({ value = 0, size = "sm", showLabel = false, className = undefined }) {
   const filled = Math.max(0, Math.min(5, Math.round(Number(value) || 0)));
   const dimensions = size === "lg" ? "w-6 h-6" : size === "md" ? "w-5 h-5" : "w-4 h-4";
 

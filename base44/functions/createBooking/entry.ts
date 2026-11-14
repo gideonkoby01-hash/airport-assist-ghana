@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { normalizeCode, evaluateDiscount, firstRecord, asList, round2 } from '../../shared/discounts.ts';
-
-const STAFF_ROLES = ['supervisor', 'management', 'admin'];
+import { STAFF_ROLES } from '../../shared/bookingAccess.ts';
 
 function makeReference() {
   const d = new Date();
@@ -172,6 +171,7 @@ export default async function (req) {
       amount_collected: 0,
       outstanding_balance: finalTotal,
       booking_channel: channel,
+      passenger_user_id: channel === 'online' ? user.id : '',
       passenger_photo_uri: String(body.passenger_photo_uri || '').trim().slice(0, 500),
       discount_code_id: '',
       discount_code: '',
@@ -201,7 +201,9 @@ export default async function (req) {
 
     let booking;
     try {
-      booking = await base44.entities.Booking.create(payload);
+      // Service role on purpose: row-level security does not let browsers create
+      // or edit bookings, so this server-priced payload is the only way in.
+      booking = await base44.asServiceRole.entities.Booking.create(payload);
     } catch (err) {
       if (discountRecord && claimToken) {
         await releaseClaim(base44, discountRecord.code, claimToken, discountAmounts.discount_amount);

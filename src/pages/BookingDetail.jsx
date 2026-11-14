@@ -11,7 +11,6 @@ import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import {
   PACKAGE_LABELS,
   PAYMENT_METHOD_LABELS,
-  STATUS_LABELS,
   formatGHS,
 } from "@/lib/packages";
 import { ArrowLeft, Plane, Calendar, Clock, Users, Phone, Globe, Luggage, StickyNote, Armchair, Tag } from "lucide-react";
@@ -37,7 +36,7 @@ export default function BookingDetail() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [id]);
 
   // Keep the assignment live: when Management assigns or reassigns this booking,
