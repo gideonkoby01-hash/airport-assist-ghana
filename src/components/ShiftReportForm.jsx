@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Plus, Trash2, Save, ArrowLeft, FileText, Eye, CalendarDays } from "lucide-react";
 import {
   formatGHS,
-  REPORT_SERVICE_LABELS,
-  REPORT_PAYMENT_LABELS,
   PORTER_COMMISSION_PER_PASSENGER } from
 "@/lib/packages";
 import ShiftReportSummary from "@/components/ShiftReportSummary";
@@ -79,7 +77,7 @@ export default function ShiftReportForm({ supervisor }) {
     loadPorters();
     loadReports();
     loadSupervisorName();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const computed = useMemo(() => {

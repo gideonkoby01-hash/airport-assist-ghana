@@ -11,7 +11,7 @@ import SupervisorNotifications from "@/components/SupervisorNotifications";
 import SupervisorProfileForm from "@/components/supervisor/SupervisorProfileForm";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
-import { ClipboardList, Wallet, Users, Armchair } from "lucide-react";
+import { ClipboardList, Wallet } from "lucide-react";
 
 export default function SupervisorDashboard() {
   return (
@@ -49,7 +49,7 @@ function SupervisorInner() {
   useEffect(() => {
     load();
     base44.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const active = bookings.filter((b) => ["confirmed", "assigned", "in_progress"].includes(b.status));

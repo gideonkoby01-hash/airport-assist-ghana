@@ -9,7 +9,7 @@ import BookingList from "@/components/BookingList";
 import PassengerNotifications from "@/components/PassengerNotifications";
 import StatCard from "@/components/StatCard";
 import { PACKAGE_DEFINITIONS, formatGHS } from "@/lib/packages";
-import { Plane, Ticket, CheckCircle2, XCircle, Sparkles } from "lucide-react";
+import { Plane, Ticket, CheckCircle2, XCircle } from "lucide-react";
 
 export default function PassengerDashboard() {
   return (
@@ -61,7 +61,7 @@ function PassengerInner() {
 
   useEffect(() => {
     loadBookings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   useEffect(() => {

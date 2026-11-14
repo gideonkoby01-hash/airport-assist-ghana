@@ -12,7 +12,7 @@ import {
   porterCommission,
   formatGHS,
 } from "@/lib/packages";
-import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
+import { PaymentBadge } from "@/components/StatusBadge";
 
 const STATUSES = ["confirmed", "assigned", "in_progress", "completed", "cancelled", "no_show"];
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];

@@ -17,7 +17,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
  * - Admins: any record, and may also correct the supervisor's full name.
  * The photograph is uploaded to private storage; only the file URI is stored.
  */
-export default function SupervisorProfileForm({ record, user, isAdmin = false, onSaved }) {
+export default function SupervisorProfileForm({ record = undefined, user = undefined, isAdmin = false, onSaved = undefined }) {
   const [entry, setEntry] = useState(record || null);
   const [loading, setLoading] = useState(!record);
   const [form, setForm] = useState(EMPTY);

@@ -145,7 +145,7 @@ export default function RatingsReviews() {
       cancelled = true;
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [filters.search, filters.rating, filters.pkg, filters.supervisor, filters.from, filters.to, filters.sort]);
 
   const loadMore = async () => {
