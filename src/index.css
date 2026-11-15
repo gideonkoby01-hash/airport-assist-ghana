@@ -29,6 +29,7 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --canvas: 216 33% 97%;
     --font-heading: ui-sans-serif, system-ui, sans-serif;
     --font-body: ui-sans-serif, system-ui, sans-serif;
     --font-display: ui-sans-serif, system-ui, sans-serif;
@@ -90,6 +91,16 @@
 }
 
 @layer components {
+  /* The signed-in app: a cool grey canvas under white cards, Figtree for text, tabular numbers for money. */
+  .app-shell {
+    font-family: 'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
+    background: hsl(var(--canvas));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+  }
+  .app-shell h1, .app-shell h2, .app-shell h3 { letter-spacing: -0.01em; }
+  .app-shell .tabular, .app-shell table { font-variant-numeric: tabular-nums; }
+
   .tricolor-bar {
     background: linear-gradient(
       to right,

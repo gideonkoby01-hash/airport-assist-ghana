@@ -28,7 +28,7 @@ function PassengerInner() {
   const tab = searchParams.get("tab") || "home";
   const [packages, setPackages] = useState(PACKAGE_DEFINITIONS);
   const [stats, setStats] = useState({ total: 0, active: 0, completed: 0 });
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams(t === "home" ? {} : { tab: t });
 
@@ -79,30 +79,18 @@ function PassengerInner() {
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Welcome, {user?.email}</h1>
-        <p className="text-muted-foreground text-sm mt-1">Book airport assistance and track your bookings.</p>
-      </div>
-
-      <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
-        <TabButton active={tab === "home"} onClick={() => setTab("home")}>Overview</TabButton>
-        <TabButton active={tab === "book"} onClick={() => setTab("book")}>Book a Service</TabButton>
-        <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>My Bookings</TabButton>
-        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
-          Notifications
-          {unreadCount > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
-              {unreadCount}
-            </span>
-          )}
-        </TabButton>
-      </div>
+      {tab === "home" && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-foreground">Welcome{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}</h2>
+          <p className="text-muted-foreground text-sm mt-1">Book airport assistance and track your bookings.</p>
+        </div>
+      )}
 
       {tab === "home" && (
         <div className="space-y-6">
-          <div className="grid sm:grid-cols-3 gap-4">
-            <StatCard label="Total Bookings" value={stats.total} icon={Ticket} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <StatCard label="Active" value={stats.active} icon={Plane} accent />
+            <StatCard label="Total Bookings" value={stats.total} icon={Ticket} />
             <StatCard label="Completed" value={stats.completed} icon={CheckCircle2} />
           </div>
           <div>
@@ -129,18 +117,6 @@ function PassengerInner() {
   );
 }
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-        active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function PackageCard({ pkg, onBook }) {
   return (

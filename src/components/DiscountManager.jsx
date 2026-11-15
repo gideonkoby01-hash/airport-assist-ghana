@@ -96,7 +96,7 @@ export default function DiscountManager() {
 
   return (
     <div className="space-y-5">
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Active Codes" value={stats.active} icon={Tag} accent />
         <StatCard label="Total Redemptions" value={stats.redemptions} icon={Ticket} />
         <StatCard label="Discount Value Granted" value={formatGHS(stats.granted)} icon={Wallet} />

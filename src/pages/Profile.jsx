@@ -119,7 +119,7 @@ export default function Profile() {
           {role === "supervisor" && (
             <p className="text-xs text-muted-foreground">
               Your photo and the contact details passengers see are set under{" "}
-              <Link to="/supervisor?tab=profile" className="text-primary underline">Photo &amp; contact for passengers</Link>.
+              <Link to="/supervisor?tab=profile" className="text-primary underline">Public profile</Link>.
             </p>
           )}
         </form>

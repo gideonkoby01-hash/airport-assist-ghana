@@ -30,11 +30,10 @@ export default function SupervisorDashboard() {
 
 function SupervisorInner() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "assigned";
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [, setUnreadCount] = useState(0);
 
-  const setTab = (t) => setSearchParams({ tab: t });
 
   // What the list shows: today's flights first thing in the shift, then everything still open, closed ones, or all.
   const [view, setView] = useState("today");
@@ -88,25 +87,9 @@ function SupervisorInner() {
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Supervisor Console</h1>
-        <p className="text-muted-foreground text-sm mt-1">{user?.email}</p>
-      </div>
-
-      <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
-        <TabButton active={tab === "assigned"} onClick={() => setTab("assigned")}>Assigned Bookings</TabButton>
-        <TabButton active={tab === "quick"} onClick={() => setTab("quick")}>Quick Sale</TabButton>
-        <TabButton active={tab === "walkin"} onClick={() => setTab("walkin")}>Walk-in Booking</TabButton>
-        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
-          Notifications{unreadCount > 0 && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full bg-accent text-accent-foreground">{unreadCount}</span>}
-        </TabButton>
-        <TabButton active={tab === "report"} onClick={() => setTab("report")}>Shift Report</TabButton>
-        <TabButton active={tab === "profile"} onClick={() => setTab("profile")}>My Profile</TabButton>
-      </div>
-
       {tab === "assigned" && (
         <div className="space-y-6">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard label="Flights Today" value={todayCount} icon={CalendarClock} accent />
             <StatCard label="Open Bookings" value={active} icon={ClipboardList} />
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
@@ -178,16 +161,3 @@ function emptyFor(view, search) {
   return "No bookings assigned to you yet.";
 }
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button
-      aria-current={active ? "true" : undefined}
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-        active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
