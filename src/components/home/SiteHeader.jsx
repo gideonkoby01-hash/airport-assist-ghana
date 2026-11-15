@@ -24,7 +24,7 @@ export default function SiteHeader() {
       <div className="tricolor-bar h-[3px]" aria-hidden="true" />
       <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center gap-6">
         <Link to="/" onClick={close} className="flex items-center gap-2.5 shrink-0">
-          <img src="/images/logo-mark.webp" alt="" width="36" height="36" className="h-9 w-9 object-contain dark:invert" />
+          <img src="/images/logo-mark.webp" alt="" width="36" height="36" className="h-9 w-9 object-contain" />
           <span className="display text-[1.35rem] text-foreground">{settings.company_name}</span>
         </Link>
 

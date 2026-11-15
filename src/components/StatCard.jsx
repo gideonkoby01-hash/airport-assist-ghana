@@ -21,12 +21,12 @@ export default function StatCard({ label, value, sub = undefined, icon: Icon, ac
       className={cn(
         "rounded-2xl border p-4 sm:p-5 flex flex-col justify-between gap-4 sm:gap-5 sm:min-h-[7.5rem]",
         accent
-          ? "bg-primary border-primary text-primary-foreground col-span-2 sm:col-span-1 dark:bg-secondary dark:border-accent/50 dark:text-foreground"
+          ? "bg-primary border-primary text-primary-foreground col-span-2 sm:col-span-1"
           : "bg-card border-border"
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className={cn("text-[0.8rem] sm:text-sm font-medium", accent ? "text-primary-foreground/75 dark:text-muted-foreground" : "text-muted-foreground")}>{label}</p>
+        <p className={cn("text-[0.8rem] sm:text-sm font-medium", accent ? "text-primary-foreground/75" : "text-muted-foreground")}>{label}</p>
         {Icon && (
           <span className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", accent ? "bg-white/10 text-accent" : "bg-secondary text-muted-foreground")}>
             <Icon className="w-4 h-4" aria-hidden="true" />
@@ -35,7 +35,7 @@ export default function StatCard({ label, value, sub = undefined, icon: Icon, ac
       </div>
       <div>
         <p className={cn("tabular whitespace-nowrap text-xl sm:text-2xl leading-none font-semibold tracking-tight", accent ? "text-accent" : "text-foreground")}><Figure value={value} /></p>
-        {sub && <p className={cn("text-xs mt-2", accent ? "text-primary-foreground/70 dark:text-muted-foreground" : "text-muted-foreground")}>{sub}</p>}
+        {sub && <p className={cn("text-xs mt-2", accent ? "text-primary-foreground/70" : "text-muted-foreground")}>{sub}</p>}
       </div>
     </div>
   );
