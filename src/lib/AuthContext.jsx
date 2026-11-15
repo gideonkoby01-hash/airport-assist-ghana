@@ -18,6 +18,13 @@ async function needsSecondFactor() {
   return data.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
 }
 
+// Whether staff must use two-step verification (the `require_staff_mfa` setting; on unless an admin switched it off).
+// If the check fails, assume it is required.
+async function staffMfaEnforced() {
+  const { data, error } = await supabase.rpc('staff_mfa_enforced');
+  return error ? true : data !== false;
+}
+
 async function hasVerifiedFactor() {
   const { data } = await supabase.auth.mfa.listFactors();
   return (data?.totp?.length ?? 0) > 0;
@@ -58,7 +65,8 @@ export const AuthProvider = ({ children }) => {
       const loaded = await loadUser(authUser);
       setAccountDisabled(Boolean(loaded.disabled));
       // A staff session that passed the check is already aal2; one with no factor yet must enrol first.
-      setMfaEnrolRequired(!loaded.disabled && ['admin', 'management'].includes(loaded.role) && !(await hasVerifiedFactor()));
+      const isStaff = !loaded.disabled && ['admin', 'management'].includes(loaded.role);
+      setMfaEnrolRequired(isStaff && (await staffMfaEnforced()) && !(await hasVerifiedFactor()));
       setUser(loaded);
       setIsAuthenticated(true);
       setAuthError(null);
