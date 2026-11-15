@@ -23,6 +23,10 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(read);
   useEffect(() => apply(theme), [theme]);
   const toggle = useCallback(() => {
+    // Fade the colours across for a moment instead of snapping.
+    const root = document.documentElement;
+    root.classList.add("theme-fade");
+    setTimeout(() => root.classList.remove("theme-fade"), 500);
     setTheme((t) => {
       const next = t === "dark" ? "light" : "dark";
       try {
