@@ -12,6 +12,8 @@ minimum_password_length = 10
 enable_signup = true
 # Registration asks for the 6-digit code from this email (see supabase/templates/confirmation.html).
 enable_confirmations = true
+# Invitation and reset links stay valid for 24 hours.
+otp_expiry = 86400
 
 [auth.email.template.confirmation]
 subject = "Your Airport Assist Ghana verification code"

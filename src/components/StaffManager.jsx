@@ -11,6 +11,13 @@ import ConfirmAction from "@/components/ConfirmAction";
 
 const ROLES = ["passenger", "supervisor", "management", "admin"];
 
+function inviteMessage(state, email, role) {
+  if (state === "role_applied") return `${email} already has an account. They are now ${roleLabel(role)}.`;
+  if (state === "reset_sent") return `${email} is already active. A password reset link was sent to them.`;
+  if (state === "invite_resent") return `A new invitation was sent to ${email}.`;
+  return `Invitation sent to ${email} as ${roleLabel(role)}. The link lets them choose a password.`;
+}
+
 export default function StaffManager() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,13 +53,26 @@ export default function StaffManager() {
       // immediately for someone who already has an account, at signup otherwise.
       const res = await api.functions.invoke("inviteStaff", { email: email.trim(), role });
       if (res?.data?.error) throw new Error(res.data.error);
-      setMsg(`Invitation sent to ${email.trim()} as ${roleLabel(role)}.`);
+      setMsg(inviteMessage(res?.data?.state, email.trim(), role));
       setEmail("");
       load();
     } catch (e) {
       setErr(e.message || "Failed to invite user.");
     } finally {
       setInviting(false);
+    }
+  };
+
+  // Staff who never accepted get a fresh invitation; staff who are active get a password reset link.
+  const resendAccess = async (u) => {
+    try {
+      const res = await api.functions.invoke("inviteStaff", { email: u.email, role: u.role, resend: true });
+      if (res?.data?.error) throw new Error(res.data.error);
+      setErr("");
+      setMsg(inviteMessage(res?.data?.state, u.email, u.role));
+    } catch (e) {
+      setMsg("");
+      setErr(e.message || "Could not send the email.");
     }
   };
 
@@ -106,8 +126,6 @@ export default function StaffManager() {
               <SelectContent>
                 <SelectItem value="supervisor">Supervisor</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="passenger">Passenger</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -119,7 +137,7 @@ export default function StaffManager() {
         {msg && <p className="text-sm text-emerald-600 mt-3">{msg}</p>}
         {err && <p className="text-sm text-destructive mt-3">{err}</p>}
         <p className="text-xs text-muted-foreground mt-2">
-          Only Admin can create Supervisor and Management accounts. Public sign-ups always become Passengers.
+          Only Admin can create Supervisor and Management accounts. They choose their own password from the emailed link. Public sign-ups always become Passengers.
         </p>
       </div>
 
@@ -162,6 +180,9 @@ export default function StaffManager() {
                       </Select>
                     </td>
                     <td className="py-2 whitespace-nowrap">
+                      {["supervisor", "management"].includes(u.role) && !u.disabled && (
+                        <Button size="sm" variant="ghost" onClick={() => resendAccess(u)}>Resend access email</Button>
+                      )}
                       {u.disabled ? (
                         <Button size="sm" variant="outline" onClick={() => setDisabled(u, false)}>Enable</Button>
                       ) : (
