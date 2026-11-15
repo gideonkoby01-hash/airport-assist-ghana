@@ -19,6 +19,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
 import RoleRedirect from '@/components/RoleRedirect';
+import ForcePasswordChange from '@/components/ForcePasswordChange';
 const PassengerDashboard = lazy(() => import('@/pages/PassengerDashboard'));
 const SupervisorDashboard = lazy(() => import('@/pages/SupervisorDashboard'));
 const ManagementDashboard = lazy(() => import('@/pages/ManagementDashboard'));
@@ -30,7 +31,7 @@ const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError, navigateToLogin, mfaRequired, mfaEnrolRequired, accountDisabled } = useAuth();
+  const { isLoadingAuth, authError, navigateToLogin, mfaRequired, mfaEnrolRequired, accountDisabled, mustChangePassword } = useAuth();
 
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
@@ -44,6 +45,8 @@ const AuthenticatedApp = () => {
   // Password accepted but the second factor is still outstanding
   if (mfaRequired) return <MfaChallenge />;
   if (accountDisabled) return <AccountDisabled />;
+  // An admin-created account must replace its temporary password before anything else, then set up two-step verification.
+  if (mustChangePassword) return <ForcePasswordChange />;
   if (mfaEnrolRequired) return <MfaEnrolGate />;
 
   // Handle authentication errors

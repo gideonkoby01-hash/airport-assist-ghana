@@ -121,6 +121,7 @@ export const AuthProvider = ({ children }) => {
         mfaRequired,
         mfaEnrolRequired,
         accountDisabled,
+        mustChangePassword: Boolean(user?.must_change_password),
         logout,
         navigateToLogin,
         checkUserAuth,
