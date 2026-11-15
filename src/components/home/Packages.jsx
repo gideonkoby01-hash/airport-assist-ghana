@@ -1,162 +1,83 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Check, X, ArrowRight } from "lucide-react";
-import { Image } from "@/components/ui/image";
 import { useHomeCta } from "@/components/home/useHomeCta";
 
-// Fixed public pricing per passenger. The booking flow reads live
-// ServicePackage records; prices shown here are the advertised rates and
-// match the canonical PACKAGE_DEFINITIONS in src/lib/packages.js.
+// Fixed public pricing per passenger. The booking flow reads live ServicePackage records; prices shown here are the
+// advertised rates and match the canonical PACKAGE_DEFINITIONS in src/lib/packages.js.
 const PACKAGES = [
   {
     code: "full_arrival",
     name: "Full Arrival Service",
     price: 700,
-    description:
-      "Meet & greet at the airbridge with fast-track immigration, baggage assistance and ground transfer coordination.",
-    inclusions: [
-      "Meet & greet at the airbridge",
-      "Fast-track immigration",
-      "Baggage assistance",
-      "Ground transfer coordination",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1561131668-f63504fc549d?auto=format&fit=crop&w=900&q=80",
-    excludesLounge: false,
+    description: "Met at the airbridge and taken through the airport to your transfer.",
+    inclusions: ["Meet and greet at the airbridge", "Fast-track immigration", "Baggage assistance", "Ground transfer coordination"],
+    lounge: true,
   },
   {
     code: "full_departure",
     name: "Full Departure Service",
     price: 850,
-    description:
-      "Curbside meet & greet, check-in assistance, fast-track security and premium lounge access for a smooth departure.",
-    inclusions: [
-      "Curbside meet & greet",
-      "Check-in assistance",
-      "Fast-track security & immigration",
-      "Premium lounge access",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1783768813434-21bca14a41db?auto=format&fit=crop&w=900&q=80",
-    excludesLounge: false,
+    description: "Met at the kerb, checked in, taken through security and into the lounge.",
+    inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track security and immigration", "Premium lounge access"],
+    lounge: true,
   },
   {
     code: "departure_priority",
     name: "Departure Priority Only",
     price: 500,
-    description:
-      "Priority fast-track security and immigration escort to get you to your gate quickly. Lounge access is not included.",
-    inclusions: [
-      "Check-in assistance",
-      "Fast-track security & immigration",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&w=900&q=80",
-    excludesLounge: true,
+    description: "The quick route to your gate, without the lounge.",
+    inclusions: ["Check-in assistance", "Fast-track security and immigration"],
+    lounge: false,
   },
   {
     code: "porter_only",
     name: "Porter Service Only",
     price: 100,
-    description:
-      "A dedicated porter handles your luggage across the terminal and escorts you to and from checkpoints.",
-    inclusions: [
-      "Luggage handling across the terminal",
-      "Porter escort to checkpoints",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1767710096520-9246565a9d31?auto=format&fit=crop&w=900&q=80",
-    excludesLounge: true,
+    description: "A porter for your luggage, and an escort to the checkpoints.",
+    inclusions: ["Luggage handling across the terminal", "Porter escort to checkpoints"],
+    lounge: false,
   },
 ];
 
 export default function Packages() {
   const { bookDest } = useHomeCta();
-
   return (
-    <section id="services" className="py-20 lg:py-28 bg-[#f7f9fc]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto">
-          <span className="text-[#8a6a00] font-semibold uppercase tracking-[0.2em] text-sm">
-            Our Services
-          </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-[#0b213c]">
-            Fixed-price service packages
-          </h2>
-          <p className="mt-4 text-[#5a697c]">
-            Choose the level of assistance that fits your journey. Prices are per
-            passenger and clearly stated, with no hidden charges.
-          </p>
-        </div>
-
-        <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PACKAGES.map((p) => (
-            <div
-              key={p.code}
-              className="relative flex flex-col rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 min-h-[460px] group"
-            >
-              <div className="absolute inset-0">
-                <Image
-                  src={p.image}
-                  alt={p.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  fittingType="fill"
-                  focalPointY={0.4}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b213c] via-[#0b213c]/80 to-[#0b213c]/30" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0b213c]/70 to-transparent" />
-              </div>
-
-              <div className="relative flex flex-col flex-1 p-6 justify-end">
-                <div className="w-10 h-1 bg-[#d4af37] rounded-full mb-3" />
-                <h3 className="font-semibold text-white text-lg leading-tight">
-                  {p.name}
-                </h3>
-                <p className="mt-2 text-sm text-white/80 leading-snug">
-                  {p.description}
-                </p>
-
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-[#d4af37]">
-                    GHS {p.price}
-                  </span>
-                  <span className="text-sm text-white/70">/ passenger</span>
-                </div>
-
-                <ul className="mt-4 space-y-1.5">
-                  {p.inclusions.map((inc) => (
-                    <li
-                      key={inc}
-                      className="flex items-start gap-2 text-sm text-white/90"
-                    >
-                      <Check className="w-4 h-4 text-[#d4af37] mt-0.5 shrink-0" />
-                      <span>{inc}</span>
-                    </li>
-                  ))}
-                  {p.excludesLounge && (
-                    <li className="flex items-start gap-2 text-sm text-white/60">
-                      <X className="w-4 h-4 text-[#e0857a] mt-0.5 shrink-0" />
-                      <span>Lounge access not included</span>
-                    </li>
-                  )}
-                </ul>
-
-                <Link
-                  to={bookDest}
-                  className="mt-5 w-full text-center py-2.5 rounded-lg bg-[#d4af37] text-[#0b213c] text-sm font-semibold hover:bg-[#c39a2e] transition-colors inline-flex items-center justify-center gap-1.5"
-                >
-                  Book Now <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-8 text-center text-sm text-[#5a697c]">
-          Lounge access depends on the selected package. Departure Priority Only
-          excludes lounge access.
+    <section id="prices" className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24">
+      <div className="grid lg:grid-cols-12 gap-6 lg:gap-14 items-end">
+        <h2 className="display text-[clamp(2.2rem,4.6vw,3.4rem)] text-foreground lg:col-span-6">Fixed prices, per passenger.</h2>
+        <p className="lg:col-span-6 text-[1.05rem] leading-relaxed text-muted-foreground max-w-[34rem]">
+          What you see is what you pay. There are no extras added at the desk, and you can book any of these online.
         </p>
       </div>
+
+      <ul className="mt-10 border-t-2 border-foreground">
+        {PACKAGES.map((p) => (
+          <li key={p.code} className="grid md:grid-cols-12 gap-x-8 gap-y-3 py-7 border-b border-border">
+            <div className="md:col-span-5">
+              <h3 className="display text-[1.7rem] text-foreground">{p.name}</h3>
+              <p className="mt-2 text-muted-foreground leading-snug">{p.description}</p>
+            </div>
+            <div className="md:col-span-4">
+              <ul className="text-[0.95rem] text-foreground space-y-1">
+                {p.inclusions.map((i) => <li key={i}>{i}</li>)}
+                {!p.lounge && <li className="text-muted-foreground">Lounge access is not included</li>}
+              </ul>
+            </div>
+            <div className="md:col-span-3 flex md:flex-col items-baseline md:items-end justify-between md:justify-start gap-2">
+              <p className="tabular display text-[2.4rem] text-foreground">
+                <span className="text-base font-semibold text-muted-foreground mr-1.5 align-middle" style={{ fontStretch: "100%" }}>GHS</span>
+                {p.price}
+              </p>
+              <Link to={bookDest} className="text-foreground font-semibold underline underline-offset-[6px] decoration-gold decoration-2 hover:decoration-foreground">
+                Book this
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 text-sm text-muted-foreground">
+        Lounge access depends on the package. Full Arrival and Full Departure include it; Departure Priority Only and Porter Service Only do not.
+      </p>
     </section>
   );
 }

@@ -18,6 +18,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
+import { ThemeProvider } from '@/lib/theme';
 import RoleRedirect from '@/components/RoleRedirect';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
 const PassengerDashboard = lazy(() => import('@/pages/PassengerDashboard'));
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
+    <ThemeProvider>
     <SettingsProvider>
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -104,6 +106,7 @@ function App() {
       </QueryClientProvider>
     </AuthProvider>
     </SettingsProvider>
+    </ThemeProvider>
   )
 }
 

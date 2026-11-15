@@ -1,72 +1,29 @@
-import React, { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import React from "react";
 
 const FAQS = [
-  {
-    q: "Are services available around the clock?",
-    a: "Yes. Airport Assist Ghana operates 24 hours a day, 7 days a week, so we can meet flights arriving or departing at any time.",
-  },
-  {
-    q: "Do you issue or guarantee visas or entry?",
-    a: "No. We do not issue or guarantee visas or entry. Visa-on-arrival assistance is provided where applicable, but all visa and entry decisions rest with the relevant authorities.",
-  },
-  {
-    q: "Is lounge access included in every package?",
-    a: "Lounge access depends on the selected package. Full Arrival and Full Departure include lounge access; Departure Priority Only and Porter Service Only do not.",
-  },
-  {
-    q: "Do you offer luggage delivery?",
-    a: "Coming soon. Efforts are underway to introduce luggage delivery as part of our service portfolio. In the meantime, we assist with baggage handling within the terminal as part of eligible packages.",
-  },
-  {
-    q: "How do I book a service?",
-    a: "Use the Book Now button to open the booking flow, choose your package, and share your flight and passenger details. Our team then prepares your assistance.",
-  },
+  { q: "Are services available around the clock?", a: "Yes. Airport Assist Ghana operates 24 hours a day, 7 days a week, so we can meet flights arriving or departing at any time." },
+  { q: "Do you issue or guarantee visas or entry?", a: "No. We do not issue or guarantee visas or entry. Visa-on-arrival assistance is provided where applicable, but all visa and entry decisions rest with the relevant authorities." },
+  { q: "Is lounge access included in every package?", a: "No. Full Arrival and Full Departure include lounge access; Departure Priority Only and Porter Service Only do not." },
+  { q: "Do you offer luggage delivery?", a: "Not yet. We are working on adding luggage delivery to our services. In the meantime we handle baggage inside the terminal as part of eligible packages." },
+  { q: "How do I book a service?", a: "Choose Book assistance, pick your package, and give us your flight and passenger details. Our team then prepares your assistance." },
 ];
 
 export default function Faq() {
-  const [open, setOpen] = useState(0);
-
   return (
-    <section id="faq" className="py-20 lg:py-28 bg-[#f7f9fc]">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <span className="text-[#8a6a00] font-semibold uppercase tracking-[0.2em] text-sm">
-            FAQ
-          </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-[#0b213c]">
-            Frequently asked questions
-          </h2>
-        </div>
-
-        <div className="mt-10 space-y-3">
-          {FAQS.map((f, i) => {
-            const isOpen = open === i;
-            return (
-              <div
-                key={f.q}
-                className="bg-white rounded-xl border border-[#e3e9f2] overflow-hidden"
-              >
-                <button
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
-                  onClick={() => setOpen(isOpen ? -1 : i)}
-                  aria-expanded={isOpen}
-                >
-                  <span className="font-semibold text-[#0b213c]">{f.q}</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-[#d4af37] shrink-0 transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {isOpen && (
-                  <div className="px-5 pb-5 text-sm text-[#5a697c] leading-relaxed">
-                    {f.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+    <section id="faq" className="bg-secondary">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24 grid lg:grid-cols-12 gap-10 lg:gap-14">
+        <h2 className="display text-[clamp(2.2rem,4.6vw,3.4rem)] text-foreground lg:col-span-5">Questions we get asked.</h2>
+        <div className="lg:col-span-7 border-t-2 border-foreground">
+          {FAQS.map((f, i) => (
+            <details key={f.q} open={i === 0} className="group border-b border-border">
+              <summary className="flex items-start justify-between gap-6 py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <span className="text-lg font-semibold text-foreground">{f.q}</span>
+                <span aria-hidden="true" className="display text-2xl text-gold leading-none mt-0.5 group-open:hidden">+</span>
+                <span aria-hidden="true" className="display text-2xl text-gold leading-none mt-0.5 hidden group-open:inline">&minus;</span>
+              </summary>
+              <p className="pb-6 pr-10 text-muted-foreground leading-relaxed max-w-[38rem]">{f.a}</p>
+            </details>
+          ))}
         </div>
       </div>
     </section>
