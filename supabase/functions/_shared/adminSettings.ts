@@ -1,7 +1,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { clearConfigCache, loadSettings } from './config.ts';
 import { encryptionKeyProblem, encryptSecret, last4 } from './crypto.ts';
-import { GROUPS, SECRETS, SECRET_BY_NAME, SETTINGS, SETTING_BY_KEY, validateSecret, validateSetting, validateTogether } from './settingsRegistry.ts';
+import { GROUPS, SECRETS, SECRET_BY_NAME, SETTINGS, SETTING_BY_KEY, validateSecret, validateSetting, validateTogether, type SecretDef } from './settingsRegistry.ts';
 
 // The logic behind the admin Settings page, kept apart from the HTTP handler so it can be tested.
 
@@ -19,7 +19,7 @@ export const OTHER_KEYS = [
 export interface Overview {
   groups: typeof GROUPS;
   settings: Array<(typeof SETTINGS)[number] & { value: string; source: string }>;
-  secrets: Array<{ name: string; label: string; help: string; where: string; prefix: string; group: string; configured: boolean; source: 'saved' | 'environment' | 'none'; last4: string; updated_date: string | null }>;
+  secrets: Array<SecretDef & { configured: boolean; source: 'saved' | 'environment' | 'none'; last4: string; updated_date: string | null }>;
   system: { encryption_ready: boolean; encryption_problem: string | null; app_url: string; allowed_origins: string; staff_mfa_required: boolean; cron_secret_set: boolean };
   other_keys: typeof OTHER_KEYS;
 }

@@ -78,3 +78,53 @@ Deno.test('a setting resolves to the saved value, then the environment, then the
   const empty = resolveSettings([], () => '');
   assertEquals(empty.photo_retention_days, { value: '30', source: 'default' }); // an empty environment value counts as not set
 });
+
+// ---- SMTP settings ------------------------------------------------------------------------------------
+Deno.test('SMTP: provider and security are choices, the port is a real port', () => {
+  assertEquals(check('email_provider', 'smtp'), { ok: true, value: 'smtp' });
+  assertEquals(check('email_provider', 'sendgrid').ok, false);
+  assertEquals(check('smtp_security', 'starttls').ok, true);
+  assertEquals(check('smtp_security', 'tls1.3').ok, false);
+  assertEquals(check('smtp_port', '465'), { ok: true, value: '465' });
+  assertEquals(check('smtp_port', '0').ok, false);
+  assertEquals(check('smtp_port', '70000').ok, false);
+});
+
+Deno.test('SMTP: the server must be a public name, not a URL, a local machine or a private address', () => {
+  for (const ok of ['smtp.gmail.com', 'smtp.office365.com', 'mail.example.co.ke', '203.0.113.9']) assertEquals(check('smtp_host', ok).ok, true, ok);
+  for (const bad of ['https://smtp.example.com', 'smtp.example.com:465', 'localhost', 'mail.localhost', 'printer.local', 'db.internal', 'mailserver',
+    '127.0.0.1', '10.0.0.5', '172.16.4.4', '172.31.255.1', '192.168.1.10', '169.254.169.254', '0.0.0.0', '::1', 'fd00::1', 'fe80::1', 'a b.com']) {
+    assertEquals(check('smtp_host', bad).ok, false, bad);
+  }
+  assertEquals(check('smtp_host', '').ok, true); // may be empty until SMTP is chosen
+  assertEquals(check('smtp_host', '172.32.0.1').ok, true); // just outside the private 172.16-31 range
+});
+
+Deno.test('SMTP: the username is optional (some servers need no sign-in)', () => {
+  assertEquals(check('smtp_username', '').ok, true);
+  assertEquals(check('smtp_username', 'mailer@example.com').ok, true);
+  assertEquals(check('company_name', '').ok, false); // other settings still cannot be empty
+});
+
+Deno.test('SMTP: choosing it needs a server and a sender', () => {
+  const ok = { email_provider: 'smtp', smtp_host: 'smtp.example.com', email_from: 'Name <noreply@example.com>' };
+  assertEquals(validateTogether(ok), null);
+  assertEquals(validateTogether({ ...ok, smtp_host: '' })?.includes('server'), true);
+  assertEquals(validateTogether({ ...ok, email_from: '' })?.includes('sender'), true);
+  assertEquals(validateTogether({ email_provider: 'resend', smtp_host: '', email_from: '' }), null);
+});
+
+Deno.test('SMTP password: any length from 1, spaces allowed (app passwords have them), no prefix rule', () => {
+  const pw = SECRETS.find((s) => s.name === 'SMTP_PASSWORD')!;
+  assertEquals(validateSecret(pw, 'abcd efgh ijkl mnop').ok, true);
+  assertEquals(validateSecret(pw, 'x').ok, true);
+  assertEquals(validateSecret(pw, '   ').ok, false);
+  assertEquals(validateSecret(pw, 'a'.repeat(501)).ok, false);
+});
+
+Deno.test('keys and fields are shown only for the provider they belong to', () => {
+  const resend = SECRETS.find((s) => s.name === 'RESEND_API_KEY')!;
+  const smtp = SECRETS.find((s) => s.name === 'SMTP_PASSWORD')!;
+  assertEquals([resend.showWhen?.value, smtp.showWhen?.value], ['resend', 'smtp']);
+  for (const k of ['smtp_host', 'smtp_port', 'smtp_security', 'smtp_username']) assertEquals(def(k).showWhen, { key: 'email_provider', value: 'smtp' });
+});

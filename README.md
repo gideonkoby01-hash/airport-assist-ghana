@@ -50,7 +50,7 @@ Most configuration (API keys, business details, booking and shift rules, retenti
 | `npm run lint` | ESLint on pages, components, `src/lib`, `src/api` and hooks |
 | `npm run typecheck` | TypeScript check of the JS/JSX (`jsconfig.json`) |
 | `npm test` | Unit tests: query filters, booking lifecycle rules, history timeline, receipts, CSV, public settings |
-| `npm run test:functions` | Deno tests for discount rules, booking access, input validation, email sending and retry, webhook signatures, CORS and error handling, key encryption, the settings list and the Settings page logic |
+| `npm run test:functions` | Deno tests for discount rules, booking access, input validation, email sending (Resend and a real local SMTP server) and retry, webhook signatures, CORS and error handling, key encryption, the settings list and the Settings page logic |
 | `npm run test:db` | Applies every migration to a scratch Postgres and runs the SQL tests (security rules, storage, lifecycle and money, audit log, two-step verification, shift reports, email bookkeeping). Uses the `PG*` environment variables; no Docker needed |
 | `npm run build` | Production build into `dist/` |
 | `npm run build:emails` | Recompiles `supabase/emails/*.mjml` into the generated module the functions import |

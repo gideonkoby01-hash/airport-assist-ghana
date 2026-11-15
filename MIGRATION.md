@@ -53,7 +53,7 @@ supabase secrets set PHOTO_RETENTION_DAYS=30       # see 3b
 
 ### 2a. Admin Settings page (API keys and code-level settings)
 
-Most of the settings in this guide can be changed later from **Admin > Settings** instead of the terminal: the Resend API key and webhook secret, the sender address, business contact details, booking rules, shift hours, escalation time, porter commission, and the photo retention period. Each field says what it does and whether its current value was saved there, comes from a server setting, or is the built-in default. Saved values win over server settings, which win over defaults, and a change reaches every function within seconds. Every change is recorded in the audit log (API keys by name and last four characters only, never the value).
+Most of the settings in this guide can be changed later from **Admin > Settings** instead of the terminal: how emails are sent (Resend, or **any SMTP mail server**: server, port, security, username, password), the Resend API key and webhook secret, the sender address, business contact details, booking rules, shift hours, escalation time, porter commission, and the photo retention period. Each field says what it does and whether its current value was saved there, comes from a server setting, or is the built-in default. Saved values win over server settings, which win over defaults, and a change reaches every function within seconds. Every change is recorded in the audit log (API keys by name and last four characters only, never the value).
 
 One thing must be set in the terminal first, because the page stores API keys **encrypted** and needs a key that lives outside the database:
 
@@ -63,6 +63,14 @@ supabase functions deploy adminSettings
 ```
 
 Keep a safe copy of that value (a password manager). If it is lost or changed, saved API keys become unreadable and must be entered again (nothing else is affected). Until it is set, the page shows a notice and the "Save key" buttons stay off; the `supabase secrets set RESEND_API_KEY=...` commands below keep working either way.
+
+**SMTP instead of Resend.** Under Email, choose "An SMTP mail server", pick your provider from the list (Gmail, Microsoft 365, Zoho, Resend, SendGrid) or type the details, save the SMTP password with **Save key**, then use **Check connection** (signs in without sending) and **Send me a test email**. Things to know:
+- Use **port 465 with SSL/TLS** if you can. As far as I know Supabase blocks outbound SMTP on ports 25 and 587 from Edge Functions; check its current documentation, and if the connection check times out, that is the likely reason.
+- Gmail and Microsoft 365 need an **app password** (your normal password is refused). The message tells you if the server refuses the login.
+- Certificates are always checked; a server with a self-signed certificate will be refused.
+- The server must be a public mail host. Private and local addresses are rejected.
+- SMTP gives no delivery reports, so **Admin > Email** shows a problem only when the server refuses the message, not when it bounces later. The Resend webhook (step 2b) is not used with SMTP.
+- Booking confirmations, alerts and invitations use whichever way is chosen here. **Sign-up codes and password-reset emails are sent by Supabase's own sign-in service** and are configured in the Supabase dashboard (Authentication > Emails > SMTP Settings); the page shows the values to copy there.
 
 Not editable on the page, on purpose: the website address (`APP_URL`, `ALLOWED_ORIGINS`: a wrong value would lock everyone out of the page itself), the scheduler secret, the Supabase service key, Google sign-in and the sign-up email SMTP password (the sign-in service needs those itself). The page lists where each of these lives.
 
@@ -157,7 +165,7 @@ In Supabase > **Authentication**:
 - **URL Configuration**: Site URL = `https://airportassistghana.com` (your production address). Redirect URLs: add `https://airportassistghana.com/**`, and for Cloudflare preview deployments `https://*.pages.dev/**` if you want to test them.
 - **Sign In / Providers > Email**: "Confirm email" **on**; minimum password length **10**.
 - **Emails > Templates > Confirm signup**: replace the body with the contents of `supabase/templates/confirmation.html` and set the subject to `Your Airport Assist Ghana verification code`. The registration screen asks for the 6-digit code, which only appears if the template contains `{{ .Token }}`.
-- **Emails > SMTP Settings**: turn on custom SMTP so sign-up codes and password-reset emails go through Resend instead of Supabase's very limited built-in sender (it allows only a few emails per hour and will block real sign-ups). Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender = the same address as `EMAIL_FROM`.
+- **Emails > SMTP Settings**: turn on custom SMTP so sign-up codes and password-reset emails go through Resend instead of Supabase's very limited built-in sender (it allows only a few emails per hour and will block real sign-ups). Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender = the same address as `EMAIL_FROM`. (If you chose SMTP on the Settings page, enter that mail server instead; the page shows the values.)
 - **Multi-Factor**: TOTP (authenticator app) enabled. SMS codes are not supported by this app. The app **requires** it for admin and management accounts.
 - **Providers > Google**: see step 5.
 

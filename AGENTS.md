@@ -29,6 +29,7 @@ The project was migrated from Base44. There is no Base44 code left except a few 
 - Show problems with `notifyError` (`src/lib/notify.js`) and confirm destructive actions with `ConfirmAction`; do not use `alert()` or `confirm()`.
 
 - Configuration lives in one list, `supabase/functions/_shared/settingsRegistry.ts` (label, help text, type, range, default, and the old environment variable name). To add a setting: add it there, read it in a function with `loadSettings(admin)` (`settings.num('key')`), and the Admin > Settings page shows and validates it with no screen change. Do not call `Deno.env.get` for new tunable values. Settings shown on the public website also need an entry in `src/lib/publicSettings.js` (a test keeps the two in step).
+- Email goes out through `sendTransactionalEmail`, which uses Resend or SMTP according to the saved `email_provider` (`_shared/emailConfig.ts`). SMTP uses `_shared/smtp.ts` (certificates always verified; the SMTP host must be public: `hostnameProblem` in the registry). The SMTP tests run against a real local server (`smtp-server`); `nodemailer` and `smtp-server` are dev dependencies so Deno can find them.
 - API keys: read with `getSecret(admin, 'NAME')` (saved encrypted on the Settings page, else the environment). Add a new key to `SECRETS` in the registry. Never return a key to the browser or write one to a log or the audit log.
 
 ## Before finishing code changes

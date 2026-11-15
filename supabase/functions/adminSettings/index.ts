@@ -1,6 +1,8 @@
 import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
 import { buildOverview, clearSecret, resetSetting, saveSecret, saveSettings } from '../_shared/adminSettings.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
+import { loadSmtpConfig } from '../_shared/emailConfig.ts';
+import { describeSmtpError, verifySmtp } from '../_shared/smtp.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 
 // Everything the admin Settings page does. Admin only, and only for a session that passed two-step verification.
@@ -38,6 +40,20 @@ serve('adminSettings', async (req) => {
       const result = await clearSecret(admin, user, String(body.name || ''));
       if (!result.ok) throw new HttpError(400, result.error);
       return json({ ok: true, overview: await buildOverview(admin, env) });
+    }
+
+    case 'test_smtp': {
+      // Connects and signs in to the saved SMTP server without sending anything.
+      const hits = await admin.rpc('hit_rate_limit', { p_key: `test-smtp:${user.id}`, p_window_seconds: 3600 });
+      if ((hits.data ?? 0) > 10) throw new HttpError(429, 'That is enough connection tests for now. Try again in an hour.');
+      const { smtp, problem } = await loadSmtpConfig(admin);
+      if (!smtp) return json({ ok: false, message: problem });
+      try {
+        await verifySmtp(smtp);
+        return json({ ok: true, message: `Connected to ${smtp.host}:${smtp.port}${smtp.username ? ' and signed in' : ''}. Send yourself a test email to finish checking.` });
+      } catch (e) {
+        return json({ ok: false, message: describeSmtpError(e, smtp) });
+      }
     }
 
     case 'test_email': {

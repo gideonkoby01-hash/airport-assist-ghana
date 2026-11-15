@@ -1,6 +1,7 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { appUrl } from './auth.ts';
-import { getSecret, loadSettings } from './config.ts';
+import { loadEmailConfig } from './emailConfig.ts';
+import { describeSmtpError, htmlToText, sendViaSmtp } from './smtp.ts';
 import { EMAIL_TEMPLATES } from './emailTemplates.generated.ts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,14 +65,28 @@ async function deliver(
   const settle = (patch: Record<string, unknown>) =>
     admin.from('email_deliveries').update({ ...patch, last_attempt_at: new Date().toISOString() }).eq('id', id);
   try {
-    const apiKey = await getSecret(admin, 'RESEND_API_KEY');
-    const from = (await loadSettings(admin)).str('email_from');
-    if (!apiKey || !from) throw new Error('Email is not set up: add the Resend API key and the sender address in Admin > Settings.');
+    const { config, problem } = await loadEmailConfig(admin);
+    if (!config) throw new Error(problem ?? 'Email is not set up.');
     const { subject, html } = renderTemplate(m.templateName, m.variables);
+
+    if (config.provider === 'smtp') {
+      // Through the admin's own mail server. SMTP gives no delivery report afterwards, so "sent" means "the server accepted it".
+      try {
+        const sent = await sendViaSmtp(config.smtp, { from: config.from, to: m.to, subject, html, text: htmlToText(html) });
+        await settle({ status: 'sent', details: 'Accepted by the SMTP server', provider_id: sent.messageId || null, to_email: null, variables: null });
+        return { status: 'sent', sent: true };
+      } catch (e) {
+        const message = describeSmtpError(e, config.smtp);
+        console.error(`email: ${m.eventKey} SMTP send failed: ${message}`);
+        await settle({ status: 'failed', details: message.slice(0, 500) });
+        return { status: 'failed', sent: false, reason: 'smtp_error', message };
+      }
+    }
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': m.eventKey },
-      body: JSON.stringify({ from, to: [m.to], subject, html }),
+      headers: { Authorization: `Bearer ${config.apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': m.eventKey },
+      body: JSON.stringify({ from: config.from, to: [m.to], subject, html }),
     });
     if (!res.ok) {
       const detail = `Resend rejected the send (${res.status}): ${(await res.text()).slice(0, 200)}`;

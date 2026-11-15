@@ -151,3 +151,74 @@ Deno.test('retry: a second failure stays failed and keeps the recipient for the 
     assertEquals('to_email' in last, false);
   } finally { f.restore(); }
 });
+
+// ---- choosing the way to send ---------------------------------------------------------------------------
+import { SMTPServer } from 'smtp-server';
+
+// An admin whose saved settings choose SMTP (read through the same tables the real code reads).
+function smtpAdmin(settings: Record<string, string>, secrets: Record<string, string> = {}) {
+  const base = fakeAdmin();
+  const rows = Object.entries(settings).map(([key, value]) => ({ key, value }));
+  return {
+    ...base,
+    from: (table: string) => {
+      const t = base.from(table);
+      if (table === 'app_settings') return { ...t, select: () => Promise.resolve({ data: rows, error: null }) };
+      if (table === 'app_secrets') return { ...t, select: () => ({ eq: (_c: string, name: string) => ({ maybeSingle: () => Promise.resolve({ data: name in secrets ? { ciphertext: 'x' } : null }) }) }) };
+      return t;
+    },
+  };
+}
+
+Deno.test('SMTP chosen: the email goes through the SMTP server, not Resend, and is marked sent with no personal data kept', async () => {
+  clearConfigCache();
+  const received: string[] = [];
+  const server = new SMTPServer({
+    logger: false, authOptional: true, disabledCommands: ['STARTTLS', 'AUTH'],
+    onData(stream, _s, cb) { let d = ''; stream.on('data', (c: Uint8Array) => (d += new TextDecoder().decode(c))); stream.on('end', () => { received.push(d); cb(); }); },
+  });
+  const port = await new Promise<number>((r) => server.listen(0, '127.0.0.1', () => r((server.server.address() as { port: number }).port)));
+  const f = stubFetch(200); const admin = smtpAdmin({ email_provider: 'smtp', smtp_host: '127.0.0.1', smtp_port: String(port), smtp_security: 'none', email_from: 'Airport Assist <noreply@example.com>' });
+  try {
+    const r = await sendTransactionalEmail(admin as never, { eventKey: 'smtp1', templateName: 'StaffRequestReceived', to: 'person@example.org', variables: vars });
+    assertEquals(r, { status: 'sent', sent: true });
+    assertEquals(f.calls.length, 0); // Resend was not called
+    assertEquals(received.length, 1);
+    assertStringIncludes(received[0], 'Subject: We\'ve received your staff access request'.replace("'", "'"));
+    const settled = admin.updates[admin.updates.length - 1] as Record<string, unknown>;
+    assertEquals([settled.status, settled.to_email, settled.variables], ['sent', null, null]);
+  } finally { f.restore(); await new Promise<void>((r) => server.close(() => r())); clearConfigCache(); }
+});
+
+Deno.test('SMTP chosen but the server is unreachable: the failure is recorded in plain words and kept for retry', async () => {
+  clearConfigCache();
+  const closed = await new Promise<number>((resolve) => { const l = Deno.listen({ port: 0, hostname: '127.0.0.1' }); const p = (l.addr as Deno.NetAddr).port; l.close(); resolve(p); });
+  const f = stubFetch(200); const admin = smtpAdmin({ email_provider: 'smtp', smtp_host: '127.0.0.1', smtp_port: String(closed), smtp_security: 'none', email_from: 'noreply@example.com' });
+  try {
+    const r = await sendTransactionalEmail(admin as never, { eventKey: 'smtp2', templateName: 'StaffRequestReceived', to: 'person@example.org', variables: vars });
+    assertEquals(r.status, 'failed');
+    assertStringIncludes(r.message ?? '', 'Could not connect');
+    const settled = admin.updates[admin.updates.length - 1] as Record<string, unknown>;
+    assertEquals(settled.status, 'failed');
+    assertEquals('to_email' in settled, false); // the recipient stays on the row so the retry can send it
+    assertEquals(f.calls.length, 0);
+  } finally { f.restore(); clearConfigCache(); }
+});
+
+Deno.test('SMTP chosen but incomplete: nothing is sent and the message says what to fill in', async () => {
+  clearConfigCache();
+  const admin = smtpAdmin({ email_provider: 'smtp', smtp_host: '', email_from: '' });
+  const r = await sendTransactionalEmail(admin as never, { eventKey: 'smtp3', templateName: 'StaffRequestReceived', to: 'person@example.org', variables: vars });
+  assertEquals(r.status, 'failed');
+  assertStringIncludes(r.message ?? '', 'SMTP server');
+  clearConfigCache();
+});
+
+Deno.test('SMTP username without a saved password is reported, not attempted', async () => {
+  clearConfigCache();
+  const admin = smtpAdmin({ email_provider: 'smtp', smtp_host: 'smtp.example.com', smtp_username: 'me@example.com', email_from: 'noreply@example.com' });
+  const r = await sendTransactionalEmail(admin as never, { eventKey: 'smtp4', templateName: 'StaffRequestReceived', to: 'person@example.org', variables: vars });
+  assertEquals(r.status, 'failed');
+  assertStringIncludes(r.message ?? '', 'password');
+  clearConfigCache();
+});

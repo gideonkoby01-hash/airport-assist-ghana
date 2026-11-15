@@ -4,7 +4,7 @@
 // A setting's value is resolved in this order: saved on the Settings page, then the function environment variable
 // named in `env` (how it was set before the page existed), then `default`.
 
-export type SettingType = 'text' | 'textarea' | 'email' | 'number' | 'boolean' | 'time';
+export type SettingType = 'text' | 'textarea' | 'email' | 'number' | 'boolean' | 'time' | 'select' | 'hostname';
 
 export interface SettingDef {
   key: string;
@@ -19,6 +19,9 @@ export interface SettingDef {
   unit?: string;
   maxLength?: number;
   public?: boolean; // shown to visitors on the website
+  options?: { value: string; label: string }[]; // for type 'select'
+  optional?: boolean; // may be left empty
+  showWhen?: { key: string; value: string }; // the page only shows it while another setting has this value
 }
 
 export interface SecretDef {
@@ -26,12 +29,15 @@ export interface SecretDef {
   group: 'email';
   label: string;
   help: string;
-  prefix: string; // what a genuine key starts with
+  prefix?: string; // what a genuine key starts with (omit for passwords, which have no fixed shape)
+  minLength?: number; // default 12
+  allowSpaces?: boolean; // some app passwords are shown with spaces
   where: string; // where to get it
+  showWhen?: { key: string; value: string };
 }
 
 export const GROUPS: Record<SettingDef['group'], { title: string; blurb: string }> = {
-  email: { title: 'Email', blurb: 'The address emails come from, and the keys for the email service (Resend).' },
+  email: { title: 'Email', blurb: 'How the system sends its emails (booking confirmations, alerts, staff invitations): through Resend, or through any SMTP mail server.' },
   business: { title: 'Business details', blurb: 'Shown on the public website: the footer, the contact section and the privacy notice.' },
   bookings: { title: 'Bookings', blurb: 'Rules applied when a passenger books online. Walk-in sales at the desk are not held to these.' },
   operations: { title: 'Operations', blurb: 'Shifts, escalation and porter commission.' },
@@ -39,8 +45,20 @@ export const GROUPS: Record<SettingDef['group'], { title: string; blurb: string 
 };
 
 export const SETTINGS: SettingDef[] = [
-  { key: 'email_from', group: 'email', label: 'Sender address', type: 'text', default: '', env: 'EMAIL_FROM', maxLength: 200,
-    help: 'Shown as the sender, for example: Airport Assist Ghana <noreply@mail.yourdomain.com>. The domain must be verified in Resend.' },
+  { key: 'email_provider', group: 'email', label: 'Send emails through', type: 'select', default: 'resend',
+    options: [{ value: 'resend', label: 'Resend (API key)' }, { value: 'smtp', label: 'An SMTP mail server' }],
+    help: 'Resend is the simplest. Choose SMTP to use your own mail server or another provider (Gmail, Microsoft 365, Zoho, SendGrid, Brevo and others).' },
+  { key: 'email_from', group: 'email', label: 'Sender address', type: 'text', default: '', env: 'EMAIL_FROM', maxLength: 200, optional: true,
+    help: 'Shown as the sender, for example: Airport Assist Ghana <noreply@yourdomain.com>. It must be an address your provider allows you to send from (for Resend, on a verified domain).' },
+  { key: 'smtp_host', group: 'email', label: 'SMTP server', type: 'hostname', default: '', optional: true, maxLength: 253, showWhen: { key: 'email_provider', value: 'smtp' },
+    help: 'The server name your provider gives you, for example smtp.yourprovider.com.' },
+  { key: 'smtp_port', group: 'email', label: 'SMTP port', type: 'number', default: '465', min: 1, max: 65535, showWhen: { key: 'email_provider', value: 'smtp' },
+    help: 'Usually 465 with SSL/TLS, or 587 with STARTTLS. Supabase may block outbound ports 25 and 587 from functions, so 465 is the safe choice.' },
+  { key: 'smtp_security', group: 'email', label: 'Connection security', type: 'select', default: 'ssl', showWhen: { key: 'email_provider', value: 'smtp' },
+    options: [{ value: 'ssl', label: 'SSL/TLS (usually port 465)' }, { value: 'starttls', label: 'STARTTLS (usually port 587)' }, { value: 'none', label: 'None (not recommended: passwords travel unprotected)' }],
+    help: 'Must match the port. If a test says the connection failed, this and the port are the first things to check.' },
+  { key: 'smtp_username', group: 'email', label: 'SMTP username', type: 'text', default: '', optional: true, maxLength: 200, showWhen: { key: 'email_provider', value: 'smtp' },
+    help: 'Often your email address. Leave empty only for a server that needs no sign-in.' },
 
   { key: 'company_name', group: 'business', label: 'Business name', type: 'text', default: 'Airport Assist Ghana', maxLength: 80, public: true, help: 'Used in the footer and the privacy notice.' },
   { key: 'contact_email', group: 'business', label: 'Contact email', type: 'email', default: 'moehamedi@gmail.com', maxLength: 120, public: true, help: 'The public contact address, and where privacy requests are sent.' },
@@ -66,10 +84,12 @@ export const SETTINGS: SettingDef[] = [
 ];
 
 export const SECRETS: SecretDef[] = [
-  { name: 'RESEND_API_KEY', group: 'email', label: 'Resend API key', prefix: 're_', where: 'Resend > API Keys > create a key with "Sending access"',
+  { name: 'RESEND_API_KEY', group: 'email', label: 'Resend API key', prefix: 're_', where: 'Resend > API Keys > create a key with "Sending access"', showWhen: { key: 'email_provider', value: 'resend' },
     help: 'Lets the system send emails (booking confirmations, alerts, staff invites).' },
-  { name: 'RESEND_WEBHOOK_SECRET', group: 'email', label: 'Resend webhook signing secret', prefix: 'whsec_', where: 'Resend > Webhooks > your endpoint > Signing secret',
+  { name: 'RESEND_WEBHOOK_SECRET', group: 'email', label: 'Resend webhook signing secret', prefix: 'whsec_', where: 'Resend > Webhooks > your endpoint > Signing secret', showWhen: { key: 'email_provider', value: 'resend' },
     help: 'Lets the system trust delivery reports (delivered, bounced, spam) coming from Resend.' },
+  { name: 'SMTP_PASSWORD', group: 'email', label: 'SMTP password', minLength: 1, allowSpaces: true, where: 'your mail provider (for Gmail and Microsoft 365 create an "app password"; your normal password will not work)', showWhen: { key: 'email_provider', value: 'smtp' },
+    help: 'Used to sign in to the SMTP server. Stored encrypted.' },
 ];
 
 export const SETTING_BY_KEY = new Map(SETTINGS.map((s) => [s.key, s]));
@@ -95,6 +115,15 @@ export function validateSetting(def: SettingDef, raw: unknown): Checked {
     case 'time':
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(text)) return fail('use 24-hour time like 06:00.');
       return { ok: true, value: text };
+    case 'select':
+      if (!def.options?.some((o) => o.value === text)) return fail('choose one of the listed options.');
+      return { ok: true, value: text };
+    case 'hostname': {
+      if (text === '') break; // checked with the other settings (it is required when SMTP is chosen)
+      const problem = hostnameProblem(text);
+      if (problem) return fail(problem);
+      break;
+    }
     case 'email':
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return fail('enter a valid email address.');
       break;
@@ -102,7 +131,7 @@ export function validateSetting(def: SettingDef, raw: unknown): Checked {
       break;
   }
   if (def.maxLength && text.length > def.maxLength) return fail(`keep it under ${def.maxLength} characters.`);
-  if (text === '' && def.key !== 'email_from') return fail('cannot be empty.');
+  if (text === '' && !def.optional) return fail('cannot be empty.');
   if (def.key === 'email_from' && text !== '' && !/^[^<>@\s][^<>@]*<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>$|^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(text)) {
     return fail('use an address like noreply@yourdomain.com or Name <noreply@yourdomain.com>.');
   }
@@ -111,6 +140,10 @@ export function validateSetting(def: SettingDef, raw: unknown): Checked {
 
 // Rules that involve more than one setting. `values` holds the effective value of each key after the change.
 export function validateTogether(values: Record<string, string>): string | null {
+  if (values.email_provider === 'smtp') {
+    if (!values.smtp_host) return 'Enter the SMTP server address before choosing SMTP.';
+    if (!values.email_from) return 'Enter the sender address before choosing SMTP.';
+  }
   const morning = values.shift_morning_start;
   const night = values.shift_night_start;
   if (morning && night && morning >= night) return 'The night shift must start after the morning shift starts (for example morning 06:00, night 18:00).';
@@ -119,8 +152,10 @@ export function validateTogether(values: Record<string, string>): string | null 
 
 export function validateSecret(def: SecretDef, raw: unknown): Checked {
   const text = String(raw ?? '').trim();
-  if (text.length < 12 || text.length > 500 || /\s/.test(text)) return { ok: false, error: `${def.label}: that does not look like a key. Paste it exactly as given, with no spaces.` };
-  if (!text.startsWith(def.prefix)) return { ok: false, error: `${def.label}: a genuine key starts with "${def.prefix}". Check you copied the right one from ${def.where}.` };
+  if (text.length < (def.minLength ?? 12) || text.length > 500 || (!def.allowSpaces && /\s/.test(text))) {
+    return { ok: false, error: `${def.label}: that does not look right. Paste it exactly as given${def.allowSpaces ? '' : ', with no spaces'}.` };
+  }
+  if (def.prefix && !text.startsWith(def.prefix)) return { ok: false, error: `${def.label}: a genuine key starts with "${def.prefix}". Check you copied the right one from ${def.where}.` };
   return { ok: true, value: text };
 }
 
@@ -138,4 +173,23 @@ export function resolveSettings(rows: { key: string; value: string }[], env: (na
     else out[def.key] = { value: def.default, source: 'default' };
   }
   return out;
+}
+
+// The SMTP server is chosen by an admin but contacted from our servers, so it must be a public internet host:
+// not this machine, not a private network address. (A name that resolves to a private address cannot be caught here.)
+export function hostnameProblem(host: string): string | null {
+  if (host.length > 253 || !/^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$|^\[?[0-9A-Fa-f:]+\]?$/.test(host)) return 'enter a server name like smtp.example.com, without http:// or a port.';
+  const lower = host.toLowerCase().replace(/^\[|\]$/g, '');
+  if (lower === 'localhost' || lower.endsWith('.localhost') || lower.endsWith('.local') || lower.endsWith('.internal') || !lower.includes('.') && !lower.includes(':')) {
+    return 'use the public address of your mail provider, not a local or internal name.';
+  }
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(lower);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if (a === 10 || a === 127 || a === 0 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254) || a >= 224) {
+      return 'that is a private or reserved address. Use the public address of your mail provider.';
+    }
+  }
+  if (lower.includes(':') && (lower === '::1' || lower === '::' || /^f[cd]/.test(lower) || lower.startsWith('fe80'))) return 'that is a private or reserved address. Use the public address of your mail provider.';
+  return null;
 }
