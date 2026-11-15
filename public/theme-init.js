@@ -1,10 +1,8 @@
-// Runs before the page paints so night mode does not flash white. Same rule as src/lib/theme.jsx:
-// a saved choice wins, otherwise follow the device setting.
+// Runs before the page paints so night mode (the light green theme) does not flash white. Same rule as
+// src/lib/theme.jsx: only a saved choice turns it on; everyone else starts in the white day theme.
 (function () {
   try {
-    var saved = localStorage.getItem('aag-theme');
-    var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (dark) document.documentElement.classList.add('dark');
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    if (localStorage.getItem('aag-theme') === 'dark') document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'light';
   } catch (e) {}
 })();

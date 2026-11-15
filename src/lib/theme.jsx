@@ -6,21 +6,19 @@ const ThemeContext = createContext({ theme: "light", toggle: () => {} });
 
 function read() {
   try {
-    const saved = localStorage.getItem(KEY);
-    if (saved === "dark" || saved === "light") return saved;
+    return localStorage.getItem(KEY) === "dark" ? "dark" : "light";
   } catch {
-    // storage unavailable: follow the device
+    return "light"; // storage unavailable: start in day mode
   }
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function apply(theme) {
   document.documentElement.classList.toggle("dark", theme === "dark");
-  document.documentElement.style.colorScheme = theme;
+  document.documentElement.style.colorScheme = "light";
 }
 
-// Day and night mode. A saved choice wins; otherwise the device setting decides. public/theme-init.js applies
-// the same rule before the first paint.
+// Day mode is white; night mode is the light green theme. Only a saved choice turns night mode on, and
+// public/theme-init.js applies the same rule before the first paint.
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(read);
   useEffect(() => apply(theme), [theme]);
