@@ -244,6 +244,10 @@ Use a private window and a second email address for the passenger.
 - **CI**: `.github/workflows/ci.yml` runs lint, types, tests, the build, the function checks and the database tests on every pull request. It has not yet run on GitHub; open a pull request and look at the Actions tab.
 - **Integrity check**: once a month an admin can call the `integrityCheck` function (or run `select * from data_integrity_check();`); every count should be 0.
 
+## Updating a live system with a new database change
+
+Some updates include a new file in `supabase/migrations/`. The site itself updates by itself when `main` changes, but database changes do not. Without a terminal: open the Supabase dashboard, **SQL Editor**, **New query**, paste the whole contents of the new migration file, and press **Run**. Run new files in date order, once each. Migrations applied so far are listed by their file names; the newest is `20261115000002_profile_self_service.sql`, which adds the phone number and the self-service "My profile" save. Until it is applied, the profile page shows an error when saving.
+
 ## Known limits and follow-ups
 
 See `docs/PLATFORM_AUDIT.md` section "Status after the fixes" for the finding-by-finding list. In short:

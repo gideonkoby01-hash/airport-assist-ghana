@@ -2,42 +2,74 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X, ChevronRight, ShieldCheck } from "lucide-react";
+import { LogOut, Menu, X, ChevronRight, ShieldCheck, UserRound } from "lucide-react";
+import UserMenu from "@/components/UserMenu";
 import Logo from "@/components/Logo";
 import { roleLabel } from "@/lib/packages";
 import { cn } from "@/lib/utils";
 
+// Grouped so a long list (admin has a dozen areas) reads as a few sections. `tab: null` is the dashboard's first screen.
 const NAV = {
   passenger: [
-    { label: "Dashboard", to: "/", tab: null },
-    { label: "Book a Service", to: "/passenger", tab: "book" },
-    { label: "My Bookings", to: "/passenger", tab: "bookings" },
-    { label: "Notifications", to: "/passenger", tab: "notifications" },
+    { items: [
+      { label: "Overview", to: "/passenger", tab: null },
+      { label: "Book a Service", to: "/passenger", tab: "book" },
+      { label: "My Bookings", to: "/passenger", tab: "bookings" },
+      { label: "Notifications", to: "/passenger", tab: "notifications" },
+    ] },
   ],
   supervisor: [
-    { label: "Assigned Bookings", to: "/supervisor", tab: null },
-    { label: "Walk-in Booking", to: "/supervisor", tab: "walkin" },
-    { label: "Shift Report", to: "/supervisor", tab: "report" },
+    { heading: "Today", items: [
+      { label: "Assigned Bookings", to: "/supervisor", tab: null },
+      { label: "Notifications", to: "/supervisor", tab: "notifications" },
+    ] },
+    { heading: "At the desk", items: [
+      { label: "Quick Sale", to: "/supervisor", tab: "quick" },
+      { label: "Walk-in Booking", to: "/supervisor", tab: "walkin" },
+      { label: "Shift Report", to: "/supervisor", tab: "report" },
+    ] },
+    { heading: "You", items: [
+      { label: "Photo & contact for passengers", to: "/supervisor", tab: "profile" },
+    ] },
   ],
   management: [
-    { label: "Operations", to: "/management", tab: null },
-    { label: "All Bookings", to: "/management", tab: "bookings" },
-    { label: "Shift Reports", to: "/management", tab: "reports" },
-    { label: "Ratings & Reviews", to: "/management", tab: "ratings" },
+    { heading: "Operations", items: [
+      { label: "Summary", to: "/management", tab: null },
+      { label: "All Bookings", to: "/management", tab: "bookings" },
+      { label: "Notifications", to: "/management", tab: "notifications" },
+    ] },
+    { heading: "Team and quality", items: [
+      { label: "Supervisors", to: "/management", tab: "supervisors" },
+      { label: "Ratings & Reviews", to: "/management", tab: "ratings" },
+    ] },
+    { heading: "Reports", items: [
+      { label: "Shift Reports", to: "/management", tab: "reports" },
+    ] },
   ],
   admin: [
-    { label: "Summary", to: "/admin", tab: null },
-    { label: "Staff Accounts", to: "/admin", tab: "staff" },
-    { label: "Supervisors", to: "/admin", tab: "supervisors" },
-    { label: "Porters", to: "/admin", tab: "porters" },
-    { label: "Staff Requests", to: "/admin", tab: "requests" },
-    { label: "Discounts", to: "/admin", tab: "discounts" },
-    { label: "Service Packages", to: "/admin", tab: "packages" },
-    { label: "Lounges", to: "/admin", tab: "lounges" },
-    { label: "Shift Reports", to: "/admin", tab: "reports" },
-    { label: "Email", to: "/admin", tab: "email" },
-    { label: "Settings", to: "/admin", tab: "settings" },
-    { label: "Ratings & Reviews", to: "/admin", tab: "ratings" },
+    { heading: "Overview", items: [
+      { label: "Summary", to: "/admin", tab: null },
+      { label: "Notifications", to: "/admin", tab: "notifications" },
+    ] },
+    { heading: "People", items: [
+      { label: "Staff Accounts", to: "/admin", tab: "staff" },
+      { label: "Staff Requests", to: "/admin", tab: "requests" },
+      { label: "Supervisors", to: "/admin", tab: "supervisors" },
+      { label: "Porters", to: "/admin", tab: "porters" },
+    ] },
+    { heading: "What we sell", items: [
+      { label: "Service Packages", to: "/admin", tab: "packages" },
+      { label: "Lounges", to: "/admin", tab: "lounges" },
+      { label: "Discounts", to: "/admin", tab: "discounts" },
+    ] },
+    { heading: "Reports", items: [
+      { label: "Shift Reports", to: "/admin", tab: "reports" },
+      { label: "Ratings & Reviews", to: "/admin", tab: "ratings" },
+    ] },
+    { heading: "System", items: [
+      { label: "Email", to: "/admin", tab: "email" },
+      { label: "Settings", to: "/admin", tab: "settings" },
+    ] },
   ],
 };
 
@@ -48,7 +80,7 @@ export default function AppLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
-  const items = NAV[role] || NAV.passenger;
+  const groups = NAV[role] || NAV.passenger;
   const currentTab = new URLSearchParams(location.search).get("tab");
 
   const handleLogout = async () => {
@@ -68,36 +100,62 @@ export default function AppLayout({ children }) {
       <div className="px-4 pt-4 pb-3">
         <Logo />
       </div>
-      <nav className="flex-1 px-3 space-y-1">
-        {items.map((item) => {
-          const target = item.tab ? `${item.to}?tab=${item.tab}` : item.to;
-          return (
-            <Link
-              key={item.label}
-              to={target}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive(item)
-                  ? "bg-accent text-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent"
-              )}
-            >
-              {item.label}
-              {isActive(item) && <ChevronRight className="w-4 h-4" />}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3 overflow-y-auto" aria-label="Main">
+        {groups.map((group, gi) => (
+          <div key={group.heading || gi} className={gi ? "mt-4" : ""}>
+            {group.heading && (
+              <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">{group.heading}</p>
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const target = item.tab ? `${item.to}?tab=${item.tab}` : item.to;
+                return (
+                  <Link
+                    key={item.label}
+                    to={target}
+                    onClick={() => setMobileOpen(false)}
+                    aria-current={isActive(item) ? "page" : undefined}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive(item)
+                        ? "bg-accent text-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    )}
+                  >
+                    {item.label}
+                    {isActive(item) && <ChevronRight className="w-4 h-4" />}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="p-3 border-t border-sidebar-border">
-        <div className="px-2 mb-3">
-          <p className="text-sm font-medium text-white truncate">{user?.email}</p>
+        <div className="px-2 mb-2">
+          <p className="text-sm font-medium text-white truncate">{user?.full_name || user?.email}</p>
           <p className="text-xs text-sidebar-foreground/70">{roleLabel(role)}</p>
         </div>
         <Link
+          to="/profile"
+          onClick={() => setMobileOpen(false)}
+          aria-current={location.pathname === "/profile" ? "page" : undefined}
+          className={cn(
+            "flex items-center rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+            location.pathname === "/profile" && "bg-sidebar-accent text-white"
+          )}
+        >
+          <UserRound className="w-4 h-4 mr-2" aria-hidden="true" />
+          My profile
+        </Link>
+        <Link
           to="/security"
           onClick={() => setMobileOpen(false)}
-          className="flex items-center rounded-lg px-3 py-2 mb-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+          aria-current={location.pathname === "/security" ? "page" : undefined}
+          className={cn(
+            "flex items-center rounded-lg px-3 py-2 mb-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+            location.pathname === "/security" && "bg-sidebar-accent text-white"
+          )}
         >
           <ShieldCheck className="w-4 h-4 mr-2" aria-hidden="true" />
           Account security
@@ -108,7 +166,7 @@ export default function AppLayout({ children }) {
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Log out
+          Sign out
         </Button>
       </div>
     </div>
@@ -126,9 +184,12 @@ export default function AppLayout({ children }) {
         <div className="w-40">
           <Logo showBar={false} />
         </div>
-        <button onClick={() => setMobileOpen(true)} className="text-white p-2" aria-label="Open menu">
-          <Menu className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-1">
+          <UserMenu dark />
+          <button onClick={() => setMobileOpen(true)} className="text-white p-2" aria-label="Open menu">
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}
@@ -149,6 +210,9 @@ export default function AppLayout({ children }) {
       )}
 
       <main className="lg:ml-64 min-h-screen">
+        <div className="hidden lg:flex sticky top-0 z-20 justify-end items-center px-10 py-3 bg-secondary/80 backdrop-blur border-b border-border">
+          <UserMenu />
+        </div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-10">{children}</div>
       </main>
     </div>

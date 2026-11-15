@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSettings } from "@/lib/SettingsContext";
+import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 // `user` and `supervisor` are still passed by the callers; the server now decides who a booking belongs to.
 // eslint-disable-next-line unused-imports/no-unused-vars
 export default function BookingForm({ channel = "online", user, supervisor = undefined, onCreated }) {
+  const { user: me } = useAuth();
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
   const [form, setForm] = useState({
@@ -35,7 +37,8 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     flight_number: "",
     flight_date: "",
     scheduled_flight_time: "",
-    contact: "",
+    // A passenger's own number is filled in from their profile; staff booking for walk-ins start blank.
+    contact: channel === "online" ? me?.phone || "" : "",
     nationality: "",
     total_bags: 0,
     special_requests: "",

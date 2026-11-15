@@ -26,6 +26,7 @@ const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const BookingDetail = lazy(() => import('@/pages/BookingDetail'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Security = lazy(() => import('@/pages/Security'));
+const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
 
 const AuthenticatedApp = () => {
@@ -77,6 +78,7 @@ const AuthenticatedApp = () => {
         <Route path="/bookings/:id" element={<BookingDetail />} />
         <Route path="/pending" element={<PendingApproval />} />
         <Route path="/security" element={<Security />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
