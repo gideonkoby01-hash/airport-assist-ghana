@@ -1,10 +1,13 @@
 -- A person can edit their own name and phone, and nothing else. Run after the migrations.
 begin;
 insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000e4', 'new-staff@example.com'),
+  ('00000000-0000-0000-0000-0000000000e5', 'other-new-staff@example.com'),
   ('00000000-0000-0000-0000-0000000000e1', 'pax-profile@example.com'),
   ('00000000-0000-0000-0000-0000000000e2', 'other-profile@example.com'),
   ('00000000-0000-0000-0000-0000000000e3', 'off-profile@example.com');
 update public.profiles set disabled = true where email = 'off-profile@example.com';
+update public.profiles set must_change_password = true where email in ('new-staff@example.com', 'other-new-staff@example.com');
 
 create function pg_temp.check_that(label text, ok boolean) returns void language plpgsql as $$
 begin
@@ -42,6 +45,13 @@ select pg_temp.check_that('the other person is untouched', (select full_name = '
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000e3');
 select pg_temp.raises('a disabled account cannot edit', $q$select public.update_my_profile('x', '')$q$, 'account_unavailable');
+
+-- a staff member created with a temporary password clears the flag for themselves only
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e4');
+select public.password_changed();
+reset role;
+select pg_temp.check_that('their own flag is cleared', (select not must_change_password from public.profiles where email = 'new-staff@example.com'));
+select pg_temp.check_that('someone else''s flag is untouched', (select must_change_password from public.profiles where email = 'other-new-staff@example.com'));
 
 reset role;
 set local role anon;

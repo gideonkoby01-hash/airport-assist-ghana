@@ -17,6 +17,8 @@ const TABLES = {
   AccountRequest: 'account_requests',
   AuditLog: 'audit_log',
   Booking: 'bookings',
+  Customer: 'customers',
+  CustomerNote: 'customer_notes',
   BookingRating: 'booking_ratings',
   DiscountCode: 'discount_codes',
   DiscountRedemption: 'discount_redemptions',
@@ -229,6 +231,23 @@ const profile = {
   },
 };
 
+// Customer CRM (admin and management). The list comes from a database function that adds each customer's totals.
+const crm = {
+  async list(/** @type {{ search?: string, segment?: string, sort?: string, limit?: number, offset?: number }} */ { search = '', segment = 'all', sort = 'recent', limit = 50, offset = 0 } = {}) {
+    const { data, error } = await supabase.rpc('crm_customers', { p_search: search, p_segment: segment, p_sort: sort, p_limit: limit, p_offset: offset });
+    if (error) fail(error);
+    return { rows: data || [], total: data?.[0]?.total_count ?? 0 };
+  },
+  async erase(/** @type {string} */ id) {
+    const { error } = await supabase.rpc('crm_erase_customer', { p_customer_id: id });
+    if (error) {
+      throw new ApiError(/has_account/.test(error.message || '')
+        ? 'This customer has a website account. Erase them from Staff accounts instead.'
+        : error.message, undefined, error);
+    }
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile };
+export const api = { entities, functions, storage, settings, profile, crm };

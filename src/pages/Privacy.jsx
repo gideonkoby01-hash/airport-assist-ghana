@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
-const UPDATED = "14 November 2026";
+const UPDATED = "15 November 2026";
 
 function Section({ title, children }) {
   return (
@@ -43,9 +43,10 @@ export default function Privacy() {
             <li><strong>Your account:</strong> name, email address and a password (stored in scrambled form; we cannot read it). To let you sign in and see your bookings.</li>
             <li><strong>Your booking:</strong> names and contact numbers of the passengers, nationality, flight details, number of bags, special requests, and what you paid. To deliver the service and keep our accounts.</li>
             <li><strong>A photo of your ID</strong> (optional): so our supervisor can identify the right passenger at the airport.</li>
+            <li><strong>Your customer record:</strong> your name and contact details, the bookings you have made, and notes our team writes after speaking with you (for example a request or a promise to call back). So anyone on the team can help you without asking you to repeat yourself.</li>
             <li><strong>Staff:</strong> name, work email and role, so we can control who can see what.</li>
           </ul>
-          <p>We use this information only to provide and manage the service, to contact you about your booking, and to meet our legal and accounting duties. We do not sell it and we do not use it for advertising.</p>
+          <p>We use this information only to provide and manage the service, to contact you about your booking, and to meet our legal and accounting duties. We do not sell it. We send offers and news only to customers who have told us they want them, and you can ask us to stop at any time.</p>
         </Section>
 
         <Section title="How long we keep it">

@@ -13,13 +13,13 @@ import SiteFooter from "@/components/home/SiteFooter";
 // authentication and booking flows; internal dashboards stay protected.
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="site min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main>
         <Hero />
-        <About />
         <Packages />
         <HowItWorks />
+        <About />
         <Faq />
         <Contact />
       </main>

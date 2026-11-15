@@ -15,7 +15,7 @@
     --secondary: 210 40% 96%;
     --secondary-foreground: 213 68% 14%;
     --muted: 210 40% 96%;
-    --muted-foreground: 213 16% 42%;
+    --muted-foreground: 215 18% 36%;
     --accent: 44 60% 47%;
     --accent-foreground: 213 68% 14%;
     --destructive: 0 72% 50%;
@@ -30,6 +30,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
     --canvas: 216 33% 97%;
+    --gold-text: 41 100% 27%;
     --font-heading: ui-sans-serif, system-ui, sans-serif;
     --font-body: ui-sans-serif, system-ui, sans-serif;
     --font-display: ui-sans-serif, system-ui, sans-serif;
@@ -45,38 +46,40 @@
   }
 
   .dark {
-    --background: 213 68% 14%;
-    --foreground: 0 0% 98%;
-    --card: 213 60% 18%;
-    --card-foreground: 0 0% 98%;
-    --popover: 213 60% 18%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 44 60% 47%;
-    --primary-foreground: 213 68% 14%;
-    --secondary: 213 50% 22%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 213 50% 22%;
-    --muted-foreground: 210 30% 70%;
-    --accent: 44 60% 47%;
-    --accent-foreground: 213 68% 14%;
-    --destructive: 0 62.8% 45%;
+    --background: 214 55% 8%;
+    --foreground: 210 30% 96%;
+    --card: 214 46% 12%;
+    --card-foreground: 210 30% 96%;
+    --popover: 214 46% 12%;
+    --popover-foreground: 210 30% 96%;
+    --primary: 44 62% 52%;
+    --primary-foreground: 214 68% 10%;
+    --secondary: 214 40% 15%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 214 40% 15%;
+    --muted-foreground: 212 22% 70%;
+    --accent: 44 62% 52%;
+    --accent-foreground: 214 68% 10%;
+    --destructive: 0 70% 52%;
     --destructive-foreground: 0 0% 98%;
-    --border: 213 40% 26%;
-    --input: 213 40% 26%;
-    --ring: 44 60% 47%;
-    --chart-1: 44 60% 47%;
+    --border: 214 34% 23%;
+    --input: 214 34% 23%;
+    --ring: 44 62% 52%;
+    --canvas: 214 55% 6%;
+    --gold-text: 44 72% 62%;
+    --chart-1: 44 62% 52%;
     --chart-2: 210 40% 70%;
     --chart-3: 197 37% 50%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar-background: 213 68% 14%;
+    --sidebar-background: 214 62% 5%;
     --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 44 60% 47%;
-    --sidebar-primary-foreground: 213 68% 14%;
-    --sidebar-accent: 213 60% 20%;
+    --sidebar-primary: 44 62% 52%;
+    --sidebar-primary-foreground: 214 68% 10%;
+    --sidebar-accent: 214 45% 14%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 213 50% 22%;
-    --sidebar-ring: 44 60% 47%;
+    --sidebar-border: 214 40% 16%;
+    --sidebar-ring: 44 62% 52%;
   }
 }
 
@@ -98,6 +101,24 @@
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
   }
+  /* The public website: Instrument Sans, condensed for headlines like airport signage. */
+  .site {
+    font-family: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .site .display {
+    font-stretch: 78%;
+    font-weight: 700;
+    letter-spacing: -0.012em;
+    line-height: 1;
+  }
+  .site h1, .site h2 { text-wrap: balance; }
+  .site section[id] { scroll-margin-top: 4.5rem; }
+  .site .tabular { font-variant-numeric: tabular-nums; }
+  .site a:focus-visible, .site button:focus-visible, .site summary:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
   .app-shell h1, .app-shell h2, .app-shell h3 { letter-spacing: -0.01em; }
   .app-shell .tabular, .app-shell table { font-variant-numeric: tabular-nums; }
 
@@ -110,3 +131,30 @@
     );
   }
 }
+
+/* Night mode: the app marks meaning with fixed Tailwind colours (green for paid, red for owed, amber for warnings,
+   pastel chips). In the dark those would be unreadable, so each is mapped once here to a night-friendly pair. */
+.dark .text-emerald-600, .dark .text-emerald-700 { color: #34d399; }
+.dark .text-emerald-800, .dark .text-emerald-900, .dark .text-emerald-950 { color: #6ee7b7; }
+.dark .text-rose-500, .dark .text-rose-600, .dark .text-rose-700 { color: #fb7185; }
+.dark .text-rose-800, .dark .text-red-700 { color: #fda4af; }
+.dark .text-amber-600, .dark .text-amber-700 { color: #fbbf24; }
+.dark .text-amber-800, .dark .text-amber-900 { color: #fcd34d; }
+.dark .text-orange-600 { color: #fb923c; }
+.dark .text-blue-700 { color: #93c5fd; }
+.dark .text-indigo-700 { color: #a5b4fc; }
+.dark .text-slate-600, .dark .text-slate-700, .dark .text-gray-500 { color: #cbd5e1; }
+.dark .text-slate-800, .dark .text-slate-900 { color: #e2e8f0; }
+.dark .bg-emerald-50, .dark .bg-emerald-100 { background-color: rgb(16 185 129 / 0.16); }
+.dark .bg-amber-50, .dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.16); }
+.dark .bg-rose-50, .dark .bg-rose-100 { background-color: rgb(244 63 94 / 0.16); }
+.dark .bg-orange-100 { background-color: rgb(249 115 22 / 0.16); }
+.dark .bg-indigo-50, .dark .bg-indigo-100 { background-color: rgb(99 102 241 / 0.18); }
+.dark .bg-sky-50, .dark .bg-sky-100 { background-color: rgb(14 165 233 / 0.16); }
+.dark .bg-slate-50, .dark .bg-slate-100 { background-color: hsl(var(--secondary)); }
+.dark .bg-white { background-color: hsl(var(--card)); }
+.dark .border-emerald-200 { border-color: rgb(16 185 129 / 0.35); }
+.dark .border-amber-200 { border-color: rgb(245 158 11 / 0.35); }
+.dark .border-rose-200 { border-color: rgb(244 63 94 / 0.35); }
+.dark .border-indigo-200, .dark .border-blue-200 { border-color: rgb(99 102 241 / 0.35); }
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: hsl(var(--border)); }

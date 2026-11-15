@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, UserPlus, ShieldCheck } from "lucide-react";
 import { roleLabel } from "@/lib/packages";
 import ConfirmAction from "@/components/ConfirmAction";
+import StaffCreate from "@/components/StaffCreate";
 
 const ROLES = ["passenger", "supervisor", "management", "admin"];
 
@@ -110,10 +111,13 @@ export default function StaffManager() {
 
   return (
     <div className="space-y-5">
+      <StaffCreate onCreated={load} />
+
       <div className="bg-card rounded-2xl border border-border p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <UserPlus className="w-4 h-4 text-accent" /> Invite Staff Member
+        <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-accent" /> Or send an invitation email
         </h3>
+        <p className="text-xs text-muted-foreground mb-3">Needs email to be set up. The person chooses their own password from the link.</p>
         <div className="flex flex-col sm:flex-row gap-3 items-end">
           <div className="space-y-1.5 flex-1 w-full">
             <Label className="text-xs">Email</Label>

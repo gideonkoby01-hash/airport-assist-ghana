@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import {
-  Armchair, BarChart3, Bell, CalendarPlus, ClipboardList, FileText, LayoutDashboard, LogOut,
+  Armchair, BarChart3, Bell, Contact, CalendarPlus, ClipboardList, FileText, LayoutDashboard, LogOut,
   Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Ticket, UserCheck,
   UserCircle, UserPlus, Users, X, Zap,
 } from "lucide-react";
@@ -42,6 +42,7 @@ const NAV = {
     { heading: "Operations", items: [
       { label: "Summary", to: "/management", tab: null, icon: LayoutDashboard, primary: true },
       { label: "All bookings", to: "/management", tab: "bookings", icon: ClipboardList, primary: true },
+      { label: "Customers", to: "/management", tab: "customers", icon: Contact },
       { label: "Notifications", to: "/management", tab: "notifications", icon: Bell, primary: true },
     ] },
     { heading: "Team and quality", items: [
@@ -58,6 +59,7 @@ const NAV = {
       { label: "Notifications", to: "/admin", tab: "notifications", icon: Bell, primary: true },
     ] },
     { heading: "People", items: [
+      { label: "Customers", to: "/admin", tab: "customers", icon: Contact },
       { label: "Staff accounts", to: "/admin", tab: "staff", icon: Users, primary: true },
       { label: "Staff requests", to: "/admin", tab: "requests", icon: UserPlus },
       { label: "Supervisors", to: "/admin", tab: "supervisors", icon: UserCheck },

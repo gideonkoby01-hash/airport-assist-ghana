@@ -4,12 +4,14 @@ import { useAuth } from "@/lib/AuthContext";
 import { roleLabel } from "@/lib/packages";
 import { initials } from "@/lib/profile";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { LogOut, Moon, ShieldCheck, Sun, UserRound } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
 // The person's name and role, always in the top corner: My profile, Account security and Sign out.
 export default function UserMenu({ dark = false }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
   const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
 
   const signOut = async () => {
@@ -44,6 +46,10 @@ export default function UserMenu({ dark = false }) {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/security"><ShieldCheck className="w-4 h-4 mr-2" aria-hidden="true" /> Account security</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); toggle(); }}>
+          {theme === "dark" ? <Sun className="w-4 h-4 mr-2" aria-hidden="true" /> : <Moon className="w-4 h-4 mr-2" aria-hidden="true" />}
+          {theme === "dark" ? "Day mode" : "Night mode"}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={signOut}>

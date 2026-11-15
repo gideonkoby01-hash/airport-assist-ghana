@@ -199,7 +199,7 @@ These `VITE_` values are public by design; the data is protected by the database
 update public.profiles set role = 'admin' where email = 'you@example.com';
 ```
 
-3. Sign out and in again. Admin and management accounts must use two-step verification, so you are first asked to set up an authenticator app (scan the QR code, enter the 6-digit code), then to sign in once more with a code. After that you land on the Admin dashboard. From there, **Staff Accounts** invites supervisors and management by email (the invite email opens a page where they choose their own password, then they sign in normally; **Resend access email** sends a fresh invitation to someone who has not accepted, or a password reset link to someone already active); people who register themselves and ask for staff access appear under **Staff Requests** for approval.
+3. Sign out and in again. Admin and management accounts must use two-step verification, so you are first asked to set up an authenticator app (scan the QR code, enter the 6-digit code), then to sign in once more with a code. After that you land on the Admin dashboard. From there, **Staff Accounts** can **create** a supervisor or management account directly (no email needed: you are shown a one-time temporary password to hand over, and they must choose their own at first sign-in), or invite supervisors and management by email (the invite email opens a page where they choose their own password, then they sign in normally; **Resend access email** sends a fresh invitation to someone who has not accepted, or a password reset link to someone already active); people who register themselves and ask for staff access appear under **Staff Requests** for approval.
 
 **Make a second admin straight away**: have a trusted person register normally, then change their role to Admin in the **User Accounts** list (the invite form cannot create admins). The system refuses to demote, disable or delete the last active admin, and a lost phone with no second admin means working in the Supabase SQL editor.
 
@@ -246,7 +246,9 @@ Use a private window and a second email address for the passenger.
 
 ## Updating a live system with a new database change
 
-Some updates include a new file in `supabase/migrations/`. The site itself updates by itself when `main` changes, but database changes do not. Without a terminal: open the Supabase dashboard, **SQL Editor**, **New query**, paste the whole contents of the new migration file, and press **Run**. Run new files in date order, once each. Migrations applied so far are listed by their file names; the newest is `20261115000002_profile_self_service.sql`, which adds the phone number and the self-service "My profile" save. Until it is applied, the profile page shows an error when saving.
+Some updates include a new file in `supabase/migrations/`. The site itself updates by itself when `main` changes, but database changes do not. Without a terminal: open the Supabase dashboard, **SQL Editor**, **New query**, paste the whole contents of the new migration file, and press **Run**. Run new files in date order, once each. Run new files in date order. `20261115000002_profile_self_service.sql` adds the phone number and the self-service "My profile" save; `20261115000003_customer_crm.sql` adds the Customers area (and links every existing booking to a customer); `20261115000004_staff_account_creation.sql` adds the forced password change for admin-created accounts. Until the matching file is applied, those screens show an error.
+
+New or changed Edge Functions (`supabase/functions/...`) must also be deployed before the feature works. `createStaffAccount` is new.
 
 ## Known limits and follow-ups
 

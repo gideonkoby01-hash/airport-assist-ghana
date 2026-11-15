@@ -1,114 +1,58 @@
 import React from "react";
-import { Clock, ShieldCheck, Plane, Route, Layers } from "lucide-react";
-import { Image } from "@/components/ui/image";
 
-const COMPANY_DESCRIPTION =
-  "Airport Assist Ghana provides personalised airport concierge and passenger assistance services at Accra International Airport in Accra, Ghana. Our mission is to make airport journeys smoother, more comfortable and less stressful through professional guidance, practical support and attentive service. Available 24 hours a day, seven days a week, our team assists passengers throughout key stages of their arrival and departure, helping them navigate airport procedures with greater confidence and peace of mind. From personalised meet and greet and baggage assistance to priority check-in, eligible fast-track escort services and premium lounge access where included, we help make every journey more convenient.";
-
-const MISSION =
-  "To take the stress out of airport navigation by delivering courteous, personalised and efficient assistance that helps passengers travel with greater comfort, confidence and peace of mind.";
-
-const REASONS = [
-  {
-    icon: Clock,
-    title: "24/7 Availability",
-    text: "Our team is on hand around the clock, seven days a week, to meet every flight.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Professional & Discreet",
-    text: "Courteous, attentive staff who handle your journey with care and discretion.",
-  },
-  {
-    icon: Plane,
-    title: "Arrival & Departure",
-    text: "Support through key stages of both arrival and departure, end to end.",
-  },
-  {
-    icon: Route,
-    title: "Priority-route Assistance",
-    text: "Eligible fast-track escort services to help you move through the airport.",
-  },
-  {
-    icon: Layers,
-    title: "Flexible Packages",
-    text: "Choose the level of service that suits your journey and budget.",
-  },
+const FACTS = [
+  ["Open all hours", "Our team is on hand 24 hours a day, seven days a week, so we can meet any flight."],
+  ["Courteous and discreet", "Attentive staff who handle your journey with care and keep your business to themselves."],
+  ["Both directions", "Help on the way in and on the way out, from the airbridge to the car and from the kerb to the gate."],
+  ["The quick route", "Fast-track escort through immigration and security where your package includes it."],
+  ["Pick what you need", "From a porter on his own to a full service with lounge access. Choose the level that suits the trip and the budget."],
 ];
 
 export default function About() {
   return (
-    <section id="about" className="py-20 lg:py-28 bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <div>
-            <span className="text-[#8a6a00] font-semibold uppercase tracking-[0.2em] text-sm">
-              Who We Are
-            </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-[#0b213c]">
-              A smoother way through Accra International Airport
-            </h2>
-            <p className="mt-6 text-[#5a697c] leading-relaxed">
-              {COMPANY_DESCRIPTION}
+    <section id="about" className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24">
+      <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <figure className="lg:col-span-5">
+          <img
+            src="/images/porter-hero.webp"
+            alt="A porter with a luggage trolley, standing with three travellers in the check-in hall"
+            width="1024"
+            height="1024"
+            loading="lazy"
+            className="w-full h-auto aspect-[4/5] object-cover object-[50%_40%]"
+          />
+          <figcaption className="mt-3 text-sm text-muted-foreground">Porters take the bags; escorts take you through the terminal.</figcaption>
+        </figure>
+
+        <div className="lg:col-span-7">
+          <h2 className="display text-[clamp(2.2rem,4.6vw,3.4rem)] text-foreground">A smoother way through the airport.</h2>
+          <div className="mt-6 space-y-4 text-[1.05rem] leading-relaxed text-muted-foreground max-w-[38rem]">
+            <p>
+              Airport Assist Ghana provides personalised airport concierge and passenger assistance at Accra International Airport in Accra, Ghana.
+              We help passengers through the key stages of their arrival and departure, so they get through the airport with more confidence and less worry.
+            </p>
+            <p>
+              That means meeting you on arrival, helping with bags, priority check-in, eligible fast-track escort, and premium lounge access where your package includes it.
             </p>
           </div>
-          <div className="relative">
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
-              <Image
-                src="/images/lounge.webp"
-                alt="Airport lounge and concierge service"
-                className="w-full h-full object-cover"
-                fittingType="fill"
-                focalPointX={0.5}
-                focalPointY={0.5}
-              />
-            </div>
-            <div className="absolute -bottom-5 -left-5 hidden sm:block bg-[#0b213c] text-white rounded-xl px-6 py-4 shadow-xl">
-              <p className="text-2xl font-bold text-[#d4af37]">24/7</p>
-              <p className="text-xs text-white/80">Always available</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="mt-16 lg:mt-20 bg-[#0b213c] rounded-2xl px-6 py-10 lg:px-12 lg:py-12 text-center">
-          <span className="text-[#d4af37] font-semibold uppercase tracking-[0.2em] text-sm">
-            Our Mission
-          </span>
-          <p className="mt-4 text-xl sm:text-2xl text-white font-medium leading-relaxed max-w-3xl mx-auto">
-            {MISSION}
-          </p>
-        </div>
-
-        <div className="mt-16">
-          <div className="text-center max-w-2xl mx-auto">
-            <h3 className="text-2xl sm:text-3xl font-bold text-[#0b213c]">
-              Why choose Airport Assist
-            </h3>
-            <p className="mt-3 text-[#5a697c]">
-              Practical, dependable support designed around the traveller.
-            </p>
-          </div>
-          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {REASONS.map((r) => {
-              const Icon = r.icon;
-              return (
-                <div
-                  key={r.title}
-                  className="bg-[#f7f9fc] rounded-2xl border border-[#e3e9f2] p-6"
-                >
-                  <div className="w-11 h-11 rounded-xl bg-[#d4af37]/15 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-[#d4af37]" />
-                  </div>
-                  <h4 className="mt-4 font-semibold text-[#0b213c]">{r.title}</h4>
-                  <p className="mt-2 text-sm text-[#5a697c] leading-relaxed">
-                    {r.text}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+          <dl className="mt-10 border-t border-border">
+            {FACTS.map(([t, d]) => (
+              <div key={t} className="grid sm:grid-cols-[13rem_1fr] gap-x-6 gap-y-1 py-4 border-b border-border">
+                <dt className="font-semibold text-foreground">{t}</dt>
+                <dd className="text-muted-foreground leading-relaxed">{d}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </div>
+
+      <blockquote className="mt-16 lg:mt-24 border-l-4 border-accent pl-6 sm:pl-10 max-w-4xl">
+        <p className="display text-[clamp(1.7rem,3.6vw,2.7rem)] text-foreground" style={{ lineHeight: 1.12 }}>
+          To take the stress out of airport navigation with courteous, personalised and efficient help, so you travel in comfort and with confidence.
+        </p>
+        <footer className="mt-4 text-sm text-muted-foreground">Our mission</footer>
+      </blockquote>
     </section>
   );
 }

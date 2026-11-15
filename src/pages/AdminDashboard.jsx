@@ -20,6 +20,7 @@ import DiscountManager from "@/components/DiscountManager";
 import BookingFinancials from "@/components/BookingFinancials";
 import RatingsReviews from "@/components/ratings/RatingsReviews";
 import StatCard from "@/components/StatCard";
+import CustomersPanel from "@/components/crm/CustomersPanel";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
 
@@ -144,6 +145,7 @@ function AdminInner() {
         </div>
       )}
 
+      {tab === "customers" && <CustomersPanel tab="customers" isAdmin />}
       {tab === "staff" && <StaffManager />}
       {tab === "email" && <EmailIssues />}
       {tab === "settings" && <AdminSettings />}
