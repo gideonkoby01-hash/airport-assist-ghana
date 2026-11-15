@@ -76,6 +76,7 @@ export const REPORT_PAYMENT_LABELS = {
   pos: "POS",
   cash: "Cash",
   momo: "MoMo",
+  account: "Account",
 };
 
 export const SHIFT_LABELS = {

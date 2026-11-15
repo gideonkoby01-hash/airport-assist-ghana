@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import ConfirmAction from "@/components/ConfirmAction";
+import { notifyError } from "@/lib/notify";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +18,7 @@ export default function LoungeManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.Lounge.filter({}, { sort: "name" });
+      const page = await api.entities.Lounge.filter({}, { sort: "name" });
       setLounges(page.items || []);
     } finally {
       setLoading(false);
@@ -31,12 +33,12 @@ export default function LoungeManager() {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await base44.entities.Lounge.create({ name: name.trim(), location: location.trim(), active: true });
+      await api.entities.Lounge.create({ name: name.trim(), location: location.trim(), active: true });
       setName("");
       setLocation("");
       load();
     } catch (e) {
-      alert(e.message || "Failed to add lounge.");
+      notifyError(e.message || "Failed to add lounge.");
     } finally {
       setSaving(false);
     }
@@ -44,20 +46,19 @@ export default function LoungeManager() {
 
   const toggle = async (l) => {
     try {
-      await base44.entities.Lounge.update(l.id, { active: !l.active });
+      await api.entities.Lounge.update(l.id, { active: !l.active });
       load();
     } catch (e) {
-      alert(e.message || "Failed to update lounge.");
+      notifyError(e.message || "Failed to update lounge.");
     }
   };
 
   const remove = async (l) => {
-    if (!confirm(`Delete lounge "${l.name}"?`)) return;
     try {
-      await base44.entities.Lounge.delete(l.id);
+      await api.entities.Lounge.delete(l.id);
       load();
     } catch (e) {
-      alert(e.message || "Failed to delete lounge.");
+      notifyError(e.message || "Failed to delete lounge.");
     }
   };
 
@@ -104,9 +105,11 @@ export default function LoungeManager() {
                     <Switch checked={!!l.active} onCheckedChange={() => toggle(l)} />
                     {l.active ? "Active" : "Inactive"}
                   </label>
-                  <button onClick={() => remove(l)} className="text-rose-500 hover:text-rose-700">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <ConfirmAction title={`Delete lounge "${l.name}"?`} description="It will no longer be offered. Past bookings keep the name." confirmLabel="Delete lounge" destructive onConfirm={() => remove(l)}>
+                    <button aria-label={`Delete lounge ${l.name}`} className="text-rose-500 hover:text-rose-700">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </ConfirmAction>
                 </div>
               </div>
             ))}

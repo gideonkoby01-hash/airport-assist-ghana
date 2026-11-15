@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +37,7 @@ export default function ReportingBaselineControl({ baseline, onReset }) {
     setSaving(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("manageReportingBaseline", { action: "set" });
+      const res = await api.functions.invoke("manageReportingBaseline", { action: "set" });
       if (res.data?.error) setError(res.data.error);
       else await onReset();
     } catch (e) {

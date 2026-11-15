@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StarRatingDisplay from "@/components/ratings/StarRatingDisplay";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
@@ -22,7 +22,7 @@ export default function ReviewDetailDialog({ review, open, onOpenChange }) {
     let active = true;
     setBooking(null);
     if (!open || !review?.booking_id) return undefined;
-    base44.entities.Booking
+    api.entities.Booking
       .get(review.booking_id)
       .then((b) => {
         if (active) setBooking(b);

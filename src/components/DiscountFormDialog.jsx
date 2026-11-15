@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,7 +84,7 @@ export default function DiscountFormDialog({ open, onOpenChange, discount, onSav
     setGenerating(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("manageDiscountCode", { action: "generate" });
+      const res = await api.functions.invoke("manageDiscountCode", { action: "generate" });
       const code = res?.data?.code;
       if (code) set("code", code);
       else setError(res?.data?.error || "Could not generate a code.");
@@ -122,7 +122,7 @@ export default function DiscountFormDialog({ open, onOpenChange, discount, onSav
           .filter(Boolean),
         active: form.active,
       };
-      const res = await base44.functions.invoke("manageDiscountCode", payload);
+      const res = await api.functions.invoke("manageDiscountCode", payload);
       if (res?.data?.error) throw new Error(res.data.error);
       onSaved?.(res?.data?.record);
       onOpenChange(false);

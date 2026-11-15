@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Tag, CheckCircle2, X } from "lucide-react";
@@ -22,7 +22,7 @@ export default function DiscountCodeInput({ applied, onApplied, onRemoved, packa
     }
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("validateDiscountCode", {
+      const res = await api.functions.invoke("validateDiscountCode", {
         discount_code: value,
         package_code: packageCode,
         num_passengers: numPassengers,

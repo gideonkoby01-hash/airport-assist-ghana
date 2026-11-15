@@ -9,9 +9,12 @@ export default [
     files: [
       "src/components/**/*.{js,mjs,cjs,jsx}",
       "src/pages/**/*.{js,mjs,cjs,jsx}",
+      "src/lib/**/*.{js,jsx}",
+      "src/api/**/*.js",
+      "src/hooks/**/*.{js,jsx}",
       "src/Layout.jsx",
     ],
-    ignores: ["src/lib/**/*", "src/components/ui/**/*"],
+    ignores: ["src/components/ui/**/*", "**/*.test.mjs"],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
     languageOptions: {

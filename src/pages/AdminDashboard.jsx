@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
+import AdminSettings from "@/components/AdminSettings";
+import EmailIssues from "@/components/EmailIssues";
+import ExportPanel from "@/components/ExportPanel";
 import StaffManager from "@/components/StaffManager";
 import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
@@ -47,7 +50,7 @@ function AdminInner() {
         let items = [];
         let cursor;
         do {
-          const page = await base44.entities.ShiftReport.filter(
+          const page = await api.entities.ShiftReport.filter(
             {},
             {
               sort: "-created_date",
@@ -73,9 +76,9 @@ function AdminInner() {
         if (active) setLoadingReports(false);
       }
     })();
-    base44.entities.User.filter({}).then((items) => setUserCount((items || []).length)).catch(() => {});
-    base44.entities.Lounge.count().then(setLoungeCount).catch(() => {});
-    base44.entities.Booking
+    api.entities.User.count().then((c) => setUserCount(c || 0)).catch(() => {});
+    api.entities.Lounge.count().then(setLoungeCount).catch(() => {});
+    api.entities.Booking
       .aggregate({ groupBy: "status", sum: ["outstanding_balance"] })
       .then((r) => setOutstanding((r.rows || []).reduce((s, row) => s + (row.sum_outstanding_balance || 0), 0)))
       .catch(() => setOutstanding(0));
@@ -86,7 +89,7 @@ function AdminInner() {
 
   useEffect(() => {
     const loadUnread = () =>
-      base44.entities.Notification.count({ user_id: user.id, read: false })
+      api.entities.Notification.count({ user_id: user.id, read: false })
         .then((c) => setUnreadCount(c || 0))
         .catch(() => {});
     loadUnread();
@@ -134,6 +137,8 @@ function AdminInner() {
         <TabButton active={tab === "discounts"} onClick={() => setTab("discounts")}>Discounts</TabButton>
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
         <TabButton active={tab === "ratings"} onClick={() => setTab("ratings")}>Ratings &amp; Reviews</TabButton>
+        <TabButton active={tab === "email"} onClick={() => setTab("email")}>Email</TabButton>
+        <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>Settings</TabButton>
         <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
           Notifications
           {unreadCount > 0 && (
@@ -160,10 +165,13 @@ function AdminInner() {
             <StatCard label="Lounges" value={loungeCount} icon={Armchair} />
           </div>
           <BookingFinancials />
+          <ExportPanel />
         </div>
       )}
 
       {tab === "staff" && <StaffManager />}
+      {tab === "email" && <EmailIssues />}
+      {tab === "settings" && <AdminSettings />}
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}

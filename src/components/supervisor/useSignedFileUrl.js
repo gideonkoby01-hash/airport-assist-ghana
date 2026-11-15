@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 
 /**
  * Resolves a private file URI to a short-lived signed URL.
@@ -15,7 +15,7 @@ export default function useSignedFileUrl(fileUri) {
     setFailed(false);
     if (!fileUri) return undefined;
 
-    base44.integrations.Core.CreateFileSignedUrl({ file_uri: fileUri })
+    api.storage.createFileSignedUrl({ file_uri: fileUri })
       .then((res) => {
         if (active) setUrl(res?.signed_url || null);
       })

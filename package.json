@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "airport-assist-ghana",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,11 +9,13 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/api/filters.test.mjs src/lib/bookingRules.test.mjs src/lib/bookingHistory.test.mjs src/lib/receiptHtml.test.mjs src/lib/csv.test.mjs src/lib/settingsContext.test.mjs src/lib/smtpHelp.test.mjs",
+    "build:emails": "node scripts/build-emails.mjs",
+    "test:db": "bash supabase/tests/run_db_tests.sh",
+    "test:functions": "deno test --allow-all supabase/functions/_shared"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.61",
-    "@base44/vite-plugin": "^1.0.52",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -45,6 +47,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@stripe/react-stripe-js": "^3.0.0",
     "@stripe/stripe-js": "^5.2.0",
+    "@supabase/supabase-js": "^2.119.0",
     "@tanstack/react-query": "^5.84.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
@@ -81,8 +84,10 @@
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@types/node": "^22.13.5",
+    "@types/nodemailer": "8.0.2",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/smtp-server": "3.5.13",
     "@vitejs/plugin-react": "^6.0.5",
     "autoprefixer": "^10.4.20",
     "baseline-browser-mapping": "^2.8.32",
@@ -92,8 +97,11 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "eslint-plugin-unused-imports": "^4.3.0",
     "globals": "^15.14.0",
+    "mjml": "^5.4.1",
     "nitro": "^3.0.260610-beta",
+    "nodemailer": "6.9.16",
     "postcss": "^8.5.3",
+    "smtp-server": "3.13.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
     "vite": "^8.2.0"

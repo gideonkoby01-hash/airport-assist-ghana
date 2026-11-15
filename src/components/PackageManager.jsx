@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { notifyError } from "@/lib/notify";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,7 @@ export default function PackageManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const page = await base44.entities.ServicePackage.filter({}, { sort: "price" });
+      const page = await api.entities.ServicePackage.filter({}, { sort: "price" });
       setPackages(page.items || []);
     } finally {
       setLoading(false);
@@ -50,7 +51,7 @@ export default function PackageManager() {
     setSaving(p.id);
     try {
       const d = draft(p);
-      await base44.entities.ServicePackage.update(p.id, {
+      await api.entities.ServicePackage.update(p.id, {
         name: d.name,
         price: Number(d.price),
         inclusions: d.inclusions,
@@ -65,7 +66,7 @@ export default function PackageManager() {
       });
       load();
     } catch (e) {
-      alert(e.message || "Failed to save package.");
+      notifyError(e.message || "Failed to save package.");
     } finally {
       setSaving(null);
     }

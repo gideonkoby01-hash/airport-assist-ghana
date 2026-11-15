@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X, ChevronRight } from "lucide-react";
+import { LogOut, Menu, X, ChevronRight, ShieldCheck } from "lucide-react";
 import Logo from "@/components/Logo";
 import { roleLabel } from "@/lib/packages";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,8 @@ const NAV = {
     { label: "Service Packages", to: "/admin", tab: "packages" },
     { label: "Lounges", to: "/admin", tab: "lounges" },
     { label: "Shift Reports", to: "/admin", tab: "reports" },
+    { label: "Email", to: "/admin", tab: "email" },
+    { label: "Settings", to: "/admin", tab: "settings" },
     { label: "Ratings & Reviews", to: "/admin", tab: "ratings" },
   ],
 };
@@ -49,8 +51,9 @@ export default function AppLayout({ children }) {
   const items = NAV[role] || NAV.passenger;
   const currentTab = new URLSearchParams(location.search).get("tab");
 
-  const handleLogout = () => {
-    logout(false);
+  const handleLogout = async () => {
+    // Wait for sign-out to finish so the session is really gone before leaving the page.
+    await logout(false);
     navigate("/login", { replace: true });
     window.location.href = "/login";
   };
@@ -91,6 +94,14 @@ export default function AppLayout({ children }) {
           <p className="text-sm font-medium text-white truncate">{user?.email}</p>
           <p className="text-xs text-sidebar-foreground/70">{roleLabel(role)}</p>
         </div>
+        <Link
+          to="/security"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center rounded-lg px-3 py-2 mb-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          <ShieldCheck className="w-4 h-4 mr-2" aria-hidden="true" />
+          Account security
+        </Link>
         <Button
           variant="outline"
           className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"

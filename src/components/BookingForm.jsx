@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useSettings } from "@/lib/SettingsContext";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +22,8 @@ const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, 
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 
+// `user` and `supervisor` are still passed by the callers; the server now decides who a booking belongs to.
+// eslint-disable-next-line unused-imports/no-unused-vars
 export default function BookingForm({ channel = "online", user, supervisor = undefined, onCreated }) {
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
@@ -38,6 +42,12 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   });
   const [passengers, setPassengers] = useState([{ ...emptyPassenger }]);
   const [submitting, setSubmitting] = useState(false);
+  const [consented, setConsented] = useState(false);
+  const { settings } = useSettings();
+  // Online booking can be paused from Admin > Settings. Staff at the desk are never blocked.
+  const paused = channel === "online" && settings.online_bookings_enabled === "false";
+  // One key per form: if a submit is retried after a timeout, the server returns the first booking instead of a second.
+  const idempotencyKey = useRef(crypto.randomUUID());
   const [error, setError] = useState("");
   const [created, setCreated] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -50,7 +60,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     let active = true;
     (async () => {
       try {
-        const page = await base44.entities.ServicePackage.filter({ active: true }, { sort: "price" });
+        const page = await api.entities.ServicePackage.filter({ active: true }, { sort: "price" });
         if (active) setPackages(page.items?.length ? page.items : PACKAGE_DEFINITIONS);
       } catch {
         if (active) setPackages(PACKAGE_DEFINITIONS);
@@ -122,6 +132,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   };
 
   const validate = () => {
+    if (channel === "online" && !consented) return "Please confirm that you have read the privacy notice.";
     if (!form.package_code) return "Please select a service package.";
     if (!form.flight_number.trim()) return "Flight number is required.";
     if (!form.flight_date) return "Flight date is required.";
@@ -148,7 +159,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       if (photoFile) {
         setPhotoUploading(true);
         try {
-          const upload = await base44.integrations.Core.UploadPrivateFile({ file: photoFile });
+          const upload = await api.storage.uploadPrivateFile({ file: photoFile });
           passenger_photo_uri = upload.file_uri;
         } catch (err) {
           setPhotoUploading(false);
@@ -161,7 +172,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       }
       // Price, discount and totals are recalculated on the server: the browser
       // never sets the amount that is saved.
-      const res = await base44.functions.invoke("createBooking", {
+      const res = await api.functions.invoke("createBooking", {
+        idempotency_key: idempotencyKey.current,
+        consent: channel === "online" ? true : undefined,
         channel,
         package_code: pkg.code,
         flight_type: form.flight_type,
@@ -182,6 +195,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       if (data.error) throw new Error(data.error);
       if (!data.booking) throw new Error("The booking could not be saved. Please try again.");
       setCreated(data.booking);
+      idempotencyKey.current = crypto.randomUUID(); // the next booking is a new submission
       setAppliedDiscount(null);
       if (onCreated) onCreated(data.booking);
     } catch (err) {
@@ -193,6 +207,15 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       setSubmitting(false);
     }
   };
+
+  if (paused) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-6 text-sm" role="status">
+        <p className="font-semibold mb-1">Online booking is paused</p>
+        <p>{settings.online_bookings_message}</p>
+      </div>
+    );
+  }
 
   if (created) {
     return (
@@ -356,7 +379,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Passenger {i + 1}</span>
                 {passengers.length > 1 &&
-              <button type="button" onClick={() => removePassenger(i)} className="text-rose-500 hover:text-rose-700">
+              <button type="button" aria-label={`Remove passenger ${i + 1}`} onClick={() => removePassenger(i)} className="text-rose-500 hover:text-rose-700">
                     <Trash2 className="w-4 h-4" />
                   </button>
               }
@@ -451,6 +474,16 @@ export default function BookingForm({ channel = "online", user, supervisor = und
 
       <PaymentInformation />
 
+      {channel === "online" && (
+        <label className="flex items-start gap-3 text-sm bg-card rounded-xl border border-border p-4">
+          <input type="checkbox" className="mt-1" checked={consented} onChange={(e) => setConsented(e.target.checked)} />
+          <span>
+            I have read the <Link to="/privacy" target="_blank" className="text-primary underline">privacy notice</Link> and agree that
+            Airport Assist Ghana may use my details to provide this service. I understand the photo of my ID is kept for 30 days after my flight and then deleted.
+          </span>
+        </label>
+      )}
+
       {/* Summary */}
       <div className="bg-primary text-primary-foreground rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -474,10 +507,10 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             </div>
           )}
         </div>
-        <Button type="submit" size="lg" disabled={submitting || !selectedPkg} className="bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button type="submit" size="lg" disabled={submitting || !selectedPkg || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
           {submitting ?
           <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}
             </> :
           channel === "walk_in" ?
           "Save walk-in booking" :

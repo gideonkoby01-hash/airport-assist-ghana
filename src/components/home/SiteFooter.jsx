@@ -2,9 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Plane } from "lucide-react";
 import { useHomeCta } from "@/components/home/useHomeCta";
+import { useSettings } from "@/lib/SettingsContext";
 
 export default function SiteFooter() {
   const { bookDest, signInDest, isAuthenticated } = useHomeCta();
+  const { settings } = useSettings();
 
   return (
     <footer className="bg-[#0b213c] text-white">
@@ -58,20 +60,20 @@ export default function SiteFooter() {
                   Book Now
                 </Link>
               </li>
-              <li className="pt-2 text-white/60 text-xs">
-                +233 537 755 063 / +233 246 222 777
-              </li>
-              <li className="text-white/60 text-xs">moehamedi@gmail.com</li>
-              <li className="text-white/60 text-xs">
-                39 Ring Road East, Nyaniba [GL-030-6750]
-              </li>
+              <li className="pt-2 text-white/60 text-xs">{settings.contact_phone}</li>
+              <li className="text-white/60 text-xs">{settings.contact_email}</li>
+              <li className="text-white/60 text-xs">{settings.contact_address}</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
-          <p>© {new Date().getFullYear()} Airport Assist Ghana. All rights reserved.</p>
-          <p>Accra International Airport, Accra, Ghana</p>
+          <p>© {new Date().getFullYear()} {settings.company_name}. All rights reserved.</p>
+          <p>
+            <Link to="/privacy" className="hover:text-[#d4af37] underline-offset-2 hover:underline">Privacy notice</Link>
+            <span className="mx-2">·</span>
+            Accra International Airport, Accra, Ghana
+          </p>
         </div>
       </div>
     </footer>

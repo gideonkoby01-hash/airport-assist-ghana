@@ -34,7 +34,7 @@ export default function SiteHeader() {
         <div className="flex items-center justify-between h-20">
           <Link to="/" onClick={close} className="flex items-center gap-2 shrink-0">
             <img
-              src="https://media.base44.com/images/public/6acb9a25b7704929e1c4bf0b/34167ba77_logo.png"
+              src="/images/logo-mark.webp"
               alt="Airport Assist Ghana logo"
               height="40"
               className="h-10 w-auto object-contain"

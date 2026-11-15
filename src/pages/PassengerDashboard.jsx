@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
+import { usePagedList } from "@/hooks/use-paged-list";
 import PassengerNotifications from "@/components/PassengerNotifications";
 import StatCard from "@/components/StatCard";
 import { PACKAGE_DEFINITIONS, formatGHS } from "@/lib/packages";
@@ -24,49 +25,48 @@ function PassengerInner() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "home";
   const [packages, setPackages] = useState(PACKAGE_DEFINITIONS);
-  const [bookings, setBookings] = useState([]);
-  const [loadingBk, setLoadingBk] = useState(true);
   const [stats, setStats] = useState({ total: 0, active: 0, completed: 0 });
   const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams(t === "home" ? {} : { tab: t });
 
   useEffect(() => {
-    base44.entities.ServicePackage
+    api.entities.ServicePackage
       .filter({ active: true }, { sort: "price" })
       .then((page) => page.items?.length && setPackages(page.items))
       .catch(() => {});
   }, []);
 
-  const loadBookings = async () => {
-    setLoadingBk(true);
+  // The list loads a page at a time; the three totals are counted by the database so they stay right however many bookings there are.
+  const mine = { $or: [{ passenger_user_id: user.id }, { created_by_id: user.id }] };
+  const paged = usePagedList("Booking", mine, { pageSize: 50 });
+  const bookings = paged.items;
+  const loadingBk = paged.loading;
+
+  const loadStats = async () => {
     try {
-      const page = await base44.entities.Booking.filter(
-        { $or: [{ passenger_user_id: user.id }, { created_by_id: user.id }] },
-        { sort: "-created_date", limit: 50 }
-      );
-      const items = page.items || [];
-      setBookings(items);
-      setStats({
-        total: items.length,
-        active: items.filter((b) => ["confirmed", "assigned", "in_progress"].includes(b.status)).length,
-        completed: items.filter((b) => b.status === "completed").length,
-      });
+      const [total, active, completed] = await Promise.all([
+        api.entities.Booking.count(mine),
+        api.entities.Booking.count({ $and: [mine, { status: { $in: ["confirmed", "assigned", "in_progress"] } }] }),
+        api.entities.Booking.count({ $and: [mine, { status: "completed" }] }),
+      ]);
+      setStats({ total, active, completed });
     } catch {
-      setBookings([]);
-    } finally {
-      setLoadingBk(false);
+      setStats({ total: 0, active: 0, completed: 0 });
     }
+  };
+  const loadBookings = async () => {
+    await paged.reload();
+    await loadStats();
   };
 
   useEffect(() => {
-    loadBookings();
-
+    loadStats();
   }, []);
 
   useEffect(() => {
     const loadUnread = () =>
-      base44.entities.Notification.count({ user_id: user.id, read: false })
+      api.entities.Notification.count({ user_id: user.id, read: false })
         .then((c) => setUnreadCount(c || 0))
         .catch(() => {});
     loadUnread();
@@ -117,7 +117,7 @@ function PassengerInner() {
       {tab === "book" && <BookingForm channel="online" user={user} onCreated={loadBookings} />}
 
       {tab === "bookings" && (
-        <BookingList bookings={bookings} loading={loadingBk} emptyMessage="You have no bookings yet. Book a service to get started." />
+        <BookingList bookings={bookings} loading={loadingBk} emptyMessage="You have no bookings yet. Book a service to get started." hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
       )}
 
       {tab === "notifications" && (

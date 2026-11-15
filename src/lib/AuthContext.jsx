@@ -1,148 +1,120 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { appParams } from '@/lib/app-params';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { supabase } from '@/api/supabaseClient';
+import { api } from '@/api/db';
 
 const AuthContext = createContext(undefined);
+
+// The signed-in person as the rest of the app sees them: the Supabase auth identity plus the
+// `profiles` row (role, full name). Roles are only ever read from profiles, which clients cannot edit.
+async function loadUser(authUser) {
+  const profile = await api.entities.User.get(authUser.id);
+  return { ...profile, id: authUser.id, email: authUser.email };
+}
+
+// True when the account has a verified authenticator app but this session has not passed the code check yet.
+async function needsSecondFactor() {
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error) return false;
+  return data.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
+}
+
+async function hasVerifiedFactor() {
+  const { data } = await supabase.auth.mfa.listFactors();
+  return (data?.totp?.length ?? 0) > 0;
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [mfaRequired, setMfaRequired] = useState(false);
+  // Admin and management must set up two-step verification before they can use their access.
+  const [mfaEnrolRequired, setMfaEnrolRequired] = useState(false);
+  const [accountDisabled, setAccountDisabled] = useState(false);
 
-  useEffect(() => {
-    checkAppState();
-  }, []);
-
-  const checkAppState = async () => {
+  const checkUserAuth = useCallback(async () => {
+    setIsLoadingAuth(true);
     try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
-      
-      try {
-        const publicSettings = await base44.app.getPublicSettings();
-        setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-          setAuthChecked(true);
-        }
-        setIsLoadingPublicSettings(false);
-      } catch (appError) {
-        console.error('App state check failed:', appError);
-        
-        // Handle app-level errors
-        if (appError.status === 403 && appError.data?.extra_data?.reason) {
-          const reason = appError.data.extra_data.reason;
-          if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
-          } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
-          } else {
-            setAuthError({
-              type: reason,
-              message: appError.message
-            });
-          }
-        } else {
-          setAuthError({
-            type: 'unknown',
-            message: appError.message || 'Failed to load app'
-          });
-        }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
+      const { data } = await supabase.auth.getSession();
+      const authUser = data.session?.user;
+      if (!authUser) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setMfaRequired(false);
+        setMfaEnrolRequired(false);
+        setAccountDisabled(false);
+        return;
       }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      setAuthError({
-        type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
-      });
-      setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
-    }
-  };
-
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      let currentUser = await base44.auth.me();
-      // Apply any pending staff role assignment (admin invite flow).
-      try {
-        const res = await base44.functions.invoke("applyStaffRoleOnLogin", {});
-        if (res?.data?.applied) {
-          currentUser = await base44.auth.me();
-        }
-      } catch (e) {
-        console.warn("Staff role check failed:", e);
+      if (await needsSecondFactor()) {
+        // Signed in with a password but not yet verified: hold the app back until the code is entered.
+        setMfaRequired(true);
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
       }
-      setUser(currentUser);
+      setMfaRequired(false);
+      const loaded = await loadUser(authUser);
+      setAccountDisabled(Boolean(loaded.disabled));
+      // A staff session that passed the check is already aal2; one with no factor yet must enrol first.
+      setMfaEnrolRequired(!loaded.disabled && ['admin', 'management'].includes(loaded.role) && !(await hasVerifiedFactor()));
+      setUser(loaded);
       setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
+      setAuthError(null);
     } catch (error) {
       console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
+      setUser(null);
       setIsAuthenticated(false);
-      setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
       if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
+        setAuthError({ type: 'auth_required', message: 'Authentication required' });
       }
+    } finally {
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
     }
-  };
+  }, []);
 
-  const logout = (shouldRedirect = true) => {
+  useEffect(() => {
+    checkUserAuth();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      // Token refreshes keep the same user; only re-check when the identity or assurance can change.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED' || event === 'MFA_CHALLENGE_VERIFIED') {
+        // Deferred: supabase-js warns against calling its own APIs inside this callback.
+        setTimeout(checkUserAuth, 0);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [checkUserAuth]);
+
+  const logout = async (shouldRedirect = true) => {
+    await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
-    }
+    setMfaRequired(false);
+    if (shouldRedirect) window.location.href = '/login';
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    if (window.location.pathname !== '/login') window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      authChecked,
-      logout,
-      navigateToLogin,
-      checkUserAuth,
-      checkAppState
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isLoadingAuth,
+        authError,
+        authChecked,
+        mfaRequired,
+        mfaEnrolRequired,
+        accountDisabled,
+        logout,
+        navigateToLogin,
+        checkUserAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

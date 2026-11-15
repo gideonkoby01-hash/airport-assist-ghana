@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Users, X, ZoomIn, ZoomOut } from "lucide-react";
 
 /**
@@ -28,7 +28,7 @@ export default function PassengerPhoto({ fileUri }) {
     }
     (async () => {
       try {
-        const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({
+        const { signed_url } = await api.storage.createFileSignedUrl({
           file_uri: fileUri,
         });
         if (active) setSignedUrl(signed_url);

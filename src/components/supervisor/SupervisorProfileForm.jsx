@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,7 @@ export default function SupervisorProfileForm({ record = undefined, user = undef
     }
     let active = true;
     setLoading(true);
-    base44.entities.SupervisorDirectory.filter({ user_id: user.id })
+    api.entities.SupervisorDirectory.filter({ user_id: user.id })
       .then((res) => {
         const items = res?.items || res || [];
         if (active) setEntry(items[0] || null);
@@ -79,7 +79,7 @@ export default function SupervisorProfileForm({ record = undefined, user = undef
     }
     setUploading(true);
     try {
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+      const { file_uri } = await api.storage.uploadPrivateFile({ file });
       set("photo_uri", file_uri);
       toast({ title: "Photo uploaded", description: "Save the profile to keep this photograph." });
     } catch (e) {
@@ -112,9 +112,9 @@ export default function SupervisorProfileForm({ record = undefined, user = undef
       let saved;
       if (entry) {
         if (isAdmin) payload.full_name = fullName.trim();
-        saved = await base44.entities.SupervisorDirectory.update(entry.id, payload);
+        saved = await api.entities.SupervisorDirectory.update(entry.id, payload);
       } else if (user?.role === "supervisor") {
-        saved = await base44.entities.SupervisorDirectory.create({
+        saved = await api.entities.SupervisorDirectory.create({
           user_id: user.id,
           full_name: fullName.trim() || user.full_name || "",
           email: email || user.email,

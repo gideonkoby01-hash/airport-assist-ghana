@@ -1,34 +1,37 @@
 # AGENTS.md
 
-## Project Context
+## Project context
 
-This is a Base44 app repository. Treat it as user-owned application code, keep changes focused on the user's request, and preserve existing project conventions.
+Airport Assist Ghana: a React/Vite app on Supabase (Postgres, Auth, Storage, Edge Functions), hosted on Cloudflare Pages, sending email through Resend. Treat it as user-owned application code: keep changes focused on the request and follow existing conventions. See `README.md` for setup and `MIGRATION.md` for deployment.
 
-Start with `README.md` for local setup, environment variables, and publish workflow.
+The project was migrated from Base44. There is no Base44 code left except a few inert hooks in `src/components/ui/image*.js(x)`.
 
-## Base44 References
+## Key files
 
-- CLI overview: https://docs.base44.com/developers/references/cli/get-started/overview.md
-- Agent skills: https://docs.base44.com/developers/backend/overview/skills.md
+- `src/api/db.js`: the only place the frontend talks to Supabase data, functions and storage. Entities keep the old call shapes (`api.entities.Booking.filter(...)`).
+- `src/api/filters.js`: translates the small Mongo-style filters (`$or`, `$and`, `$in`, `$gte`, `$lte`, `$regex`) into PostgREST calls. Unit tested in `filters.test.mjs`.
+- `src/lib/AuthContext.jsx`: session, role from the `profiles` table, authenticator-app gate.
+- `supabase/migrations/`: schema and row-level security. Add a new migration file; never edit one that has been applied to a real project.
+- `supabase/functions/<name>/index.ts`: one Edge Function each. Shared code is in `supabase/functions/_shared/` (`auth.ts`, `http.ts`, `email.ts`, `notify.ts`, `bookingAccess.ts`, `discounts.ts`).
+- `.env.local`: local only, never commit secrets. `VITE_*` values are public by design; server secrets (`RESEND_API_KEY`, service role key) live in Supabase secrets only.
 
-If your agent supports Agent Skills, install or update Base44 skills before Base44-specific work:
+## Rules that matter
 
-```bash
-npx skills add base44/skills
-```
+- Browsers must not write `bookings`, `payments`, `discount_*`, `booking_ratings` or `profiles.role`. Do it in an Edge Function that checks the caller's role (`requireCaller(req, admin, [roles])`) and uses the service-role client. The row-level security tests in `supabase/tests/` enforce this; keep them passing.
+- Money changes go through SQL functions (`record_payment`, `claim_discount`), not read-modify-write in code.
+- Edge Functions return `HttpError` messages that are safe to show; anything else is logged and returned as a generic 500.
+- Email goes through `sendTransactionalEmail` (idempotent per `eventKey`, logged in `email_deliveries`). Edit templates in `supabase/emails/*.mjml`, then run `npm run build:emails` and commit the generated file.
 
-## Key Files
+- Booking status follows a state machine enforced by a database trigger (`bookings_status_guard`); `src/lib/bookingRules.js` mirrors it for the screens. Change both together. Money adjustments are ledger rows (`record_adjustment`), never edits.
+- Changes to bookings, payments, roles, packages, discounts and shift reports are written to the insert-only `audit_log` by triggers. When a function changes one of those tables, set `updated_by_id` to the acting user so the log names them.
+- Admin and management only count as such for a session that passed two-step verification (`app_role()` returns `mfa_required` otherwise). Tests that act as those roles must set `request.jwt.claims` with `aal2`.
+- A sale is a booking with a ledger payment (`createQuickSale` / `createBooking` + `recordPayment`). Shift reports are built from the ledger (`build_shift_report`); never add a way to type sales into a report.
+- Show problems with `notifyError` (`src/lib/notify.js`) and confirm destructive actions with `ConfirmAction`; do not use `alert()` or `confirm()`.
 
-- `src/`: frontend application source.
-- `src/api/base44Client.js`: frontend Base44 SDK client.
-- `vite.config.js`: Vite config and Base44 Vite plugin setup.
-- `.env.local`: local-only environment values; never commit secrets.
+- Configuration lives in one list, `supabase/functions/_shared/settingsRegistry.ts` (label, help text, type, range, default, and the old environment variable name). To add a setting: add it there, read it in a function with `loadSettings(admin)` (`settings.num('key')`), and the Admin > Settings page shows and validates it with no screen change. Do not call `Deno.env.get` for new tunable values. Settings shown on the public website also need an entry in `src/lib/publicSettings.js` (a test keeps the two in step).
+- Email goes out through `sendTransactionalEmail`, which uses Resend or SMTP according to the saved `email_provider` (`_shared/emailConfig.ts`). SMTP uses `_shared/smtp.ts` (certificates always verified; the SMTP host must be public: `hostnameProblem` in the registry). The SMTP tests run against a real local server (`smtp-server`); `nodemailer` and `smtp-server` are dev dependencies so Deno can find them.
+- API keys: read with `getSecret(admin, 'NAME')` (saved encrypted on the Settings page, else the environment). Add a new key to `SECRETS` in the registry. Never return a key to the browser or write one to a log or the audit log.
 
-## Working Notes
+## Before finishing code changes
 
-- Use `base44 dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
-- When docs or code mention the frontend being started automatically, that usually means the Base44 project config includes `site.serveCommand`, for example `"serveCommand": "npm run dev"` in `base44/config.jsonc`.
-- Use `npm run dev` only for frontend-only work against the hosted Base44 backend.
-- Prefer the existing Base44 CLI workflow over adding new npm scripts for Base44-specific tasks.
-- Reuse the existing SDK client and Vite plugin patterns before adding new Base44 integration paths.
-- Run the relevant checks from `package.json` before finishing code changes.
+Run what applies: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; for `supabase/functions` run `npm run test:functions` and `deno check supabase/functions/<name>/index.ts` (CI runs all of these); for `supabase/migrations` or policies run `npm run test:db` (needs a Postgres reachable through `PG*` variables).

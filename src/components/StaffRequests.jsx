@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -13,7 +13,7 @@ export default function StaffRequests() {
   const load = async () => {
     setLoading(true);
     try {
-      const items = await base44.entities.AccountRequest.filter(
+      const items = await api.entities.AccountRequest.filter(
         { status: filter },
         { sort: "-created_date", limit: 100 }
       );
@@ -37,7 +37,7 @@ export default function StaffRequests() {
   const process = async (id, action) => {
     setProcessing(id + action);
     try {
-      const res = await base44.functions.invoke("processStaffRequest", {
+      const res = await api.functions.invoke("processStaffRequest", {
         request_id: id,
         action,
       });

@@ -1,0 +1,72 @@
+<mjml>
+  <mj-head>
+    <mj-title>A booking still needs a supervisor</mj-title>
+    <mj-preview>Booking {{reference}} was made {{minutes}} minutes ago and has no supervisor yet.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, Arial, sans-serif" />
+      <mj-section background-color="#ffffff" padding="0 36px" />
+      <mj-column padding="0" />
+      <mj-text color="#0b213c" font-size="15px" line-height="1.6" padding="0" />
+      <mj-button background-color="#0b213c" color="#ffffff" border-radius="8px" font-size="15px" font-weight="700" inner-padding="14px 28px" padding="0" align="left" />
+      <mj-image padding="0" />
+      <mj-divider border-color="#e5e7eb" border-width="1px" padding="0" />
+      <mj-class name="h" font-family="Arial, Helvetica, Arial, sans-serif" font-weight="700" />
+      <mj-class name="label" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#5a697c" />
+      <mj-class name="muted" color="#5a697c" />
+      <mj-class name="goldbar" font-size="11px" letter-spacing="2px" text-transform="uppercase" font-weight="700" color="#d4af37" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#ffffff" width="600px">
+    <mj-wrapper padding="28px 12px" background-color="#ffffff">
+      <mj-section background-color="#0b213c" padding="24px 36px" border-radius="8px 8px 0 0">
+        <mj-column>
+          <mj-image src="{{logo_url}}" alt="Airport Assist Ghana" width="40px" align="center" padding="0 0 12px" />
+          <mj-text align="center" font-size="12px" letter-spacing="4px" font-weight="700" text-transform="uppercase" color="#ffffff">Airport Assist Ghana</mj-text>
+          <mj-text align="center" mj-class="goldbar" padding="6px 0 0">Needs attention</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding="40px 36px 8px">
+        <mj-column>
+          <mj-text mj-class="h" font-size="28px" line-height="1.2" padding="0 0 10px">Booking not assigned</mj-text>
+          <mj-text mj-class="muted" font-size="15px">Booking {{reference}} was made {{minutes}} minutes ago and has no supervisor yet.</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding="24px 36px 0">
+        <mj-group background-color="#f7f9fc">
+          <mj-column padding="16px 20px 12px"><mj-text mj-class="label">Reference</mj-text></mj-column>
+          <mj-column padding="16px 20px 12px"><mj-text align="right" font-size="15px" font-weight="700">{{reference}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 0">
+        <mj-group background-color="#f7f9fc">
+          <mj-column padding="12px 20px 12px"><mj-text mj-class="label">Service</mj-text></mj-column>
+          <mj-column padding="12px 20px 12px"><mj-text align="right" font-size="15px" font-weight="700">{{service}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 0">
+        <mj-group background-color="#f7f9fc">
+          <mj-column padding="12px 20px 12px"><mj-text mj-class="label">Flight</mj-text></mj-column>
+          <mj-column padding="12px 20px 12px"><mj-text align="right" font-size="15px" font-weight="700">{{flight_line}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 28px">
+        <mj-group background-color="#f7f9fc">
+          <mj-column padding="12px 20px 16px"><mj-text mj-class="label">Date and time</mj-text></mj-column>
+          <mj-column padding="12px 20px 16px"><mj-text align="right" font-size="15px" font-weight="700">{{travel_line}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 24px">
+        <mj-column>
+          <mj-text font-size="15px">Please assign a supervisor so the passenger is looked after.</mj-text>
+        </mj-column>
+      </mj-section>
+      <mj-section padding="0 36px 40px"><mj-column><mj-button href="{{cta_url}}" align="left">Assign a supervisor</mj-button></mj-column></mj-section>
+      <mj-section background-color="#0b213c" padding="26px 36px 30px" border-radius="0 0 8px 8px">
+        <mj-column>
+          <mj-text mj-class="h" align="center" font-size="17px" color="#ffffff" padding="0 0 8px">Airport Assist Ghana</mj-text>
+          <mj-text align="center" font-size="12px" line-height="1.7" color="#ffffff" padding="0">This alert is sent once per booking.</mj-text>
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+  </mj-body>
+</mjml>

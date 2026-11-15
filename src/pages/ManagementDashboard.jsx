@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import BookingList from "@/components/BookingList";
+import { usePagedList } from "@/hooks/use-paged-list";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
@@ -26,29 +27,19 @@ function ManagementInner() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "ops";
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const paged = usePagedList("Booking", {}, { pageSize: 50 });
+  const bookings = paged.items;
+  const loading = paged.loading;
   const [statusRows, setStatusRows] = useState([]);
   const [reports, setReports] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams({ tab: t });
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const page = await base44.entities.Booking.filter({}, { sort: "-created_date", limit: 100 });
-      setBookings(page.items || []);
-    } catch {
-      setBookings([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadSummary = async () => {
     try {
-      const byStatus = await base44.entities.Booking.aggregate({
+      const byStatus = await api.entities.Booking.aggregate({
         groupBy: "status",
         sum: ["total_value", "amount_collected", "outstanding_balance"],
         sort: "-count",
@@ -63,7 +54,7 @@ function ManagementInner() {
       let items = [];
       let cursor;
       do {
-        const page = await base44.entities.ShiftReport.filter(
+        const page = await api.entities.ShiftReport.filter(
           {},
           {
             sort: "-created_date",
@@ -90,13 +81,12 @@ function ManagementInner() {
 
   const loadUnread = async () => {
     try {
-      const c = await base44.entities.Notification.count({ user_id: user.id, read: false });
+      const c = await api.entities.Notification.count({ user_id: user.id, read: false });
       setUnreadCount(c || 0);
     } catch {}
   };
 
   useEffect(() => {
-    load();
     loadSummary();
     loadReports();
     loadUnread();
@@ -190,7 +180,7 @@ function ManagementInner() {
       )}
 
       {tab === "bookings" && (
-        <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." />
+        <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
       )}
 
       {tab === "supervisors" && <SupervisorDirectory readOnly />}

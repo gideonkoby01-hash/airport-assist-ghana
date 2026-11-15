@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock, XCircle, LogOut } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
@@ -12,7 +12,7 @@ export default function PendingApproval() {
 
   useEffect(() => {
     if (!user?.id) return;
-    base44.entities.AccountRequest
+    api.entities.AccountRequest
       .filter({ user_id: user.id })
       .then((items) => {
         const list = Array.isArray(items) ? items : (items?.items || []);

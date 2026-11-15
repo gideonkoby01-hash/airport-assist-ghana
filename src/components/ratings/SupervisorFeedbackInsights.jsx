@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StarRatingDisplay from "@/components/ratings/StarRatingDisplay";
@@ -22,7 +22,7 @@ export default function SupervisorFeedbackInsights({ supervisors }) {
       };
     }
     setLoading(true);
-    base44.entities.BookingRating
+    api.entities.BookingRating
       .filter({ supervisor_user_id: selected }, { sort: "-submitted_at", limit: 100 })
       .then((page) => {
         if (active) setRows(page.items || []);

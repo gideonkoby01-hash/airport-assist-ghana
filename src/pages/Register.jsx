@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
+import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,13 +26,22 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (password.length < 10) {
+      setError("Use a password of at least 10 characters.");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
     setLoading(true);
     try {
-      await base44.auth.register({ email, password });
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { full_name: fullName.trim() } },
+      });
+      if (signUpError) throw signUpError;
       setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -44,13 +54,11 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
-      if (result?.access_token) {
-        base44.auth.setToken(result.access_token);
-      }
+      const { error: verifyError } = await supabase.auth.verifyOtp({ email: email.trim(), token: otpCode, type: "signup" });
+      if (verifyError) throw verifyError;
       if (role === "supervisor" || role === "management") {
         // Submit a staff access request; the account is held as "pending" until an admin approves.
-        const res = await base44.functions.invoke("submitStaffRequest", {
+        const res = await api.functions.invoke("submitStaffRequest", {
           requested_role: role,
           full_name: fullName.trim(),
         });
@@ -69,7 +77,8 @@ export default function Register() {
   const handleResend = async () => {
     setError("");
     try {
-      await base44.auth.resendOtp(email);
+      const { error: resendError } = await supabase.auth.resend({ type: "signup", email: email.trim() });
+      if (resendError) throw resendError;
       toast({
         title: "Code sent",
         description: "Check your email for the new code.",
@@ -79,8 +88,13 @@ export default function Register() {
     }
   };
 
-  const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", safeReturnTo());
+  const handleGoogle = async () => {
+    setError("");
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + safeReturnTo() },
+    });
+    if (oauthError) setError(oauthError.message || "Google sign-in failed");
   };
 
   if (showOtp) {
@@ -232,7 +246,7 @@ export default function Register() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Password <span className="text-xs font-normal text-muted-foreground">(at least 10 characters)</span></Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input

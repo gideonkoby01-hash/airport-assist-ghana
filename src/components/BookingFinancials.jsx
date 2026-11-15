@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { api } from "@/api/db";
 import { formatGHS } from "@/lib/packages";
 import { BarChart3, Percent, Wallet } from "lucide-react";
 import ReportingBaselineControl from "@/components/ReportingBaselineControl";
@@ -18,7 +18,7 @@ export default function BookingFinancials() {
 
   const load = async () => {
     setLoading(true);
-    const page = await base44.entities.ReportingBaseline.list({ sort: "-created_date", limit: 1 });
+    const page = await api.entities.ReportingBaseline.list({ sort: "-created_date", limit: 1 });
     const current = page?.items?.[0] || null;
     setBaseline(current);
 
@@ -27,7 +27,7 @@ export default function BookingFinancials() {
       query.created_date = { $gte: current.baseline_at };
     }
 
-    const result = await base44.entities.Booking.aggregate({
+    const result = await api.entities.Booking.aggregate({
       query,
       groupBy: "status",
       sum: ["original_total", "discount_amount", "total_value"],

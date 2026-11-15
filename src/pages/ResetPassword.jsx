@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,21 @@ import { Lock, Loader2, AlertTriangle } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
-  const resetToken = searchParams.get("token");
+  // The emailed link opens this page with a short-lived recovery session; without one the link is invalid or expired.
+  const [hasRecoverySession, setHasRecoverySession] = useState(null);
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || session) setHasRecoverySession(true);
+    });
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.auth.getSession();
+      setHasRecoverySession(Boolean(data.session));
+    }, 800);
+    return () => {
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,13 +32,19 @@ export default function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (newPassword.length < 10) {
+      setError("Use a password of at least 10 characters.");
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
     setLoading(true);
     try {
-      await base44.auth.resetPassword({ resetToken, newPassword });
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+      await supabase.auth.signOut();
       window.location.href = "/login";
     } catch (err) {
       setError(err.message || "Failed to reset password");
@@ -34,7 +53,9 @@ export default function ResetPassword() {
     }
   };
 
-  if (!resetToken) {
+  if (hasRecoverySession === null) return null;
+
+  if (!hasRecoverySession) {
     return (
       <AuthLayout
         icon={AlertTriangle}
