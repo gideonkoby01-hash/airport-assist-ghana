@@ -34,16 +34,15 @@ export default function AdminDashboard() {
 
 function AdminInner() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "summary";
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [, setUnreadCount] = useState(0);
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [loungeCount, setLoungeCount] = useState(0);
   const [outstanding, setOutstanding] = useState(0);
 
-  const setTab = (t) => setSearchParams(t === "summary" ? {} : { tab: t });
 
   useEffect(() => {
     let active = true;
@@ -125,32 +124,6 @@ function AdminInner() {
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Admin Console</h1>
-        <p className="text-muted-foreground text-sm mt-1">Manage staff, service packages, lounges, and view organisation figures.</p>
-      </div>
-
-      <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
-        <TabButton active={tab === "summary"} onClick={() => setTab("summary")}>Summary</TabButton>
-        <TabButton active={tab === "packages"} onClick={() => setTab("packages")}>Service Packages</TabButton>
-        <TabButton active={tab === "lounges"} onClick={() => setTab("lounges")}>Lounges</TabButton>
-        <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
-        <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>Staff Requests</TabButton>
-        <TabButton active={tab === "discounts"} onClick={() => setTab("discounts")}>Discounts</TabButton>
-        <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
-        <TabButton active={tab === "ratings"} onClick={() => setTab("ratings")}>Ratings &amp; Reviews</TabButton>
-        <TabButton active={tab === "email"} onClick={() => setTab("email")}>Email</TabButton>
-        <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>Settings</TabButton>
-        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
-          Notifications
-          {unreadCount > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
-              {unreadCount}
-            </span>
-          )}
-        </TabButton>
-      </div>
-
       {tab === "summary" && (
         <div className="space-y-4">
           {loadingReports && (
@@ -159,7 +132,7 @@ function AdminInner() {
               Calculating figures from submitted shift reports…
             </div>
           )}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
             <StatCard label="Amount Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding Balance" value={formatGHS(outstanding)} icon={Wallet} />
@@ -189,15 +162,3 @@ function AdminInner() {
   );
 }
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-        active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}

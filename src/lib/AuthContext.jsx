@@ -103,6 +103,9 @@ export const AuthProvider = ({ children }) => {
     if (shouldRedirect) window.location.href = '/login';
   };
 
+  // After the person edits their own details, show the new values straight away.
+  const updateProfile = (patch) => setUser((u) => (u ? { ...u, ...patch } : u));
+
   const navigateToLogin = () => {
     if (window.location.pathname !== '/login') window.location.href = '/login';
   };
@@ -121,6 +124,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         navigateToLogin,
         checkUserAuth,
+        updateProfile,
       }}
     >
       {children}

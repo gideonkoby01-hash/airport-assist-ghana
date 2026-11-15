@@ -122,30 +122,9 @@ function ManagementInner() {
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Operations Management</h1>
-        <p className="text-muted-foreground text-sm mt-1">Organisation-wide bookings, assignments, and figures.</p>
-      </div>
-
-      <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
-        <TabButton active={tab === "ops"} onClick={() => setTab("ops")}>Summary</TabButton>
-        <TabButton active={tab === "bookings"} onClick={() => setTab("bookings")}>All Bookings</TabButton>
-        <TabButton active={tab === "supervisors"} onClick={() => setTab("supervisors")}>Supervisors</TabButton>
-        <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>Shift Reports</TabButton>
-        <TabButton active={tab === "ratings"} onClick={() => setTab("ratings")}>Ratings &amp; Reviews</TabButton>
-        <TabButton active={tab === "notifications"} onClick={() => setTab("notifications")}>
-          Notifications
-          {unreadCount > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-semibold">
-              {unreadCount}
-            </span>
-          )}
-        </TabButton>
-      </div>
-
       {tab === "ops" && (
         <div className="space-y-6">
-          <div className="grid sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(totalOutstanding)} icon={AlertCircle} />
@@ -195,15 +174,3 @@ function ManagementInner() {
   );
 }
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-        active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}

@@ -213,6 +213,22 @@ const settings = {
   },
 };
 
+// The signed-in person's own details. Only name and phone can be changed here; role and access are admin-only.
+const profile = {
+  async updateMine(/** @type {{ full_name: string, phone: string }} */ { full_name, phone }) {
+    const { data, error } = await supabase.rpc('update_my_profile', { p_full_name: full_name, p_phone: phone });
+    if (error) {
+      const known = {
+        invalid_phone: 'Enter a phone number with at least 7 digits. Add the country code if it is not a Ghana number.',
+        name_too_long: 'That name is too long.',
+      };
+      const key = Object.keys(known).find((k) => (error.message || '').includes(k));
+      throw new ApiError(key ? known[key] : error.message, undefined, error);
+    }
+    return data;
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings };
+export const api = { entities, functions, storage, settings, profile };
