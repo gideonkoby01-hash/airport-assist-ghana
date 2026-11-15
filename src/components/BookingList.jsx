@@ -2,6 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import { PACKAGE_LABELS, formatGHS } from "@/lib/packages";
+import { isOverdue } from "@/lib/bookingRules";
+import { todayUtc } from "@/lib/bookingFormRules";
 import { Plane, Calendar, Users } from "lucide-react";
 
 export default function BookingList({ bookings, loading, emptyMessage = "No bookings yet.", hasMore = false, loadingMore = false, onLoadMore = undefined }) {
@@ -16,6 +18,7 @@ export default function BookingList({ bookings, loading, emptyMessage = "No book
   if (!bookings.length) {
     return <div className="text-center py-12 text-muted-foreground text-sm">{emptyMessage}</div>;
   }
+  const today = todayUtc();
   return (
     <div className="space-y-3">
       {bookings.map((b) => (
@@ -38,6 +41,9 @@ export default function BookingList({ bookings, loading, emptyMessage = "No book
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" /> {b.flight_date} {b.scheduled_flight_time}
+                  {isOverdue(b, today) && (
+                    <span className="ml-1 rounded bg-amber-100 text-amber-900 px-1.5 py-0.5 font-medium">Date passed, still open</span>
+                  )}
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="w-3 h-3" /> {b.num_passengers}

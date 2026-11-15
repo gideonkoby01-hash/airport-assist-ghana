@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
@@ -14,7 +14,10 @@ import SupervisorNotifications from "@/components/SupervisorNotifications";
 import SupervisorProfileForm from "@/components/supervisor/SupervisorProfileForm";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
-import { ClipboardList, Wallet } from "lucide-react";
+import { supervisorView, LIVE_STATUSES } from "@/lib/bookingRules";
+import { todayUtc } from "@/lib/bookingFormRules";
+import { Input } from "@/components/ui/input";
+import { ClipboardList, Wallet, CalendarClock, Search } from "lucide-react";
 
 export default function SupervisorDashboard() {
   useDocumentTitle("Supervisor");
@@ -33,8 +36,20 @@ function SupervisorInner() {
 
   const setTab = (t) => setSearchParams({ tab: t });
 
+  // What the list shows: today's flights first thing in the shift, then everything still open, closed ones, or all.
+  const [view, setView] = useState("today");
+  const [searchText, setSearchText] = useState("");
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchText), 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+  const today = todayUtc();
+  const { query, sort } = useMemo(() => supervisorView(view, user.id, today, search), [view, user.id, today, search]);
+
   // The list loads a page at a time; the totals are summed by the database over every assigned booking.
-  const paged = usePagedList("Booking", { assigned_supervisor_id: user.id }, { pageSize: 50 });
+  const paged = usePagedList("Booking", query, { pageSize: 50, sort });
+  const [todayCount, setTodayCount] = useState(0);
   const bookings = paged.items;
   const loading = paged.loading;
   const [totals, setTotals] = useState({ active: 0, collected: 0, outstanding: 0 });
@@ -52,13 +67,19 @@ function SupervisorInner() {
       setTotals({ active: 0, collected: 0, outstanding: 0 });
     }
   };
+  const loadToday = () =>
+    api.entities.Booking.count({ assigned_supervisor_id: user.id, status: { $in: LIVE_STATUSES }, flight_date: today })
+      .then(setTodayCount)
+      .catch(() => {});
   const load = async () => {
     await paged.reload();
     await loadTotals();
+    await loadToday();
   };
 
   useEffect(() => {
     loadTotals();
+    loadToday();
     api.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
 
   }, []);
@@ -85,12 +106,41 @@ function SupervisorInner() {
 
       {tab === "assigned" && (
         <div className="space-y-6">
-          <div className="grid sm:grid-cols-3 gap-4">
-            <StatCard label="Active Bookings" value={active} icon={ClipboardList} accent />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Flights Today" value={todayCount} icon={CalendarClock} accent />
+            <StatCard label="Open Bookings" value={active} icon={ClipboardList} />
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(outstanding)} icon={Wallet} />
           </div>
-          <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings assigned to you yet." hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+            <div className="flex gap-2 flex-wrap" role="group" aria-label="Show bookings">
+              {[["today", "Today"], ["active", "All open"], ["closed", "Closed"], ["all", "Everything"]].map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={view === key}
+                  onClick={() => setView(key)}
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    view === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}{key === "today" && todayCount > 0 ? ` (${todayCount})` : ""}
+                </button>
+              ))}
+            </div>
+            <div className="relative sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                type="search"
+                aria-label="Search by reference, flight number or phone"
+                placeholder="Reference, flight or phone"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <BookingList bookings={bookings} loading={loading} emptyMessage={emptyFor(view, search)} hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
         </div>
       )}
 
@@ -120,9 +170,18 @@ function SupervisorInner() {
   );
 }
 
+function emptyFor(view, search) {
+  if (search.trim()) return "No bookings match that search.";
+  if (view === "today") return "Nothing assigned to you for today. Choose \"All open\" to see upcoming flights.";
+  if (view === "closed") return "No closed bookings yet.";
+  if (view === "active") return "No open bookings assigned to you.";
+  return "No bookings assigned to you yet.";
+}
+
 function TabButton({ active, onClick, children }) {
   return (
     <button
+      aria-current={active ? "true" : undefined}
       onClick={onClick}
       className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
         active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
