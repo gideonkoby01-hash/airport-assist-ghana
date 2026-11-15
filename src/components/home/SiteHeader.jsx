@@ -38,9 +38,11 @@ export default function SiteHeader() {
 
         <div className="hidden lg:flex items-center gap-2 ml-4">
           <ThemeToggle className="text-muted-foreground hover:text-foreground hover:bg-secondary" />
-          <Link to={signInDest} className="px-3 py-2 text-[0.95rem] font-medium text-foreground hover:underline underline-offset-4">
-            {isAuthenticated ? "My account" : "Sign in"}
-          </Link>
+          {isAuthenticated && (
+            <Link to={signInDest} className="px-3 py-2 text-[0.95rem] font-medium text-foreground hover:underline underline-offset-4">
+              My account
+            </Link>
+          )}
           <Link to={bookDest} className="px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-[0.95rem] font-semibold hover:opacity-90">
             Book assistance
           </Link>
@@ -73,9 +75,11 @@ export default function SiteHeader() {
             </ul>
             <div className="mt-4 flex gap-3">
               <Link to={bookDest} onClick={close} className="flex-1 text-center py-3 rounded-md bg-primary text-primary-foreground font-semibold">Book assistance</Link>
-              <Link to={signInDest} onClick={close} className="flex-1 text-center py-3 rounded-md border border-border text-foreground font-medium">
-                {isAuthenticated ? "My account" : "Sign in"}
-              </Link>
+              {isAuthenticated && (
+                <Link to={signInDest} onClick={close} className="flex-1 text-center py-3 rounded-md border border-border text-foreground font-medium">
+                  My account
+                </Link>
+              )}
             </div>
           </div>
         </div>
