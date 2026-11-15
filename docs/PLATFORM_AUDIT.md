@@ -323,7 +323,7 @@ Effort: S under a day, M a few days, L a week or more.
 |---|---|---|
 | Bookings per year | about 18,000 | A few dozen MB of rows a year. A single small Postgres instance is far more than enough. No caching, queues or extra services. |
 | Peak load | roughly 4 bookings an hour over a 12-hour day, plus staff browsing | Trivial for Supabase and for Edge Functions. |
-| ID photos stored | 50 a day for 30 days is about 1,500 files at any time. **At the 5 MB upload limit that is up to 7.5 GB**; typical phone photos of 2–4 MB give 3–6 GB | **More than the Free plan's storage and close to what a small plan allows.** Shrink the picture in the browser before upload (about 1,600 px wide, JPEG at 80%, roughly 300 KB) and the steady state is about 450 MB. This is the one sizing risk; do it before launch. |
+| ID photos stored | 50 a day for 30 days is about 1,500 files at any time. **At the 5 MB upload limit that is up to 7.5 GB**; typical phone photos of 2–4 MB give 3–6 GB | **More than the Free plan's storage and close to what a small plan allows.** Photos are now shrunk in the browser before upload (about 1,600 px on the long side, JPEG at 80%, roughly 300 KB), so the steady state is about 450 MB. This is the one sizing risk; do it before launch. |
 | Email | about 50 booking confirmations a day, plus sign-up codes, password resets and staff emails | Check Resend's current free-plan daily and monthly limits against this. You are likely to need a paid plan, and sign-up codes must not be blocked by a limit. |
 | Database plan | n/a | Use a paid Supabase plan: the Free plan pauses after inactivity and has no point-in-time recovery, which F10 requires. |
 

@@ -7,6 +7,7 @@
 //     equality, $or, $and, $in, $gte, $lte and case-insensitive $regex (substring).
 //   - filter() returns an array that also has `.items` and `.next_cursor`, because
 //     callers read it both ways.
+import { shrinkImage } from '@/lib/imageResize';
 import { supabase } from '@/api/supabaseClient';
 import { ApiError, applyFilter, applySort } from '@/api/filters';
 
@@ -184,7 +185,8 @@ const BUCKET = 'private-files';
 
 const storage = {
   // Stores a file under the caller's own folder and returns a stable reference.
-  async uploadPrivateFile(/** @type {{ file: File }} */ { file }) {
+  async uploadPrivateFile(/** @type {{ file: File }} */ { file: original }) {
+    const file = await shrinkImage(original);
     const { data: auth } = await supabase.auth.getUser();
     const owner = auth?.user?.id;
     if (!owner) throw new ApiError('Sign in to upload files', 401);
