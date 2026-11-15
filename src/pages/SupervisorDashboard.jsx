@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
@@ -16,6 +17,7 @@ import { formatGHS } from "@/lib/packages";
 import { ClipboardList, Wallet } from "lucide-react";
 
 export default function SupervisorDashboard() {
+  useDocumentTitle("Supervisor");
   return (
     <RoleGuard allowedRoles={["supervisor", "admin"]}>
       <SupervisorInner />

@@ -20,7 +20,7 @@ export default function Contact() {
     <section id="contact" className="py-20 lg:py-28 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="text-[#d4af37] font-semibold uppercase tracking-[0.2em] text-sm">
+          <span className="text-[#8a6a00] font-semibold uppercase tracking-[0.2em] text-sm">
             Contact Us
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-[#0b213c]">

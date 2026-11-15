@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
-    "test": "node --test src/api/filters.test.mjs src/lib/bookingRules.test.mjs src/lib/bookingHistory.test.mjs src/lib/receiptHtml.test.mjs src/lib/csv.test.mjs src/lib/settingsContext.test.mjs src/lib/smtpHelp.test.mjs",
+    "test": "node --test src/api/filters.test.mjs src/lib/bookingRules.test.mjs src/lib/bookingHistory.test.mjs src/lib/receiptHtml.test.mjs src/lib/csv.test.mjs src/lib/settingsContext.test.mjs src/lib/smtpHelp.test.mjs src/lib/pageTitle.test.mjs",
     "build:emails": "node scripts/build-emails.mjs",
     "test:db": "bash supabase/tests/run_db_tests.sh",
     "test:functions": "deno test --allow-all supabase/functions/_shared"

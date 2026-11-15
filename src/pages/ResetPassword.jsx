@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Link } from "react-router-dom";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Lock, Loader2, AlertTriangle } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function ResetPassword() {
+  useDocumentTitle("New password");
   // The emailed link opens this page with a short-lived recovery session; without one the link is invalid or expired.
   const [hasRecoverySession, setHasRecoverySession] = useState(null);
   useEffect(() => {

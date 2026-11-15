@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
@@ -20,6 +21,7 @@ import {
 import { ArrowLeft, Plane, Calendar, Clock, Users, Phone, Globe, Luggage, StickyNote, Armchair, Tag } from "lucide-react";
 
 export default function BookingDetail() {
+  useDocumentTitle("Booking");
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();

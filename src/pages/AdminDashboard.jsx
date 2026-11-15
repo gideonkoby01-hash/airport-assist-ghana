@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import AppLayout from "@/components/AppLayout";
@@ -23,6 +24,7 @@ import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
 
 export default function AdminDashboard() {
+  useDocumentTitle("Admin");
   return (
     <RoleGuard allowedRoles={["admin"]}>
       <AdminInner />

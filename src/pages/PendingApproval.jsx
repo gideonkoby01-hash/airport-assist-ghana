@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Loader2, Clock, XCircle, LogOut } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function PendingApproval() {
+  useDocumentTitle("Awaiting approval");
   const { user, logout } = useAuth();
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);

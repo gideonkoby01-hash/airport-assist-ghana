@@ -42,7 +42,7 @@ export default function About() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
-            <span className="text-[#d4af37] font-semibold uppercase tracking-[0.2em] text-sm">
+            <span className="text-[#8a6a00] font-semibold uppercase tracking-[0.2em] text-sm">
               Who We Are
             </span>
             <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-[#0b213c]">
