@@ -246,7 +246,7 @@ Use a private window and a second email address for the passenger.
 
 ## Updating a live system with a new database change
 
-Some updates include a new file in `supabase/migrations/`. The site itself updates by itself when `main` changes, but database changes do not. Without a terminal: open the Supabase dashboard, **SQL Editor**, **New query**, paste the whole contents of the new migration file, and press **Run**. Run new files in date order, once each. Run new files in date order. `20261115000002_profile_self_service.sql` adds the phone number and the self-service "My profile" save; `20261115000004_staff_account_creation.sql` adds the forced password change for admin-created accounts. Until the matching file is applied, those screens show an error.
+Some updates include a new file in `supabase/migrations/`. The site itself updates by itself when `main` changes, but database changes do not. Without a terminal: open the Supabase dashboard, **SQL Editor**, **New query**, paste the whole contents of the new migration file, and press **Run**. Run new files in date order, once each. Run new files in date order. `20261115000002_profile_self_service.sql` adds the phone number and the self-service "My profile" save; `20261115000003_customer_crm.sql` adds the Customers area (and links every existing booking to a customer); `20261115000004_staff_account_creation.sql` adds the forced password change for admin-created accounts. Until the matching file is applied, those screens show an error.
 
 New or changed Edge Functions (`supabase/functions/...`) must also be deployed before the feature works. `createStaffAccount` is new.
 
