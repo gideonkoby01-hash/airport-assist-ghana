@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
@@ -11,9 +11,13 @@ import SupervisorDirectory from "@/components/SupervisorDirectory";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import BookingFinancials from "@/components/BookingFinancials";
+import OperationsGlance from "@/components/OperationsGlance";
+import { Input } from "@/components/ui/input";
+import { UNASSIGNED, managementView } from "@/lib/bookingRules";
+import { todayUtc } from "@/lib/bookingFormRules";
 import RatingsReviews from "@/components/ratings/RatingsReviews";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
-import { BarChart3, Wallet, Users, AlertCircle, Bell } from "lucide-react";
+import { BarChart3, Wallet, Users, AlertCircle, Bell, Search } from "lucide-react";
 import ManagementNotifications from "@/components/ManagementNotifications";
 
 export default function ManagementDashboard() {
@@ -29,14 +33,25 @@ function ManagementInner() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "ops";
-  const paged = usePagedList("Booking", {}, { pageSize: 50 });
+  // The All bookings screen: a view (all, waiting for a supervisor, today, open, closed) and a search.
+  const view = searchParams.get("view") || "all";
+  const [searchText, setSearchText] = useState("");
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchText), 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+  const { query, sort } = useMemo(() => managementView(view, todayUtc(), search), [view, search]);
+  const paged = usePagedList("Booking", query, { pageSize: 50, sort });
   const bookings = paged.items;
   const loading = paged.loading;
+  const [unassigned, setUnassigned] = useState(0);
   const [statusRows, setStatusRows] = useState([]);
   const [reports, setReports] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const setTab = (t) => setSearchParams({ tab: t });
+  const setView = (v) => setSearchParams(v === "all" ? { tab: "bookings" } : { tab: "bookings", view: v });
 
 
   const loadSummary = async () => {
@@ -89,6 +104,7 @@ function ManagementInner() {
   };
 
   useEffect(() => {
+    api.entities.Booking.count(UNASSIGNED).then(setUnassigned).catch(() => {});
     loadSummary();
     loadReports();
     loadUnread();
@@ -118,7 +134,6 @@ function ManagementInner() {
   );
   const totalRevenue = collected - commissions;
   const totalOutstanding = statusRows.reduce((s, r) => s + (r.sum_outstanding_balance || 0), 0);
-  const unassigned = bookings.filter((b) => !b.assigned_supervisor_id && b.status === "confirmed").length;
 
   return (
     <AppLayout>
@@ -129,39 +144,61 @@ function ManagementInner() {
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(totalOutstanding)} icon={AlertCircle} />
             <StatCard label="Unassigned" value={unassigned} icon={Users} />
-            <button onClick={() => setTab("notifications")} className="text-left">
-              <StatCard
-                label="Notifications"
-                value={unreadCount}
-                sub={unreadCount > 0 ? "New booking alerts" : "All caught up"}
-                icon={Bell}
-                accent
-              />
-            </button>
           </div>
 
           {unreadCount > 0 && (
             <button
               onClick={() => setTab("notifications")}
-              className="w-full flex items-center justify-between bg-accent/10 border border-accent/30 rounded-xl px-5 py-4 text-left hover:bg-accent/15 transition-colors">
+              className="w-full flex items-center justify-between bg-accent/10 border border-accent/30 rounded-2xl px-5 py-4 text-left hover:bg-accent/15 transition-colors">
               <div className="flex items-center gap-3">
                 <Bell className="w-5 h-5 text-accent" />
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     {unreadCount} new booking notification{unreadCount !== 1 ? "s" : ""}
                   </p>
-                  <p className="text-xs text-muted-foreground">Tap to review new booking alerts.</p>
+                  <p className="text-xs text-muted-foreground">Review new booking alerts.</p>
                 </div>
               </div>
-              <span className="text-xs font-medium text-accent">View →</span>
+              <span className="text-sm font-medium text-foreground underline underline-offset-4">Review</span>
             </button>
           )}
+          <OperationsGlance />
           <BookingFinancials />
         </div>
       )}
 
       {tab === "bookings" && (
-        <BookingList bookings={bookings} loading={loading} emptyMessage="No bookings in the system yet." hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+            <div className="flex gap-2 flex-wrap" role="group" aria-label="Show bookings">
+              {[["all", "All"], ["unassigned", "Unassigned"], ["today", "Today"], ["open", "Open"], ["closed", "Closed"]].map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={view === key}
+                  onClick={() => setView(key)}
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    view === key ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}{key === "unassigned" && unassigned > 0 ? ` (${unassigned})` : ""}
+                </button>
+              ))}
+            </div>
+            <div className="relative sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                type="search"
+                aria-label="Search by reference, flight, phone or supervisor"
+                placeholder="Reference, flight, phone or supervisor"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-9 bg-card"
+              />
+            </div>
+          </div>
+          <BookingList bookings={bookings} loading={loading} emptyMessage={emptyFor(view, search)} hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
+        </div>
       )}
 
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
@@ -174,3 +211,11 @@ function ManagementInner() {
   );
 }
 
+function emptyFor(view, search) {
+  if (search.trim()) return "No bookings match that search.";
+  if (view === "unassigned") return "Every confirmed booking has a supervisor.";
+  if (view === "today") return "No flights booked for today.";
+  if (view === "open") return "No open bookings.";
+  if (view === "closed") return "No closed bookings yet.";
+  return "No bookings in the system yet.";
+}
