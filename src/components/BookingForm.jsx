@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Users, Plane, CheckCircle2 } from "lucide-react";
+import { validateBooking, todayUtc } from "@/lib/bookingFormRules";
 import PaymentInformation from "@/components/PaymentInformation";
 import DiscountCodeInput from "@/components/DiscountCodeInput";
 import {
@@ -49,6 +50,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   // One key per form: if a submit is retried after a timeout, the server returns the first booking instead of a second.
   const idempotencyKey = useRef(crypto.randomUUID());
   const [error, setError] = useState("");
+  // Messages beside the fields that need fixing, keyed as in validateBooking.
+  const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
+  const errorBox = useRef(null);
   const [created, setCreated] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -82,17 +86,47 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   const numPassengers = passengers.length;
   const totalValue = computeTotal(pricePerPassenger, numPassengers);
 
-  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const clearError = (/** @type {string} */ key) => setErrors((e) => {
+    if (!e[key]) return e;
+    const { [key]: _gone, ...rest } = e;
+    return rest;
+  });
+  const setField = (k, v) => {
+    clearError(k);
+    setForm((f) => ({ ...f, [k]: v }));
+  };
+
+  // After a field is left, show its message straight away instead of waiting for the submit button.
+  const checkField = (/** @type {string} */ key) => {
+    const found = validateBooking({ form, passengers, channel, consented })[key];
+    if (found) setErrors((e) => ({ ...e, [key]: found }));
+  };
+  const fp = (/** @type {string} */ key) => ({
+    id: `bf-${key}`,
+    "aria-invalid": errors[key] ? true : undefined,
+    "aria-describedby": errors[key] ? `bf-${key}-err` : undefined,
+    onBlur: () => checkField(key),
+  });
+  const fieldError = (/** @type {string} */ key) =>
+    errors[key] ? <p id={`bf-${key}-err`} className="text-xs text-destructive">{errors[key]}</p> : null;
+
+  // A message at the top is easy to miss when the button is at the bottom: bring it into view.
+  useEffect(() => {
+    if (error) errorBox.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
 
   const onPackageChange = (code) => {
     const pkg = packages.find((p) => p.code === code) || packageByCode(code);
     const ft = pkg?.flight_type === "departure" ? "departure" : pkg?.flight_type === "arrival" ? "arrival" : form.flight_type;
     setAppliedDiscount(null);
+    clearError("package_code");
     setForm((f) => ({ ...f, package_code: code, flight_type: ft }));
   };
 
-  const setPassenger = (i, k, v) =>
-  setPassengers((ps) => ps.map((p, idx) => idx === i ? { ...p, [k]: v } : p));
+  const setPassenger = (i, k, v) => {
+    if (k === "name") clearError(`passenger_${i}_name`);
+    setPassengers((ps) => ps.map((p, idx) => idx === i ? { ...p, [k]: v } : p));
+  };
   const addPassenger = () => {
     setAppliedDiscount(null);
     setPassengers((ps) => [...ps, { ...emptyPassenger }]);
@@ -131,27 +165,18 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     });
   };
 
-  const validate = () => {
-    if (channel === "online" && !consented) return "Please confirm that you have read the privacy notice.";
-    if (!form.package_code) return "Please select a service package.";
-    if (!form.flight_number.trim()) return "Flight number is required.";
-    if (!form.flight_date) return "Flight date is required.";
-    if (!form.scheduled_flight_time) return "Scheduled flight time is required.";
-    if (!form.contact.trim()) return "A contact number is required.";
-    for (let i = 0; i < passengers.length; i++) {
-      if (!passengers[i].name.trim()) return `Passenger ${i + 1}: name is required.`;
-    }
-    return "";
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    const v = validate();
-    if (v) {
-      setError(v);
+    const found = validateBooking({ form, passengers, channel, consented });
+    const firstKey = Object.keys(found)[0];
+    if (firstKey) {
+      setErrors(found);
+      setError(`Please fix ${Object.keys(found).length === 1 ? "the highlighted field" : "the highlighted fields"} and try again.`);
+      document.getElementById(`bf-${firstKey}`)?.focus({ preventScroll: false });
       return;
     }
+    setErrors({});
     setSubmitting(true);
     try {
       const pkg = selectedPkg;
@@ -239,9 +264,14 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             {formatGHS(created.original_total)})
           </p>
         )}
+        <p className="text-sm text-muted-foreground mt-4">
+          {channel === "walk_in"
+            ? "It is assigned to you. Record payment and progress from the booking."
+            : "Keep your reference. You can follow this booking, and see your supervisor's details once one is assigned, from your dashboard."}
+        </p>
         <div className="flex gap-3 justify-center mt-6">
-          <Button variant="outline" onClick={() => window.location.assign(`/bookings/${created.id}`)}>
-            View booking
+          <Button variant="outline" asChild>
+            <Link to={`/bookings/${created.id}`}>View booking</Link>
           </Button>
           <Button
             onClick={() => {
@@ -272,10 +302,10 @@ export default function BookingForm({ channel = "online", user, supervisor = und
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+      {error && <div ref={errorBox} role="alert" className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
 
       {/* Package selection */}
-      <section className="bg-card rounded-2xl border border-border p-5">
+      <section id="bf-package_code" tabIndex={-1} className="bg-card rounded-2xl border border-border p-5 outline-none">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" /> Service Package
         </h3>
@@ -289,6 +319,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
           <button
             type="button"
             key={p.code}
+            aria-pressed={form.package_code === p.code}
             onClick={() => onPackageChange(p.code)}
             className={`text-left rounded-xl border p-4 transition-all ${
             form.package_code === p.code ?
@@ -305,6 +336,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
           )}
           </div>
         }
+        {fieldError("package_code")}
       </section>
 
       {/* Flight details */}
@@ -312,9 +344,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         <h3 className="text-sm font-semibold text-foreground">Flight Details</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Direction</Label>
+            <Label htmlFor="bf-direction">Direction</Label>
             <Select value={form.flight_type} onValueChange={(v) => setField("flight_type", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger id="bf-direction"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="arrival">Arrival</SelectItem>
                 <SelectItem value="departure">Departure</SelectItem>
@@ -322,39 +354,44 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Airline</Label>
-            <Input value={form.airline} onChange={(e) => setField("airline", e.target.value)} placeholder="e.g. Kenya Airways" />
+            <Label htmlFor="bf-airline">Airline</Label>
+            <Input id="bf-airline" value={form.airline} onChange={(e) => setField("airline", e.target.value)} placeholder="e.g. Kenya Airways" />
           </div>
           <div className="space-y-1.5">
-            <Label>Flight number *</Label>
-            <Input value={form.flight_number} onChange={(e) => setField("flight_number", e.target.value)} placeholder="e.g. KQ 510" />
+            <Label htmlFor="bf-flight_number">Flight number *</Label>
+            <Input {...fp("flight_number")} value={form.flight_number} onChange={(e) => setField("flight_number", e.target.value)} placeholder="e.g. KQ 510" />
+            {fieldError("flight_number")}
           </div>
           <div className="space-y-1.5">
-            <Label>Flight date *</Label>
-            <Input type="date" value={form.flight_date} onChange={(e) => setField("flight_date", e.target.value)} />
+            <Label htmlFor="bf-flight_date">Flight date *</Label>
+            <Input {...fp("flight_date")} type="date" min={channel === "online" ? todayUtc() : undefined} value={form.flight_date} onChange={(e) => setField("flight_date", e.target.value)} />
+            {fieldError("flight_date")}
           </div>
           <div className="space-y-1.5">
-            <Label>Scheduled flight time *</Label>
-            <Input type="time" value={form.scheduled_flight_time} onChange={(e) => setField("scheduled_flight_time", e.target.value)} />
+            <Label htmlFor="bf-scheduled_flight_time">Scheduled flight time *</Label>
+            <Input {...fp("scheduled_flight_time")} type="time" value={form.scheduled_flight_time} onChange={(e) => setField("scheduled_flight_time", e.target.value)} />
+            {fieldError("scheduled_flight_time")}
           </div>
           <div className="space-y-1.5">
-            <Label>Primary contact *</Label>
-            <Input value={form.contact} onChange={(e) => setField("contact", e.target.value)} placeholder="Phone / WhatsApp" />
+            <Label htmlFor="bf-contact">Primary contact *</Label>
+            <Input {...fp("contact")} type="tel" inputMode="tel" autoComplete="tel" value={form.contact} onChange={(e) => setField("contact", e.target.value)} placeholder="Phone / WhatsApp, e.g. 024 123 4567" />
+            {fieldError("contact")}
           </div>
           <div className="space-y-1.5">
-            <Label>Nationality</Label>
-            <Input value={form.nationality} onChange={(e) => setField("nationality", e.target.value)} placeholder="e.g. Ghanaian" />
+            <Label htmlFor="bf-nationality">Nationality</Label>
+            <Input id="bf-nationality" value={form.nationality} onChange={(e) => setField("nationality", e.target.value)} placeholder="e.g. Ghanaian" />
           </div>
           {selectedPkg?.includes_lounge &&
           <div className="space-y-1.5">
-              <Label>Lounge preference</Label>
-              <Input value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="e.g. Akwaaba Lounge" />
+              <Label htmlFor="bf-lounge">Lounge preference</Label>
+              <Input id="bf-lounge" value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="e.g. Akwaaba Lounge" />
             </div>
           }
         </div>
         <div className="space-y-1.5">
-          <Label>Special requests</Label>
+          <Label htmlFor="bf-special_requests">Special requests</Label>
           <Textarea
+            id="bf-special_requests"
             value={form.special_requests}
             onChange={(e) => setField("special_requests", e.target.value)}
             placeholder="Wheelchair, unaccompanied minor, VIP, etc."
@@ -386,21 +423,24 @@ export default function BookingForm({ channel = "online", user, supervisor = und
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Full name *</Label>
-                  <Input value={p.name} onChange={(e) => setPassenger(i, "name", e.target.value)} placeholder="Passenger name" />
+                  <Label htmlFor={`bf-passenger_${i}_name`} className="text-xs">Full name *</Label>
+                  <Input {...fp(`passenger_${i}_name`)} value={p.name} onChange={(e) => setPassenger(i, "name", e.target.value)} placeholder="As on their passport" autoComplete="off" />
+                  {fieldError(`passenger_${i}_name`)}
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Contact</Label>
-                  <Input value={p.contact} onChange={(e) => setPassenger(i, "contact", e.target.value)} placeholder="Phone" />
+                  <Label htmlFor={`bf-passenger_${i}_contact`} className="text-xs">Contact</Label>
+                  <Input id={`bf-passenger_${i}_contact`} type="tel" inputMode="tel" value={p.contact} onChange={(e) => setPassenger(i, "contact", e.target.value)} placeholder="Phone" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Nationality</Label>
-                  <Input value={p.nationality} onChange={(e) => setPassenger(i, "nationality", e.target.value)} />
+                  <Label htmlFor={`bf-passenger_${i}_nationality`} className="text-xs">Nationality</Label>
+                  <Input id={`bf-passenger_${i}_nationality`} value={p.nationality} onChange={(e) => setPassenger(i, "nationality", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Bags</Label>
+                  <Label htmlFor={`bf-passenger_${i}_bags`} className="text-xs">Bags</Label>
                   <Input
+                  id={`bf-passenger_${i}_bags`}
                   type="number"
+                  inputMode="numeric"
                   min={0}
                   value={p.total_bags}
                   onChange={(e) => setPassenger(i, "total_bags", e.target.value)} />
@@ -408,8 +448,8 @@ export default function BookingForm({ channel = "online", user, supervisor = und
                 </div>
               </div>
               <div className="space-y-1 mt-2">
-                <Label className="text-xs">Special requests</Label>
-                <Input value={p.special_requests} onChange={(e) => setPassenger(i, "special_requests", e.target.value)} />
+                <Label htmlFor={`bf-passenger_${i}_requests`} className="text-xs">Special requests</Label>
+                <Input id={`bf-passenger_${i}_requests`} value={p.special_requests} onChange={(e) => setPassenger(i, "special_requests", e.target.value)} />
               </div>
             </div>
           )}
@@ -421,7 +461,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Users className="w-4 h-4 text-accent" /> Passenger Identification Photo
         </h3>
-        <p className="text-xs text-muted-foreground">Optional. For easy identification during meet & greet (JPG, PNG, or WEBP, up to 5MB).
+        <p className="text-xs text-muted-foreground">Optional. Helps your supervisor recognise you at meet & greet. JPG, PNG or WEBP, up to 5MB; it is made smaller automatically.
 
         </p>
         {photoError &&
@@ -452,7 +492,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
 
         <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl py-6 cursor-pointer hover:border-accent/50 transition-colors">
             <Users className="w-6 h-6 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Click to upload a photo</span>
+            <span className="text-xs text-muted-foreground">Tap to take or choose a photo</span>
             <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -476,10 +516,18 @@ export default function BookingForm({ channel = "online", user, supervisor = und
 
       {channel === "online" && (
         <label className="flex items-start gap-3 text-sm bg-card rounded-xl border border-border p-4">
-          <input type="checkbox" className="mt-1" checked={consented} onChange={(e) => setConsented(e.target.checked)} />
+          <input
+            id="bf-consent"
+            type="checkbox"
+            className="mt-1"
+            checked={consented}
+            aria-invalid={errors.consent ? true : undefined}
+            aria-describedby={errors.consent ? "bf-consent-err" : undefined}
+            onChange={(e) => { setConsented(e.target.checked); clearError("consent"); }} />
           <span>
             I have read the <Link to="/privacy" target="_blank" className="text-primary underline">privacy notice</Link> and agree that
             Airport Assist Ghana may use my details to provide this service. I understand the photo of my ID is kept for 30 days after my flight and then deleted.
+            {fieldError("consent")}
           </span>
         </label>
       )}
@@ -507,7 +555,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             </div>
           )}
         </div>
-        <Button type="submit" size="lg" disabled={submitting || !selectedPkg || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button type="submit" size="lg" disabled={submitting || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
           {submitting ?
           <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}

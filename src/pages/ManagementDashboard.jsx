@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
@@ -16,6 +17,7 @@ import { BarChart3, Wallet, Users, AlertCircle, Bell } from "lucide-react";
 import ManagementNotifications from "@/components/ManagementNotifications";
 
 export default function ManagementDashboard() {
+  useDocumentTitle("Management");
   return (
     <RoleGuard allowedRoles={["management", "admin"]}>
       <ManagementInner />

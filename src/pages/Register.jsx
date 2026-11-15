@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Link } from "react-router-dom";
 import { api } from "@/api/db";
 import { supabase } from "@/api/supabaseClient";
@@ -13,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 
 export default function Register() {
+  useDocumentTitle("Create your account");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

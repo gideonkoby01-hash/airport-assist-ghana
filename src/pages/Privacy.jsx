@@ -1,4 +1,5 @@
 import React from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
@@ -17,11 +18,12 @@ function Section({ title, children }) {
 // Plain-language privacy notice. DRAFT: have a Ghanaian lawyer confirm it against the Data Protection Act, 2012
 // (Act 843) and your registration with the Data Protection Commission before relying on it.
 export default function Privacy() {
+  useDocumentTitle("Privacy notice");
   const { settings } = useSettings();
   const CONTACT = settings.contact_email;
   const NAME = settings.company_name;
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-3xl px-4 py-10">
         <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to the home page
@@ -82,6 +84,6 @@ export default function Privacy() {
           </p>
         </Section>
       </div>
-    </div>
+    </main>
   );
 }

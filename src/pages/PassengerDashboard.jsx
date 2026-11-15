@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
@@ -13,6 +14,7 @@ import { PACKAGE_DEFINITIONS, formatGHS } from "@/lib/packages";
 import { Plane, Ticket, CheckCircle2, XCircle } from "lucide-react";
 
 export default function PassengerDashboard() {
+  useDocumentTitle("My bookings");
   return (
     <RoleGuard allowedRoles={["passenger", "admin"]}>
       <PassengerInner />

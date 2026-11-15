@@ -163,6 +163,8 @@ update public.app_settings set value = '19:00' where key = 'shift_night_start';
 In Supabase > **Authentication**:
 
 - **URL Configuration**: Site URL = `https://airportassistghana.com` (your production address). Redirect URLs: add `https://airportassistghana.com/**`, and for Cloudflare preview deployments `https://*.pages.dev/**` if you want to test them.
+  - **Invitation links depend on this.** The staff invitation email sends people to `<your site>/reset-password`. Supabase only honours that address if it is in the Redirect URLs list; otherwise it silently sends them to the Site URL (the homepage). Add the exact address people really use (for example `https://airport-assist-ghana.pages.dev/**` until your own domain is live) and set the function secret `APP_URL` to the same address.
+- **Authentication > Sign In / Providers > Email**: set *Email OTP expiration* to 86400 seconds (24 hours) so an invitation sent in the evening still works the next day.
 - **Sign In / Providers > Email**: "Confirm email" **on**; minimum password length **10**.
 - **Emails > Templates > Confirm signup**: replace the body with the contents of `supabase/templates/confirmation.html` and set the subject to `Your Airport Assist Ghana verification code`. The registration screen asks for the 6-digit code, which only appears if the template contains `{{ .Token }}`.
 - **Emails > SMTP Settings**: turn on custom SMTP so sign-up codes and password-reset emails go through Resend instead of Supabase's very limited built-in sender (it allows only a few emails per hour and will block real sign-ups). Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender = the same address as `EMAIL_FROM`. (If you chose SMTP on the Settings page, enter that mail server instead; the page shows the values.)
@@ -197,9 +199,9 @@ These `VITE_` values are public by design; the data is protected by the database
 update public.profiles set role = 'admin' where email = 'you@example.com';
 ```
 
-3. Sign out and in again. Admin and management accounts must use two-step verification, so you are first asked to set up an authenticator app (scan the QR code, enter the 6-digit code), then to sign in once more with a code. After that you land on the Admin dashboard. From there, **Staff Accounts** invites supervisors and management by email (the invite email lets them set a password); people who register themselves and ask for staff access appear under **Staff Requests** for approval.
+3. Sign out and in again. Admin and management accounts must use two-step verification, so you are first asked to set up an authenticator app (scan the QR code, enter the 6-digit code), then to sign in once more with a code. After that you land on the Admin dashboard. From there, **Staff Accounts** invites supervisors and management by email (the invite email opens a page where they choose their own password, then they sign in normally; **Resend access email** sends a fresh invitation to someone who has not accepted, or a password reset link to someone already active); people who register themselves and ask for staff access appear under **Staff Requests** for approval.
 
-**Make a second admin straight away** (invite a trusted person as Admin). The system refuses to demote, disable or delete the last active admin, and a lost phone with no second admin means working in the Supabase SQL editor.
+**Make a second admin straight away**: have a trusted person register normally, then change their role to Admin in the **User Accounts** list (the invite form cannot create admins). The system refuses to demote, disable or delete the last active admin, and a lost phone with no second admin means working in the Supabase SQL editor.
 
 **If an admin is locked out** (lost phone): another admin removes their authenticator in the Supabase dashboard (Authentication > Users > the person > remove factors). If nobody can get in, as a last resort run `update public.app_settings set value = 'false' where key = 'require_staff_mfa';` in the SQL editor, sign in, then set it back to `'true'`.
 

@@ -56,3 +56,12 @@ export async function recipientsByRole(admin: SupabaseClient, roles: Profile['ro
 export function appUrl(): string {
   return (Deno.env.get('APP_URL') ?? 'http://localhost:5173').replace(/\/+$/, '');
 }
+
+// Where emailed links should open. APP_URL when it is set; otherwise the website the admin is using right now
+// (the Origin header of a signed-in admin's browser). Never fall back to localhost for a real browser request.
+export function requestAppUrl(req: Request): string {
+  const configured = Deno.env.get('APP_URL');
+  if (configured) return configured.replace(/\/+$/, '');
+  const origin = req.headers.get('origin') ?? '';
+  return /^https:\/\/[^/\s]+$/.test(origin) ? origin : appUrl();
+}

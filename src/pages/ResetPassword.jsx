@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Link } from "react-router-dom";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, Loader2, AlertTriangle } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import { AUTH_LINK_KEY } from "@/lib/authLinkRedirect";
+
+function linkKind() {
+  try {
+    return sessionStorage.getItem(AUTH_LINK_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export default function ResetPassword() {
+  useDocumentTitle("New password");
   // The emailed link opens this page with a short-lived recovery session; without one the link is invalid or expired.
   const [hasRecoverySession, setHasRecoverySession] = useState(null);
   useEffect(() => {
@@ -24,6 +35,7 @@ export default function ResetPassword() {
     };
   }, []);
 
+  const isInvite = linkKind() === "invite";
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -45,6 +57,11 @@ export default function ResetPassword() {
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) throw updateError;
       await supabase.auth.signOut();
+      try {
+        sessionStorage.removeItem(AUTH_LINK_KEY);
+      } catch {
+        // nothing to clear
+      }
       window.location.href = "/login";
     } catch (err) {
       setError(err.message || "Failed to reset password");
@@ -59,16 +76,17 @@ export default function ResetPassword() {
     return (
       <AuthLayout
         icon={AlertTriangle}
-        title="Invalid reset link"
-        subtitle="This password reset link is missing or invalid"
+        title="This link no longer works"
+        subtitle="It may have expired or already been used"
         footer={
           <Link to="/forgot-password" className="text-primary font-medium hover:underline">
-            Request a new link
+            Request a password reset link
           </Link>
         }
       >
         <p className="text-sm text-foreground text-center">
-          The link you used appears to be incomplete. Please request a new password reset email.
+          Links in invitation and password emails work once and expire. If you were invited as staff, ask an Admin to
+          resend your invitation. If you already have a password, request a reset link.
         </p>
       </AuthLayout>
     );
@@ -77,8 +95,8 @@ export default function ResetPassword() {
   return (
     <AuthLayout
       icon={Lock}
-      title="New password"
-      subtitle="Enter your new password below"
+      title={isInvite ? "Set your password" : "New password"}
+      subtitle={isInvite ? "Choose a password to activate your Airport Assist account" : "Enter your new password below"}
     >
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
@@ -123,10 +141,10 @@ export default function ResetPassword() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Resetting...
+              Saving...
             </>
           ) : (
-            "Reset password"
+            isInvite ? "Set password" : "Reset password"
           )}
         </Button>
       </form>
