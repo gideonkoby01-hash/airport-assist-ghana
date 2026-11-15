@@ -61,3 +61,46 @@ export function supervisorView(view, supervisorId, today, search = "") {
 export function isOverdue(booking, today) {
   return LIVE_STATUSES.includes(booking?.status) && Boolean(booking?.flight_date) && booking.flight_date < today;
 }
+
+/** Bookings nobody is looking after yet: confirmed, with no supervisor assigned. */
+export const UNASSIGNED = { status: "confirmed", $or: [{ assigned_supervisor_id: null }, { assigned_supervisor_id: "" }] };
+
+/** Filters for management's list of every booking, in the order they matter. */
+export function managementView(view, today, search = "") {
+  /** @type {any} */
+  let query = {};
+  let sort = "-created_date";
+  if (view === "unassigned") {
+    query = UNASSIGNED;
+    sort = "flight_date,scheduled_flight_time";
+  } else if (view === "today") {
+    query = { flight_date: today };
+    sort = "scheduled_flight_time";
+  } else if (view === "open") {
+    query = { status: { $in: LIVE_STATUSES } };
+    sort = "flight_date,scheduled_flight_time";
+  } else if (view === "closed") {
+    query = { status: { $in: ["completed", "cancelled", "no_show"] } };
+    sort = "-flight_date,-scheduled_flight_time";
+  }
+  const text = String(search).trim();
+  if (text) {
+    const found = { $or: [{ reference: { $regex: text } }, { flight_number: { $regex: text } }, { contact: { $regex: text } }, { assigned_supervisor_name: { $regex: text } }] };
+    query = Object.keys(query).length ? { $and: [query, found] } : found;
+  }
+  return { query, sort };
+}
+
+/** How today's flights split by progress, for the bar on the management summary. */
+export function tallyToday(bookings) {
+  const t = { waiting: 0, assigned: 0, in_progress: 0, completed: 0, other: 0, total: 0 };
+  for (const b of bookings) {
+    t.total += 1;
+    if (b.status === "confirmed") t.waiting += 1;
+    else if (b.status === "assigned") t.assigned += 1;
+    else if (b.status === "in_progress") t.in_progress += 1;
+    else if (b.status === "completed") t.completed += 1;
+    else t.other += 1;
+  }
+  return t;
+}

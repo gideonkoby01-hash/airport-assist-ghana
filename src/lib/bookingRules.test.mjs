@@ -49,3 +49,24 @@ test('overdue means live and the flight date has passed', () => {
   assert.equal(isOverdue({ status: 'assigned', flight_date: '2026-11-15' }, '2026-11-15'), false);
   assert.equal(isOverdue({ status: 'completed', flight_date: '2026-11-01' }, '2026-11-15'), false);
 });
+
+import { managementView, tallyToday, UNASSIGNED } from './bookingRules.js';
+
+test('management views', () => {
+  assert.deepEqual(managementView('all', '2026-11-15').query, {});
+  assert.equal(managementView('all', 'x').sort, '-created_date');
+  assert.deepEqual(managementView('unassigned', 'x').query, UNASSIGNED);
+  assert.equal(managementView('today', '2026-11-15').query.flight_date, '2026-11-15');
+  assert.deepEqual(managementView('open', 'x').query.status.$in, ['confirmed', 'assigned', 'in_progress']);
+  assert.deepEqual(managementView('closed', 'x').query.status.$in, ['completed', 'cancelled', 'no_show']);
+});
+test('a management search narrows the view, or stands alone on "all"', () => {
+  assert.equal(managementView('all', 'x', 'Kofi').query.$or.length, 4);
+  const narrowed = managementView('open', 'x', 'Kofi').query;
+  assert.equal(narrowed.$and.length, 2);
+  assert.equal(narrowed.$and[0].status.$in.length, 3);
+});
+test("today's tally counts each progress step", () => {
+  const t = tallyToday([{ status: 'confirmed' }, { status: 'assigned' }, { status: 'assigned' }, { status: 'in_progress' }, { status: 'completed' }, { status: 'no_show' }]);
+  assert.deepEqual(t, { waiting: 1, assigned: 2, in_progress: 1, completed: 1, other: 1, total: 6 });
+});
