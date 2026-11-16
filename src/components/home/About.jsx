@@ -12,57 +12,57 @@ const FACTS = [
 
 export default function About() {
   return (
-    <section id="about" className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24">
-      <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-        <Reveal as="figure" className="lg:col-span-5">
-          <div className="overflow-hidden rounded-[14px]">
-            <img
-              src="/images/porter-hero.webp"
-              alt="A porter with a luggage trolley, standing with three travellers in the check-in hall"
-              width="1024"
-              height="1024"
-              loading="lazy"
-              className="w-full h-auto aspect-[4/5] object-cover object-[50%_40%] transition-transform duration-[900ms] ease-out hover:scale-[1.04]"
-            />
-          </div>
-          <figcaption className="mt-3 text-sm text-muted-foreground">Porters take the bags; escorts take you through the terminal.</figcaption>
+    <section id="about" className="bg-secondary">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24">
+        <Reveal className="text-center max-w-3xl mx-auto">
+          <p className="flex items-center justify-center gap-4 eyebrow text-gold"><span className="h-px w-10 bg-accent/60" aria-hidden="true" /> About Airport Assist Ghana <span className="h-px w-10 bg-accent/60" aria-hidden="true" /></p>
+          <h2 className="serif mt-4 text-[clamp(2rem,4.4vw,3.2rem)] text-foreground">
+            A smoother way through <span className="serif-i text-gold">the airport.</span>
+          </h2>
         </Reveal>
 
-        <Reveal className="lg:col-span-7" delay={100}>
-          <h2 className="display text-[clamp(2.2rem,4.6vw,3.4rem)] text-foreground">A smoother way through the airport.</h2>
-          <div className="mt-6 space-y-4 text-[1.05rem] leading-relaxed text-muted-foreground max-w-[38rem]">
-            <p>
-              Airport Assist Ghana provides personalised airport concierge and passenger assistance at Accra International Airport in Accra, Ghana.
-              We help passengers through the key stages of their arrival and departure, so they get through the airport with more confidence and less worry.
-            </p>
-            <p>
-              That means meeting you on arrival, helping with bags, priority check-in, eligible fast-track escort, and premium lounge access where your package includes it.
-            </p>
+        {/* An editorial card in the serif voice: the mission, with the story beside it. */}
+        <Reveal className="mt-12 mx-auto max-w-5xl overflow-hidden rounded-[24px] border border-border bg-card shadow-[0_26px_60px_-36px_hsl(var(--foreground)/0.5)]">
+          <div className="flex items-center justify-between gap-3 px-6 sm:px-8 py-4 border-b border-border bg-secondary/60">
+            <span className="eyebrow text-muted-foreground">Our story</span>
+            <span className="eyebrow text-muted-foreground">Accra International Airport</span>
           </div>
-        </Reveal>
-      </div>
-
-      <ul className="mt-14 grid sm:grid-cols-2 lg:grid-cols-6 gap-5">
-        {FACTS.map((f, i) => {
-          const Icon = f.icon;
-          return (
-            <Reveal as="li" key={f.title} delay={(i % 3) * 90} className={`list-none ${i < 3 ? "lg:col-span-2" : "lg:col-span-3"}`}>
-              <div className="lift h-full rounded-[14px] border border-border bg-card p-6">
-                <Icon className="w-6 h-6 text-gold" aria-hidden="true" />
-                <h3 className="mt-4 text-lg font-semibold text-foreground">{f.title}</h3>
-                <p className="mt-2 text-muted-foreground leading-relaxed text-[0.95rem]">{f.text}</p>
+          <div className="grid md:grid-cols-12">
+            <div className="md:col-span-7 p-6 sm:p-9">
+              <h3 className="serif text-[clamp(1.6rem,3vw,2.3rem)] leading-tight text-foreground">Personalised help at every stage of the journey.</h3>
+              <div className="mt-5 space-y-4 text-muted-foreground leading-[1.75] serif-body">
+                <p className="serif-first">
+                  Airport Assist Ghana provides personalised airport concierge and passenger assistance at Accra International Airport in Accra, Ghana.
+                  We help passengers through the key stages of their arrival and departure, so they get through the airport with more confidence and less worry.
+                </p>
+                <p>That means meeting you on arrival, helping with bags, priority check-in, eligible fast-track escort, and premium lounge access where your package includes it.</p>
               </div>
-            </Reveal>
-          );
-        })}
-      </ul>
+            </div>
+            <div className="md:col-span-5 p-6 sm:p-9 md:border-l border-t md:border-t-0 border-border flex flex-col justify-center">
+              <svg viewBox="0 0 24 24" className="w-9 h-9 text-accent" fill="currentColor" aria-hidden="true"><path d="M7.2 6C4.9 6 3 7.9 3 10.2V18h7v-7.8H6.4c0-1.1.9-2 2-2V6H7.2zm9 0C13.9 6 12 7.9 12 10.2V18h7v-7.8h-3.6c0-1.1.9-2 2-2V6h-1.2z" /></svg>
+              <blockquote className="serif mt-3 text-[1.35rem] leading-snug text-foreground font-semibold">
+                To take the stress out of airport navigation with courteous, personalised and efficient help, so you travel in comfort and with confidence.
+              </blockquote>
+              <p className="mt-5 pt-4 border-t border-border eyebrow text-muted-foreground">Our mission</p>
+            </div>
+          </div>
+        </Reveal>
 
-      <Reveal as="blockquote" className="mt-16 lg:mt-24 border-l-4 border-accent pl-6 sm:pl-10 max-w-4xl">
-        <p className="display text-[clamp(1.7rem,3.6vw,2.7rem)] text-foreground" style={{ lineHeight: 1.12 }}>
-          To take the stress out of airport navigation with courteous, personalised and efficient help, so you travel in comfort and with confidence.
-        </p>
-        <footer className="mt-4 text-sm text-muted-foreground">Our mission</footer>
-      </Reveal>
+        <ul className="mt-12 grid sm:grid-cols-2 lg:grid-cols-6 gap-5">
+          {FACTS.map((f, i) => {
+            const Icon = f.icon;
+            return (
+              <Reveal as="li" key={f.title} delay={(i % 3) * 90} className={`list-none ${i < 3 ? "lg:col-span-2" : "lg:col-span-3"}`}>
+                <div className="lift h-full rounded-[18px] border border-border bg-card p-6">
+                  <span className="grid place-items-center w-11 h-11 rounded-full text-white" style={{ background: "var(--grad-brand)" }}><Icon className="w-5 h-5" aria-hidden="true" /></span>
+                  <h3 className="mt-4 text-lg font-bold text-foreground">{f.title}</h3>
+                  <p className="mt-2 text-muted-foreground leading-relaxed text-[0.95rem]">{f.text}</p>
+                </div>
+              </Reveal>
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
 }

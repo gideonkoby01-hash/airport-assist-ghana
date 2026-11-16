@@ -33,16 +33,19 @@ export default function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const call = "press inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-[0.9rem] font-semibold text-[hsl(var(--wa-ink))] bg-[hsl(var(--wa))]";
   return (
     <header className={`sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border transition-shadow duration-300 ${scrolled ? "shadow-[0_8px_24px_-16px_hsl(var(--foreground)/0.4)]" : ""}`}>
-      <div className="tricolor-bar h-[3px]" aria-hidden="true" />
-      <div className={`mx-auto max-w-6xl px-5 sm:px-8 flex items-center gap-6 transition-[height] duration-300 ${scrolled ? "h-14" : "h-16"}`}>
+      <div className={`mx-auto max-w-7xl px-5 sm:px-8 flex items-center gap-6 transition-[height] duration-300 ${scrolled ? "h-14" : "h-16"}`}>
         <Link to="/" onClick={close} className="flex items-center gap-2.5 shrink-0">
           <img src="/images/logo-mark.webp" alt="" width="36" height="36" className="h-9 w-9 object-contain" />
-          <span className="display text-[1.35rem] text-foreground">{settings.company_name}</span>
+          <span className="leading-none">
+            <span className="block display text-[1.15rem] text-foreground">{settings.company_name}</span>
+            <span className="block eyebrow !text-[0.55rem] !tracking-[0.2em] mt-1 grad-text">Akwaaba Services</span>
+          </span>
         </Link>
 
-        <nav aria-label="Sections" className="hidden lg:flex items-center gap-7 ml-auto">
+        <nav aria-label="Sections" className="hidden lg:flex items-center gap-7 mx-auto">
           {NAV_LINKS.map((l) => {
             const on = active === l.href.slice(1);
             return (
@@ -54,15 +57,13 @@ export default function SiteHeader() {
           })}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-2 ml-2">
+        <div className="hidden lg:flex items-center gap-2">
           <ThemeToggle className="text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" />
           {isAuthenticated && (
             <Link to={signInDest} className="link-grow pb-1 px-1 text-[0.95rem] font-medium text-foreground">My account</Link>
           )}
-          <a href={callHref} className="press inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-[0.95rem] font-medium text-foreground hover:border-gold">
-            <Phone className="w-4 h-4 text-gold" aria-hidden="true" /> Call us
-          </a>
-          <Link to={bookDest} className="press px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-[0.95rem] font-semibold">Book assistance</Link>
+          <a href={callHref} className={call}><Phone className="w-4 h-4" aria-hidden="true" /> Call us</a>
+          <Link to={bookDest} className="press px-5 py-2.5 rounded-[14px] bg-primary text-primary-foreground text-[0.9rem] font-semibold">Book assistance</Link>
         </div>
 
         <div className="lg:hidden ml-auto flex items-center">
@@ -83,8 +84,8 @@ export default function SiteHeader() {
               ))}
             </ul>
             <div className="mt-4 flex gap-3">
-              <Link to={bookDest} onClick={close} className="press flex-1 text-center py-3 rounded-full bg-primary text-primary-foreground font-semibold">Book assistance</Link>
-              <a href={callHref} onClick={close} className="press flex-1 text-center py-3 rounded-full border border-border text-foreground font-medium">Call us</a>
+              <Link to={bookDest} onClick={close} className="press flex-1 text-center py-3 rounded-[14px] bg-primary text-primary-foreground font-semibold">Book assistance</Link>
+              <a href={callHref} onClick={close} className="press flex-1 text-center py-3 rounded-[14px] text-[hsl(var(--wa-ink))] font-semibold bg-[hsl(var(--wa))]">Call us</a>
             </div>
             {isAuthenticated && (
               <Link to={signInDest} onClick={close} className="block text-center mt-3 py-2 text-foreground underline underline-offset-4">My account</Link>

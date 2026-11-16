@@ -19,7 +19,7 @@ export function parseBookingPrefill(search, today = new Date().toISOString().sli
 }
 
 /** The booking address for a quote: where the website's "Continue to booking" button goes. */
-export function bookingAddress({ package_code, date, pax }) {
+export function bookingAddress({ package_code = "", date = "", pax = 1 } = {}) {
   const q = new URLSearchParams({ tab: "book" });
   if (package_code) q.set("package", package_code);
   if (date) q.set("date", date);

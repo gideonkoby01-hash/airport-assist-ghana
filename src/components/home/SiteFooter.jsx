@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import { useHomeCta } from "@/components/home/useHomeCta";
 import { addressLines, phoneNumbers, useSettings } from "@/lib/SettingsContext";
 
@@ -8,57 +9,66 @@ export default function SiteFooter() {
   const { settings } = useSettings();
   const phones = phoneNumbers(settings.contact_phone);
   const address = addressLines(settings.contact_address);
-  const link = "text-sidebar-foreground/75 hover:text-white link-grow pb-0.5";
-  const head = "text-white font-semibold mb-4";
+  const callHref = phones[0] ? `tel:${phones[0].replace(/[^\d+]/g, "")}` : "#contact";
+  const link = "text-white/70 hover:text-white link-grow pb-0.5";
+  const head = "eyebrow text-accent mb-4";
   return (
-    <footer className="bg-sidebar text-sidebar-foreground">
-      <div className="tricolor-bar h-[3px]" aria-hidden="true" />
+    <footer className="bg-[hsl(var(--site-dark))] text-white border-t-2" style={{ borderColor: "hsl(var(--accent))" }}>
       <div className="mx-auto max-w-6xl px-5 sm:px-8 pt-14 pb-10 grid md:grid-cols-12 gap-10">
-        <div className="md:col-span-4">
-          <p className="display text-[1.7rem] text-white">{settings.company_name}</p>
-          <p className="mt-1 text-sm text-sidebar-foreground/60">Akwaaba Services</p>
-          <p className="mt-4 max-w-xs leading-relaxed text-sidebar-foreground/80">
-            Personalised airport assistance at Accra International Airport. Open 24 hours a day, 7 days a week.
+        <div className="md:col-span-5">
+          <div className="flex items-center gap-3">
+            <img src="/images/logo-mark.webp" alt="" width="36" height="36" className="h-9 w-9 rounded-md bg-white/90 object-contain p-0.5" />
+            <p className="sora text-[1.25rem] font-semibold">{settings.company_name}</p>
+          </div>
+          <p className="mt-4 max-w-sm leading-relaxed text-white/75">
+            Personalised airport assistance from arrival to departure at Accra International Airport, 24 hours a day, 7 days a week.
           </p>
-          <Link to={bookDest} className="press mt-6 inline-block px-6 py-3 rounded-full bg-accent text-accent-foreground font-semibold">Book assistance</Link>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href={callHref} className="press inline-flex items-center gap-2 px-5 py-3 rounded-[14px] font-semibold text-[hsl(var(--wa-ink))] bg-[hsl(var(--wa))]"><Phone className="w-4 h-4" aria-hidden="true" /> Call us</a>
+            <Link to={bookDest} className="press inline-flex items-center gap-2 px-5 py-3 rounded-[14px] font-semibold bg-white text-[#15121c]">Book assistance <ArrowUpRight className="w-4 h-4" aria-hidden="true" /></Link>
+          </div>
         </div>
 
         <nav aria-label="Services" className="md:col-span-2">
-          <p className={head}>Services</p>
+          <p className={head}>Airport assistance</p>
           <ul className="space-y-2.5">
-            <li><a href="#services" className={link}>On arrival</a></li>
-            <li><a href="#services" className={link}>On departure</a></li>
-            <li><a href="#services" className={link}>Porter only</a></li>
+            <li><a href="#services" className={link}>Arrival</a></li>
+            <li><a href="#services" className={link}>Departure</a></li>
+            <li><a href="#services" className={link}>Porter</a></li>
             <li><a href="#prices" className={link}>Prices</a></li>
           </ul>
         </nav>
 
         <nav aria-label="Company" className="md:col-span-2">
-          <p className={head}>Company</p>
+          <p className={head}>Airport Assist</p>
           <ul className="space-y-2.5">
-            <li><a href="#about" className={link}>About us</a></li>
+            <li><a href="#about" className={link}>About</a></li>
             <li><a href="#how-it-works" className={link}>How it works</a></li>
             <li><a href="#faq" className={link}>Questions</a></li>
-            <li><Link to="/privacy" className={link}>Privacy notice</Link></li>
+            <li><a href="#contact" className={link}>Contact</a></li>
             <li><Link to={signInDest} className={link}>{isAuthenticated ? "My account" : "Staff sign in"}</Link></li>
           </ul>
         </nav>
 
-        <div className="md:col-span-4">
-          <p className={head}>Contact</p>
-          <ul className="space-y-2.5">
-            {phones.map((p) => (
-              <li key={p}><a href={`tel:${p.replace(/[^\d+]/g, "")}`} className={link}>{p}</a></li>
-            ))}
-            <li><a href={`mailto:${settings.contact_email}`} className={`${link} break-all`}>{settings.contact_email}</a></li>
-            {address.map((l) => <li key={l} className="text-sidebar-foreground/75">{l}</li>)}
-          </ul>
+        <div className="md:col-span-3 space-y-3 text-white/75">
+          <div className="flex items-start gap-3 rounded-[14px] border border-white/15 bg-white/5 p-3">
+            <MapPin className="w-5 h-5 mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+            <div>
+              <p className="font-semibold text-white">Accra International Airport</p>
+              <p className="text-sm text-white/60">Open 24 hours, 7 days a week</p>
+            </div>
+          </div>
+          <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 hover:text-white break-all"><Mail className="w-4 h-4 shrink-0 text-accent" aria-hidden="true" /> {settings.contact_email}</a>
+          {phones.map((p) => (
+            <a key={p} href={`tel:${p.replace(/[^\d+]/g, "")}`} className="flex items-center gap-2 hover:text-white"><Phone className="w-4 h-4 shrink-0 text-accent" aria-hidden="true" /> {p}</a>
+          ))}
+          <p className="text-sm text-white/60">{address.join(", ")}</p>
         </div>
       </div>
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8 py-5 flex flex-col sm:flex-row justify-between gap-2 text-sm text-sidebar-foreground/60">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 py-5 flex flex-col sm:flex-row justify-between gap-2 text-sm text-white/55">
           <p>&copy; {new Date().getFullYear()} {settings.company_name}</p>
-          <p>Accra International Airport, Accra, Ghana</p>
+          <Link to="/privacy" className="hover:text-white">Privacy notice</Link>
         </div>
       </div>
     </footer>
