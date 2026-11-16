@@ -12,6 +12,7 @@ import ShiftReportViewer from "@/components/ShiftReportViewer";
 import StatCard from "@/components/StatCard";
 import BookingFinancials from "@/components/BookingFinancials";
 import OperationsGlance from "@/components/OperationsGlance";
+import PorterPay from "@/components/PorterPay";
 import CustomersPanel from "@/components/crm/CustomersPanel";
 import { Input } from "@/components/ui/input";
 import { UNASSIGNED, managementView } from "@/lib/bookingRules";
@@ -203,6 +204,7 @@ function ManagementInner() {
       )}
 
       {tab === "customers" && <CustomersPanel tab="customers" />}
+      {tab === "porter-pay" && <PorterPay />}
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
       {tab === "reports" && <ShiftReportViewer />}
       {tab === "ratings" && <RatingsReviews />}

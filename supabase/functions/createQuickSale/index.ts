@@ -13,6 +13,9 @@ const MESSAGES: Record<string, string> = {
   invalid_amount: 'The price cannot be more than the package price, or zero.',
   reason_required: 'A lower price needs a reason (a few words). It is kept on the record.',
   invalid_method: 'Choose how the passenger paid.',
+  invalid_flight: 'Enter the flight number as letters and numbers, for example KQ 510.',
+  invalid_flight_time: 'Enter the flight time as hours and minutes, for example 14:30.',
+  invalid_porter_passengers: 'A porter cannot be credited with more passengers than were sold.',
 };
 
 // A walk-in sale at the desk: a minimal booking plus its payment, created together so every sale has a
@@ -40,6 +43,15 @@ serve('createQuickSale', async (req) => {
   const repeat = await first();
   if (repeat) return json({ ok: true, booking: repeat, duplicate: true });
 
+  // A porter comes from the register, so every payout is tied to a real person.
+  let porterId = '';
+  let porterName = '';
+  if (body.porter_id) {
+    const { data: porter } = await admin.from('porters').select('id,full_name,active').eq('id', String(body.porter_id)).maybeSingle();
+    if (!porter || !porter.active) throw new HttpError(400, 'That porter is not on the active list. Ask an admin to add them under Porters.');
+    porterId = porter.id;
+    porterName = porter.full_name;
+  }
   const commission = (await loadSettings(admin)).num('porter_commission_per_passenger');
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data, error } = await admin.rpc('create_quick_sale', {
@@ -47,8 +59,10 @@ serve('createQuickSale', async (req) => {
       p_package_code: String(body.package_code || ''), p_count: Math.trunc(Number(body.count)), p_direction: String(body.direction || ''),
       p_name: String(body.name || '').trim().slice(0, 120), p_phone: phone,
       p_override_amount: override, p_override_reason: String(body.override_reason || '').trim().slice(0, 200), p_method: method,
-      p_porter_name: String(body.porter_name || '').trim().slice(0, 120), p_porter_passengers: Math.trunc(Number(body.porter_passengers)) || null,
+      p_porter_name: porterName, p_porter_passengers: Math.trunc(Number(body.porter_passengers)) || null,
       p_commission_per_passenger: commission, p_idempotency_key: key,
+      p_flight_number: String(body.flight_number || '').trim().slice(0, 12), p_airline: String(body.airline || '').trim().slice(0, 60),
+      p_flight_time: String(body.flight_time || '').trim(), p_porter_id: porterId,
     });
     if (!error) return json({ ok: true, booking: data });
     if (error.code === '23505') {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api/db";
-import { LIVE_STATUSES, UNASSIGNED, tallyToday } from "@/lib/bookingRules";
+import { LIVE_STATUSES, UNASSIGNED, tallyToday, waitingForPorter } from "@/lib/bookingRules";
 import { todayUtc } from "@/lib/bookingFormRules";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 
@@ -58,6 +58,7 @@ export default function OperationsGlance() {
   const [tally, setTally] = useState(null);
   const [unassigned, setUnassigned] = useState(null);
   const [overdue, setOverdue] = useState(null);
+  const [needPorter, setNeedPorter] = useState(null);
 
   useEffect(() => {
     let live = true;
@@ -71,6 +72,10 @@ export default function OperationsGlance() {
     api.entities.Booking.filter({ status: { $in: LIVE_STATUSES }, flight_date: { $lt: today } }, { sort: "flight_date,scheduled_flight_time", limit: 5, fields })
       .then((p) => live && setOverdue(p.items || []))
       .catch(() => live && setOverdue([]));
+    // Website porter requests nobody has been assigned to yet: management assigns the porter.
+    api.entities.Booking.filter({ package_code: "porter_only", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters"] })
+      .then((p) => live && setNeedPorter(waitingForPorter(p.items || []).slice(0, 5)))
+      .catch(() => live && setNeedPorter([]));
     return () => {
       live = false;
     };
@@ -116,6 +121,14 @@ export default function OperationsGlance() {
           loading={unassigned === null}
           emptyText="Every confirmed booking has a supervisor."
           to="/management?tab=bookings&view=unassigned"
+        />
+        <AttentionList
+          title="Waiting for a porter"
+          hint="Porter requests from the website. Open the booking and assign a porter."
+          rows={needPorter || []}
+          loading={needPorter === null}
+          emptyText="Every porter request has a porter."
+          to="/management?tab=bookings"
         />
         <AttentionList
           title="Flight date passed, still open"

@@ -13,7 +13,7 @@ import {
 } from "@/lib/packages";
 import { PaymentBadge } from "@/components/StatusBadge";
 import { useSettings } from "@/lib/SettingsContext";
-import { acceptsPayments, isClosed, nextStatuses, ALL_STATUSES } from "@/lib/bookingRules";
+import { acceptsPayments, canAssignPorter, isClosed, nextStatuses, ALL_STATUSES } from "@/lib/bookingRules";
 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
@@ -35,8 +35,11 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const [payMethod, setPayMethod] = useState(booking.payment_method || "cash");
   const [savingPay, setSavingPay] = useState(false);
 
-  const [porterName, setPorterName] = useState("");
-  const [porterHandled, setPorterHandled] = useState(1);
+  const [porterRegister, setPorterRegister] = useState([]);
+  const [porterId, setPorterId] = useState("");
+  const covered = (booking.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0);
+  const [porterHandled, setPorterHandled] = useState(Math.max(1, (booking.num_passengers || 1) - covered));
+  const mayAssignPorter = canAssignPorter(user, booking);
   const [savingPorter, setSavingPorter] = useState(false);
 
   const [lounge, setLounge] = useState(booking.lounge_used || "");
@@ -64,6 +67,14 @@ export default function BookingActions({ booking, user, onUpdated }) {
         .finally(() => setLoadingSupers(false));
     }
   }, [canAssignSupervisor]);
+
+  // The register of porters, for whoever may assign one on this booking.
+  useEffect(() => {
+    if (!mayAssignPorter) return;
+    api.entities.Porter.filter({ active: true }, { sort: "full_name" })
+      .then((page) => setPorterRegister(page.items || []))
+      .catch(() => setPorterRegister([]));
+  }, [mayAssignPorter]);
 
   // Staff edits go through backend functions: browsers cannot write bookings directly,
   // and the server (not this form) works out balances and commissions.
@@ -137,15 +148,15 @@ export default function BookingActions({ booking, user, onUpdated }) {
   };
 
   const addPorter = async () => {
-    if (!porterName.trim()) return notifyError("Enter the porter's name.");
+    if (!porterId) return notifyError("Choose a porter from the list.");
     setSavingPorter(true);
     try {
       await callBooking("updateBookingOperations", {
         action: "add_porter",
-        porter_name: porterName.trim(),
+        porter_id: porterId,
         passengers_handled: Number(porterHandled || 0),
       });
-      setPorterName("");
+      setPorterId("");
       setPorterHandled(1);
     } catch (err) {
       notifyError(err.message || "Failed to assign porter");
@@ -226,33 +237,43 @@ export default function BookingActions({ booking, user, onUpdated }) {
           )}
         </Panel>
 
-        {/* Porters */}
+        </>
+      )}
+
+      {mayAssignPorter && (
         <Panel icon={Users} title="Porters & Commission">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1 flex-1 min-w-[160px]">
-              <Label className="text-xs">Porter name</Label>
-              <Input value={porterName} onChange={(e) => setPorterName(e.target.value)} placeholder="Porter name" />
-            </div>
-            <div className="space-y-1 w-28">
-              <Label className="text-xs">Passengers handled</Label>
-              <Input
-                type="number"
-                min={1}
-                value={porterHandled}
-                onChange={(e) => setPorterHandled(e.target.value)}
-              />
-            </div>
-            <div className="text-sm text-muted-foreground pb-2">
-              Commission: <span className="font-semibold text-foreground">{formatGHS(commissionPerPassenger * Number(porterHandled || 0))}</span>
-            </div>
-            <Button onClick={addPorter} disabled={savingPorter}>
-              {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
-              Add
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {formatGHS(commissionPerPassenger)} commission per passenger handled.
+          <p className="text-xs text-muted-foreground mb-3">
+            {booking.booking_channel === "walk_in"
+              ? "A walk-in at the desk: you choose the porter."
+              : "A service requested on the website: management assigns the porter."}{" "}
+            {formatGHS(commissionPerPassenger)} goes to the porter for each passenger handled, and is paid to them daily.
           </p>
+          {porterRegister.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No porters on the list yet. An admin adds them under Porters.</p>
+          ) : (
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1 flex-1 min-w-[170px]">
+                <Label htmlFor="porter-pick" className="text-xs">Porter</Label>
+                <Select value={porterId} onValueChange={setPorterId}>
+                  <SelectTrigger id="porter-pick"><SelectValue placeholder="Choose a porter" /></SelectTrigger>
+                  <SelectContent>
+                    {porterRegister.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 w-28">
+                <Label htmlFor="porter-pax" className="text-xs">Passengers handled</Label>
+                <Input id="porter-pax" type="number" min={1} max={booking.num_passengers || 50} value={porterHandled} onChange={(e) => setPorterHandled(e.target.value)} />
+              </div>
+              <div className="text-sm text-muted-foreground pb-2">
+                Commission: <span className="font-semibold text-foreground">{formatGHS(commissionPerPassenger * Number(porterHandled || 0))}</span>
+              </div>
+              <Button onClick={addPorter} disabled={savingPorter || !porterId}>
+                {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
+                Assign
+              </Button>
+            </div>
+          )}
           {booking.porters?.length > 0 && (
             <div className="mt-3 space-y-2">
               {booking.porters.map((p, i) => (
@@ -261,7 +282,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
                     <span className="font-medium">{p.porter_name}</span> · {p.passengers_handled} passenger(s) ·{" "}
                     {formatGHS(p.commission)}
                   </span>
-                  <button aria-label="Remove porter" onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
+                  <button aria-label={`Remove ${p.porter_name}`} onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -273,7 +294,6 @@ export default function BookingActions({ booking, user, onUpdated }) {
             </div>
           )}
         </Panel>
-        </>
       )}
 
       {canOperate && (
