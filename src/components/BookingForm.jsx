@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSettings } from "@/lib/SettingsContext";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/api/db";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Users, Plane, CheckCircle2 } from "lucide-react";
 import { validateBooking, todayUtc } from "@/lib/bookingFormRules";
+import { parseBookingPrefill } from "@/lib/bookingPrefill";
 import PaymentInformation from "@/components/PaymentInformation";
 import DiscountCodeInput from "@/components/DiscountCodeInput";
 import {
@@ -28,14 +29,17 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 // eslint-disable-next-line unused-imports/no-unused-vars
 export default function BookingForm({ channel = "online", user, supervisor = undefined, onCreated }) {
   const { user: me } = useAuth();
+  // Choices made in the website's quick quote arrive in the address (package, date, number of travellers).
+  const [searchParams] = useSearchParams();
+  const prefill = useMemo(() => parseBookingPrefill(searchParams.toString()), []); // read once, when the form opens
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
   const [form, setForm] = useState({
-    package_code: "",
-    flight_type: "arrival",
+    package_code: prefill.package_code,
+    flight_type: prefill.flight_type || "arrival",
     airline: "",
     flight_number: "",
-    flight_date: "",
+    flight_date: prefill.flight_date,
     scheduled_flight_time: "",
     // A passenger's own number is filled in from their profile; staff booking for walk-ins start blank.
     contact: channel === "online" ? me?.phone || "" : "",
@@ -44,7 +48,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     special_requests: "",
     lounge_used: ""
   });
-  const [passengers, setPassengers] = useState([{ ...emptyPassenger }]);
+  const [passengers, setPassengers] = useState(() => Array.from({ length: prefill.passengers }, () => ({ ...emptyPassenger })));
   const [submitting, setSubmitting] = useState(false);
   const [consented, setConsented] = useState(false);
   const { settings } = useSettings();
