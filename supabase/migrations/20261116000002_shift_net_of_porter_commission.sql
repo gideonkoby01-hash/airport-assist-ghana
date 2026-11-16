@@ -1,6 +1,6 @@
 -- Shift reports show sales minus porter commission, and cannot be filed while a service sold at the desk has no porter
 -- on it. (Website bookings are assigned by management, so they are listed but do not hold up the report.)
-alter table public.shift_reports add column net_after_commission numeric(12,2);
+alter table public.shift_reports add column if not exists net_after_commission numeric(12,2);
 -- Older reports: sales less the commission recorded on them.
 update public.shift_reports set net_after_commission = round(coalesce(grand_total_paid, total_revenue, 0) - coalesce(porter_total_commission, total_commission, 0), 2)
 where net_after_commission is null;
