@@ -26,14 +26,14 @@ export default function HeroQuote({ slide, index, total, controls }) {
     <form
       aria-label="Quick price"
       onSubmit={(e) => e.preventDefault()}
-      className="hero-rise relative z-10 mx-auto -mt-24 sm:-mt-28 w-[calc(100%-1.5rem)] max-w-5xl overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_34px_70px_-34px_hsl(var(--foreground)/0.5)]"
+      className="hero-rise relative z-10 mx-auto -mt-14 sm:-mt-24 w-[calc(100%-1.5rem)] sm:w-[calc(100%-4rem)] max-w-[88rem] overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_34px_70px_-34px_hsl(var(--foreground)/0.5)]"
       style={delayStyle(900)}
     >
       <div className="h-[3px]" style={{ background: "var(--grad-brand)" }} aria-hidden="true" />
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-6 pt-4 pb-3 border-b border-border">
         <div className="min-w-0">
           <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Airport Assist journey · {index + 1} of {total}</p>
-          <p className="font-semibold text-foreground truncate">{slide.title}</p>
+          <p className="font-semibold text-foreground">{slide.title}</p>
         </div>
         <div className="flex items-center gap-3">
           {controls}
