@@ -63,6 +63,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
     if (discounted && (!(Number(amount) > 0) || tooHigh)) return setError(`Enter a price above zero and not more than ${formatGHS(gross)}.`);
     if (discounted && reason.trim().length < 3) return setError("Give a reason for the lower price.");
     if (flightNumber.trim() && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,9}$/.test(flightNumber.trim())) return setError("Enter the flight number as letters and numbers, for example KQ 510.");
+    if (pkg.code === "porter_only" && !porterId) return setError(porters.length ? "Choose the porter handling this service." : "No porters are on the list yet. Ask an admin to add them under Porters.");
     if (porterId && !(Number(porterPax) >= 1 && Number(porterPax) <= Number(count))) return setError("The porter's passengers cannot be more than the passengers sold.");
     setSaving(true);
     try {
@@ -207,14 +208,14 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         </Select>
       </div>
 
-      {porters.length > 0 && (
+      {(porters.length > 0 || pkg?.code === "porter_only") && (
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="qs-porter">Porter (optional)</Label>
+            <Label htmlFor="qs-porter">{pkg?.code === "porter_only" ? "Porter" : "Porter (optional)"}</Label>
             <Select value={porterId || "none"} onValueChange={(v) => setPorterId(v === "none" ? "" : v)}>
               <SelectTrigger id="qs-porter"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No porter</SelectItem>
+                {pkg?.code !== "porter_only" && <SelectItem value="none">No porter</SelectItem>}
                 {porters.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
               </SelectContent>
             </Select>

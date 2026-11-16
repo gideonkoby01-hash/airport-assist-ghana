@@ -52,6 +52,8 @@ serve('createQuickSale', async (req) => {
     porterId = porter.id;
     porterName = porter.full_name;
   }
+  // Porter services always carry a porter, so the shift report can take the commission off the sales.
+  if (String(body.package_code) === 'porter_only' && !porterId) throw new HttpError(400, 'A porter service needs a porter. Choose who is handling it.');
   const commission = (await loadSettings(admin)).num('porter_commission_per_passenger');
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data, error } = await admin.rpc('create_quick_sale', {

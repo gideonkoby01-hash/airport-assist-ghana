@@ -133,6 +133,17 @@ export default function ShiftReportForm({ supervisor }) {
       {preview && (
         <>
           <ShiftReportSummary report={{ ...preview, supervisor_name: supervisor.full_name || supervisor.email, created_date: null }} />
+          {Number(preview.porters_missing) > 0 && (
+            <p role="alert" className="text-sm rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-3">
+              {preview.porters_missing === 1 ? "A porter service" : `${preview.porters_missing} porter services`} sold in this shift ({(preview.porters_missing_refs || []).join(", ")}) {preview.porters_missing === 1 ? "has" : "have"} no porter on {preview.porters_missing === 1 ? "it" : "them"}.
+              Open {preview.porters_missing === 1 ? "the booking" : "each booking"} and assign a porter, then reload this page. The report cannot be submitted until every porter service has one.
+            </p>
+          )}
+          {Number(preview.porters_awaiting_management) > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {preview.porters_awaiting_management} porter request{preview.porters_awaiting_management === 1 ? "" : "s"} from the website {preview.porters_awaiting_management === 1 ? "is" : "are"} still waiting for management to assign a porter. {preview.porters_awaiting_management === 1 ? "It does" : "They do"} not hold up your report.
+            </p>
+          )}
           {Number(preview.grand_total_paid) === 0 && Number(preview.booking_count) === 0 && (
             <p className="text-sm text-muted-foreground">
               Nothing was recorded for this shift. If you did take money, record it first (Quick sale or the booking's Payment box) and reload this page; sales cannot be added to a report by hand.
@@ -159,7 +170,7 @@ export default function ShiftReportForm({ supervisor }) {
               <Textarea id="sr-remarks" value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={3} maxLength={1000} />
             </div>
             {already && <p className="text-sm text-amber-700">A report for this shift has already been submitted. Ask an admin if it needs to be redone.</p>}
-            <Button onClick={submit} disabled={saving || already}>
+            <Button onClick={submit} disabled={saving || already || Number(preview.porters_missing) > 0}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Submit report
             </Button>

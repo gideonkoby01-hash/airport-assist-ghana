@@ -3,7 +3,8 @@ begin;
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000c1', 'sup1@example.com'),
   ('00000000-0000-0000-0000-0000000000c2', 'sup2@example.com'),
-  ('00000000-0000-0000-0000-0000000000c3', 'sup3@example.com');
+  ('00000000-0000-0000-0000-0000000000c3', 'sup3@example.com'),
+  ('00000000-0000-0000-0000-0000000000c4', 'sup4@example.com');
 update public.profiles set role = 'supervisor' where email like 'sup%@example.com';
 
 create function pg_temp.check_that(label text, ok boolean) returns void language plpgsql as $$
@@ -81,6 +82,8 @@ select pg_temp.check_that('the report is built from the ledger',
       and b -> 'meet_assist_entries' @> '[{"service_type":"full_departure","amount_paid":800,"payment_method":"momo"}]'
       and b -> 'porter_entries' @> '[{"porter_name":"Yaw","passengers_handled":3,"commission":90}]'
       and (b ->> 'porter_total_commission')::numeric = 90
+      and (b ->> 'net_after_commission')::numeric = 2410   -- 2500 sales less GHS 90 commission
+      and (b ->> 'porters_missing')::int = 0
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000c1', (select period from cur), (select shift from cur)) as b) x));
 select pg_temp.check_that('the other supervisor''s sale and the manager''s refund are not in it',
   (select jsonb_array_length(b -> 'meet_assist_entries') = 2
@@ -111,12 +114,25 @@ select public.create_shift_report('00000000-0000-0000-0000-0000000000c1', 'Ama',
 select pg_temp.check_that('the report is stored with the variance worked out by the system',
   (select system_generated and grand_total_paid = 2500 and cash_expected = 1700 and cash_counted = 1690 and cash_variance = -10
           and remarks = 'Short GHS 10 in the till' and supervisor_name = 'Ama' from public.shift_reports where supervisor_id = '00000000-0000-0000-0000-0000000000c1'));
+select pg_temp.check_that('the filed report keeps sales less commission',
+  (select net_after_commission = 2410 from public.shift_reports where supervisor_id = '00000000-0000-0000-0000-0000000000c1'));
 select pg_temp.raises('the same shift cannot be filed twice',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c1', 'Ama', (select period from cur), (select shift from cur), 1500, '')$q$, 'duplicate_report');
 select pg_temp.raises('the cash count is required',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c2', 'Kojo', current_date - 1, 'morning', null, '')$q$, 'cash_count_required');
 select pg_temp.raises('a future shift cannot be filed',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c2', 'Kojo', current_date + 1, 'morning', 0, '')$q$, 'future_period');
+-- a porter service sold at the desk must have a porter on it before the shift can be closed
+select public.create_quick_sale('00000000-0000-0000-0000-0000000000c4', 'Efua', 'QS-6', 'porter_only', 2, null, null, null, null, null, 'cash', null, null, 30);
+select pg_temp.check_that('a porter sale with no porter is counted as missing',
+  (select (b ->> 'porters_missing')::int = 1 and (b ->> 'net_after_commission')::numeric = 200
+   from (select public.build_shift_report('00000000-0000-0000-0000-0000000000c4', (select period from cur), (select shift from cur)) as b) x));
+select pg_temp.raises('the shift cannot be filed while a porter service has no porter',
+  $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c4', 'Efua', (select period from cur), (select shift from cur), 200, '')$q$, 'porter_missing');
+update public.bookings set porters = '[{"porter_name":"Yaw","passengers_handled":2,"commission":60}]'::jsonb where reference = 'QS-6';
+select pg_temp.check_that('once a porter is assigned the shift closes with the commission taken off',
+  (select net_after_commission = 140 and total_commission = 60 and grand_total_paid = 200
+   from public.create_shift_report('00000000-0000-0000-0000-0000000000c4', 'Efua', (select period from cur), (select shift from cur), 200, '')));
 select pg_temp.check_that('a shift with no sales can still be filed as a nil return',
   (select grand_total_paid = 0 from public.create_shift_report('00000000-0000-0000-0000-0000000000c2', 'Kojo', current_date - 5, 'morning', 0, 'Quiet')));
 

@@ -37,6 +37,8 @@ export default function ShiftReportSummary({ report }) {
       ? report.grand_total_paid
       : meetAssistTotal + (report.porter_amount_paid || 0);
 
+  const netAfterCommission = report.net_after_commission != null ? Number(report.net_after_commission) : Number(grandTotal) - Number(porterTotalCommission);
+
   return (
     <div className="space-y-5">
       <div className="bg-secondary rounded-lg p-4 grid sm:grid-cols-3 gap-3 text-sm">
@@ -168,6 +170,12 @@ export default function ShiftReportSummary({ report }) {
       <div className="bg-primary text-primary-foreground rounded-xl p-5 flex items-center justify-between">
         <span className="font-semibold">Grand Total Paid</span>
         <span className="text-xl font-bold">{formatGHS(grandTotal)}</span>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-5 text-sm space-y-2" aria-label="Sales less porter commission">
+        <div className="flex items-center justify-between"><span className="text-muted-foreground">Sales this shift</span><span className="font-semibold tabular">{formatGHS(grandTotal)}</span></div>
+        <div className="flex items-center justify-between"><span className="text-muted-foreground">Less porter commission</span><span className="font-semibold tabular">− {formatGHS(porterTotalCommission)}</span></div>
+        <div className="flex items-center justify-between border-t border-border pt-2"><span className="font-semibold">Net after commission</span><span className="text-lg font-bold tabular">{formatGHS(netAfterCommission)}</span></div>
       </div>
 
       {report.remarks && (

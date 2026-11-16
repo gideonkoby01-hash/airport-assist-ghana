@@ -7,6 +7,7 @@ const MESSAGES: Record<string, [number, string]> = {
   cash_count_required: [400, 'Enter the cash you counted (0 if none).'],
   future_period: [400, 'That shift has not happened yet.'],
   duplicate_report: [409, 'A report for this shift already exists. Ask an admin if it needs to be redone.'],
+  porter_missing: [409, 'A porter service sold in this shift has no porter on it. Assign a porter to each one, then submit the report.'],
   invalid_shift: [400, 'Choose morning or night shift.'],
 };
 
