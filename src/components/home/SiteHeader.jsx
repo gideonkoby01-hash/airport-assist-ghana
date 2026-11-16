@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, Phone, X } from "lucide-react";
 import { ThemeToggle } from "@/lib/theme";
 import { useHomeCta } from "@/components/home/useHomeCta";
-import { useSettings } from "@/lib/SettingsContext";
+import { phoneNumbers, useSettings } from "@/lib/SettingsContext";
 import { useActiveSection } from "@/lib/useActiveSection";
 import { inertWhen } from "@/components/home/Reveal";
 
 const NAV_LINKS = [
+  { label: "Services", href: "#services" },
   { label: "Prices", href: "#prices" },
   { label: "How it works", href: "#how-it-works" },
-  { label: "About", href: "#about" },
   { label: "Questions", href: "#faq" },
   { label: "Contact", href: "#contact" },
 ];
@@ -19,6 +19,8 @@ const IDS = NAV_LINKS.map((l) => l.href.slice(1));
 export default function SiteHeader() {
   const { bookDest, signInDest, isAuthenticated } = useHomeCta();
   const { settings } = useSettings();
+  const phone = phoneNumbers(settings.contact_phone)[0];
+  const callHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : "#contact";
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const active = useActiveSection(IDS);
@@ -32,7 +34,7 @@ export default function SiteHeader() {
   }, []);
 
   return (
-    <header className={`sticky top-0 z-50 bg-background/95 backdrop-blur border-b transition-shadow duration-300 ${scrolled ? "border-border shadow-[0_8px_24px_-16px_hsl(var(--foreground)/0.4)]" : "border-border"}`}>
+    <header className={`sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border transition-shadow duration-300 ${scrolled ? "shadow-[0_8px_24px_-16px_hsl(var(--foreground)/0.4)]" : ""}`}>
       <div className="tricolor-bar h-[3px]" aria-hidden="true" />
       <div className={`mx-auto max-w-6xl px-5 sm:px-8 flex items-center gap-6 transition-[height] duration-300 ${scrolled ? "h-14" : "h-16"}`}>
         <Link to="/" onClick={close} className="flex items-center gap-2.5 shrink-0">
@@ -44,64 +46,49 @@ export default function SiteHeader() {
           {NAV_LINKS.map((l) => {
             const on = active === l.href.slice(1);
             return (
-              <a
-                key={l.href}
-                href={l.href}
-                aria-current={on ? "true" : undefined}
-                className={`link-grow pb-1 text-[0.95rem] transition-colors ${on ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
+              <a key={l.href} href={l.href} aria-current={on ? "true" : undefined}
+                className={`link-grow pb-1 text-[0.95rem] transition-colors ${on ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 {l.label}
               </a>
             );
           })}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-2 ml-4">
+        <div className="hidden lg:flex items-center gap-2 ml-2">
           <ThemeToggle className="text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" />
           {isAuthenticated && (
-            <Link to={signInDest} className="link-grow pb-1 px-1 text-[0.95rem] font-medium text-foreground">
-              My account
-            </Link>
+            <Link to={signInDest} className="link-grow pb-1 px-1 text-[0.95rem] font-medium text-foreground">My account</Link>
           )}
-          <Link to={bookDest} className="press px-5 py-2.5 rounded-md bg-primary text-primary-foreground text-[0.95rem] font-semibold">
-            Book assistance
-          </Link>
+          <a href={callHref} className="press inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-[0.95rem] font-medium text-foreground hover:border-gold">
+            <Phone className="w-4 h-4 text-gold" aria-hidden="true" /> Call us
+          </a>
+          <Link to={bookDest} className="press px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-[0.95rem] font-semibold">Book assistance</Link>
         </div>
 
         <div className="lg:hidden ml-auto flex items-center">
           <ThemeToggle className="text-foreground hover:bg-secondary" />
-          <button
-            type="button"
-            className="p-2 text-foreground"
-            onClick={() => setOpen((v) => !v)}
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            aria-controls="site-menu"
-          >
+          <button type="button" className="p-2 text-foreground" onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-menu">
             {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* The phone menu slides open instead of appearing. */}
       <div id="site-menu" className={`lg:hidden grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr] border-t border-border" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden bg-background" {...inertWhen(!open)}>
           <div className="px-5 py-4">
             <ul className="divide-y divide-border">
               {NAV_LINKS.map((l) => (
-                <li key={l.href}>
-                  <a href={l.href} onClick={close} className="block py-3 text-lg text-foreground">{l.label}</a>
-                </li>
+                <li key={l.href}><a href={l.href} onClick={close} className="block py-3 text-lg text-foreground">{l.label}</a></li>
               ))}
             </ul>
             <div className="mt-4 flex gap-3">
-              <Link to={bookDest} onClick={close} className="press flex-1 text-center py-3 rounded-md bg-primary text-primary-foreground font-semibold">Book assistance</Link>
-              {isAuthenticated && (
-                <Link to={signInDest} onClick={close} className="press flex-1 text-center py-3 rounded-md border border-border text-foreground font-medium">
-                  My account
-                </Link>
-              )}
+              <Link to={bookDest} onClick={close} className="press flex-1 text-center py-3 rounded-full bg-primary text-primary-foreground font-semibold">Book assistance</Link>
+              <a href={callHref} onClick={close} className="press flex-1 text-center py-3 rounded-full border border-border text-foreground font-medium">Call us</a>
             </div>
+            {isAuthenticated && (
+              <Link to={signInDest} onClick={close} className="block text-center mt-3 py-2 text-foreground underline underline-offset-4">My account</Link>
+            )}
           </div>
         </div>
       </div>

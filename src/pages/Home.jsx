@@ -1,6 +1,8 @@
 import React from "react";
 import SiteHeader from "@/components/home/SiteHeader";
 import Hero from "@/components/home/Hero";
+import TrustStrip from "@/components/home/TrustStrip";
+import ServicesBand from "@/components/home/ServicesBand";
 import Packages from "@/components/home/Packages";
 import About from "@/components/home/About";
 import HowItWorks from "@/components/home/HowItWorks";
@@ -17,6 +19,8 @@ export default function Home() {
       <SiteHeader />
       <main>
         <Hero />
+        <TrustStrip />
+        <ServicesBand />
         <Packages />
         <HowItWorks />
         <About />

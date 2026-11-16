@@ -5,9 +5,9 @@ import { useAuth } from "@/lib/AuthContext";
 // Sign In opens login, or the role dashboard for already-authenticated users.
 export function useHomeCta() {
   const { isAuthenticated } = useAuth();
-  const bookDest = isAuthenticated
-    ? "/passenger?tab=book"
-    : `/login?returnTo=${encodeURIComponent("/passenger?tab=book")}`;
+  /** Where "book" goes for a given booking address; guests sign in first and are then sent on to it. */
+  const bookingLink = (address) => (isAuthenticated ? address : `/login?returnTo=${encodeURIComponent(address)}`);
+  const bookDest = bookingLink("/passenger?tab=book");
   const signInDest = isAuthenticated ? "/portal" : "/login";
-  return { bookDest, signInDest, isAuthenticated };
+  return { bookDest, bookingLink, signInDest, isAuthenticated };
 }
