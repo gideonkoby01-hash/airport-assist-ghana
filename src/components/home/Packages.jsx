@@ -12,7 +12,7 @@ const PACKAGES = [
     code: "full_arrival", kind: "arrival", tag: "ARR", name: "Full Arrival Service", price: 700,
     description: "Met at the airbridge and taken through the airport to your transfer.",
     inclusions: ["Meet and greet at the airbridge", "Fast-track immigration", "Baggage assistance", "Ground transfer coordination"],
-    image: "/images/terminal3-night.webp", position: "50% 35%", place: "Accra, Ghana",
+    image: "/images/terminal-arrivals-hall.webp", position: "50% 45%", place: "Arrivals hall",
   },
   {
     code: "full_departure", kind: "departure", tag: "DEP", name: "Full Departure Service", price: 850,
@@ -30,7 +30,7 @@ const PACKAGES = [
     code: "porter_only", kind: "porter", tag: "PTR", name: "Porter Service Only", price: 100,
     description: "A porter for your luggage, and an escort to the checkpoints.",
     inclusions: ["Luggage handling across the terminal", "Porter escort to checkpoints"],
-    image: "/images/terminal3-trolleys.webp", position: "50% 55%", place: "Accra, Ghana",
+    image: "/images/terminal-trolleys.webp", position: "50% 50%", place: "Luggage trolleys",
   },
 ];
 
