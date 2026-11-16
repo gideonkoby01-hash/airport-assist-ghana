@@ -244,6 +244,19 @@ Use a private window and a second email address for the passenger.
 - **CI**: `.github/workflows/ci.yml` runs lint, types, tests, the build, the function checks and the database tests on every pull request. It has not yet run on GitHub; open a pull request and look at the Actions tab.
 - **Integrity check**: once a month an admin can call the `integrityCheck` function (or run `select * from data_integrity_check();`); every count should be 0.
 
+## Automatic function deployment (no terminal)
+
+The Edge Functions deploy themselves from GitHub: whenever anything under `supabase/functions/` changes on `main`, the **Deploy functions** workflow type-checks them and publishes them to Supabase. You set it up once:
+
+1. **Create a Supabase access token.** In Supabase, click your profile picture (bottom left), **Account preferences**, **Access Tokens**, **Generate new token**. Name it "GitHub deploy" and copy it now (it is shown once).
+2. **Add two secrets in GitHub.** In your repository: **Settings**, **Secrets and variables**, **Actions**, **New repository secret**.
+   - `SUPABASE_ACCESS_TOKEN`: the token from step 1.
+   - `SUPABASE_PROJECT_REF`: the part of your Supabase address before `.supabase.co` (for `https://abcd1234.supabase.co` it is `abcd1234`).
+3. **Run it the first time.** In the repository open the **Actions** tab, choose **Deploy functions** on the left, **Run workflow**, **Run workflow**. When it shows a green tick, every function is live. From then on it runs by itself.
+
+Function secrets such as `APP_URL` are not part of this. Set them in Supabase under **Edge Functions**, **Secrets**.
+Database changes are not deployed from here either: run new files from `supabase/migrations` in the SQL Editor as described below.
+
 ## Updating a live system with a new database change
 
 Some updates include a new file in `supabase/migrations/`. The site itself updates by itself when `main` changes, but database changes do not. Without a terminal: open the Supabase dashboard, **SQL Editor**, **New query**, paste the whole contents of the new migration file, and press **Run**. Run new files in date order, once each. Run new files in date order. `20261115000002_profile_self_service.sql` adds the phone number and the self-service "My profile" save; `20261115000003_customer_crm.sql` adds the Customers area (and links every existing booking to a customer); `20261115000004_staff_account_creation.sql` adds the forced password change for admin-created accounts. Until the matching file is applied, those screens show an error.
