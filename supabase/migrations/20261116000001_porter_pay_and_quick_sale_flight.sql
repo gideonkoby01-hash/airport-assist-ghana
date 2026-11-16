@@ -1,3 +1,4 @@
+-- Safe to run more than once.
 -- 1. Quick sale records the flight (number, airline, scheduled time) and a registered porter.
 -- 2. Porter pay: what each porter earned on a day (GHS 30 per passenger handled, from completed bookings) and a
 --    record of what was paid to them, so each day is settled once and a late job adds only the difference.
@@ -5,9 +6,9 @@
 -- ---------------------------------------------------------------------------
 -- Quick sale with flight details and a porter from the register
 -- ---------------------------------------------------------------------------
-drop function public.create_quick_sale(text, text, text, text, integer, text, text, text, numeric, text, text, text, integer, numeric, text);
+drop function if exists public.create_quick_sale(text, text, text, text, integer, text, text, text, numeric, text, text, text, integer, numeric, text);
 
-create function public.create_quick_sale(
+create or replace function public.create_quick_sale(
   p_user_id text, p_user_name text, p_reference text, p_package_code text, p_count integer, p_direction text,
   p_name text, p_phone text, p_override_amount numeric, p_override_reason text, p_method text,
   p_porter_name text, p_porter_passengers integer, p_commission_per_passenger numeric, p_idempotency_key text default null,
@@ -65,7 +66,7 @@ grant execute on function public.create_quick_sale(text, text, text, text, integ
 -- ---------------------------------------------------------------------------
 -- Porter pay
 -- ---------------------------------------------------------------------------
-create table public.porter_payouts (
+create table if not exists public.porter_payouts (
   id uuid primary key default gen_random_uuid(),
   created_date timestamptz not null default now(),
   updated_date timestamptz not null default now(),
@@ -77,14 +78,18 @@ create table public.porter_payouts (
   paid_by_id text,
   paid_by_name text
 );
-create index porter_payouts_day_idx on public.porter_payouts (pay_date, porter_key);
+create index if not exists porter_payouts_day_idx on public.porter_payouts (pay_date, porter_key);
 
 alter table public.porter_payouts enable row level security;
+drop policy if exists porter_payouts_staff_read on public.porter_payouts;
 create policy porter_payouts_staff_read on public.porter_payouts for select to authenticated
   using (public.app_role() in ('admin', 'management'));
+drop policy if exists disabled_accounts_blocked on public.porter_payouts;
 create policy disabled_accounts_blocked on public.porter_payouts as restrictive for all to authenticated
   using (public.app_role() is distinct from 'disabled');
+drop trigger if exists porter_payouts_touch on public.porter_payouts;
 create trigger porter_payouts_touch before update on public.porter_payouts for each row execute function public.touch_updated_date();
+drop trigger if exists audit_porter_payouts on public.porter_payouts;
 create trigger audit_porter_payouts after insert or update or delete on public.porter_payouts for each row execute function public.audit_row();
 revoke all on public.porter_payouts from anon;
 revoke insert, update, delete, truncate on public.porter_payouts from authenticated;
@@ -94,7 +99,7 @@ grant all on public.porter_payouts to service_role;
 -- What each porter earned on a day, and what has been paid. A job counts once its booking is completed; cancelled and
 -- no-show bookings earn nothing. The commission stored on the booking at assignment time is used, so changing the rate
 -- later never rewrites what was already earned.
-create function public.porter_earnings(p_date date) returns table (
+create or replace function public.porter_earnings(p_date date) returns table (
   porter_key text, porter_name text, jobs integer, passengers integer, earned numeric, paid numeric, balance numeric,
   last_paid_at timestamptz, bookings jsonb
 )
@@ -125,7 +130,7 @@ begin
 end $$;
 
 -- Pays a porter what is still owed for a day. Two people pressing the button together cannot pay twice.
-create function public.pay_porter(p_porter_key text, p_date date) returns public.porter_payouts
+create or replace function public.pay_porter(p_porter_key text, p_date date) returns public.porter_payouts
 language plpgsql security definer set search_path = public as $$
 declare r record; row public.porter_payouts; payer text;
 begin
