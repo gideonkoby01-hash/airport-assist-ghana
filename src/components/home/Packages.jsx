@@ -12,25 +12,25 @@ const PACKAGES = [
     code: "full_arrival", kind: "arrival", tag: "ARR", name: "Full Arrival Service", price: 700,
     description: "Met at the airbridge and taken through the airport to your transfer.",
     inclusions: ["Meet and greet at the airbridge", "Fast-track immigration", "Baggage assistance", "Ground transfer coordination"],
-    image: "/images/terminal3-night.webp", position: "50% 35%",
+    image: "/images/terminal3-night.webp", position: "50% 35%", place: "Accra, Ghana",
   },
   {
     code: "full_departure", kind: "departure", tag: "DEP", name: "Full Departure Service", price: 850,
     description: "Met at the kerb, checked in, taken through security and into the lounge.",
     inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track security and immigration", "Premium lounge access"],
-    image: "/images/terminal3-day.webp", position: "50% 30%",
+    image: "/images/terminal-departure-hall.webp", position: "50% 40%", place: "Departure hall",
   },
   {
     code: "departure_priority", kind: "departure", tag: "DEP", name: "Departure Priority Only", price: 500,
     description: "The quick route to your gate, without the lounge.",
     inclusions: ["Check-in assistance", "Fast-track security and immigration"],
-    image: "/images/terminal3-gates.webp", position: "50% 40%",
+    image: "/images/terminal-checkin-hall.webp", position: "50% 50%", place: "Check-in hall",
   },
   {
     code: "porter_only", kind: "porter", tag: "PTR", name: "Porter Service Only", price: 100,
     description: "A porter for your luggage, and an escort to the checkpoints.",
     inclusions: ["Luggage handling across the terminal", "Porter escort to checkpoints"],
-    image: "/images/terminal3-trolleys.webp", position: "50% 55%",
+    image: "/images/terminal3-trolleys.webp", position: "50% 55%", place: "Accra, Ghana",
   },
 ];
 
@@ -74,7 +74,7 @@ export default function Packages() {
                     className={`w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]`} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" aria-hidden="true" />
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/95 text-[0.68rem] font-bold tracking-widest text-[hsl(var(--site-dark))]">{p.tag}</span>
-                  <p className="absolute bottom-3 left-3 flex items-center gap-1.5 text-[0.78rem] text-white"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Accra, Ghana</p>
+                  <p className="absolute bottom-3 left-3 flex items-center gap-1.5 text-[0.78rem] text-white"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {p.place}</p>
                 </div>
                 <div className="p-5 flex-1 flex flex-col">
                   <h3 className="font-bold text-foreground leading-snug">{p.name}</h3>

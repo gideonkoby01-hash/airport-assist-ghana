@@ -71,10 +71,10 @@ export default function SiteFooter() {
           <Link to="/privacy" className="hover:text-white">Privacy notice</Link>
         </div>
         <p className="mx-auto max-w-6xl px-5 sm:px-8 pb-5 text-xs text-white/45">
-          Terminal 3 photographs by{" "}
-          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Jan_2019_Kotoka_Airport_Terminal_3.jpg" target="_blank" rel="noreferrer">Sm105</a> and{" "}
-          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Kotoka_Int._Airport_T3.jpg" target="_blank" rel="noreferrer">Enock4seth</a>,{" "}
-          <a className="underline hover:text-white" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>, via Wikimedia Commons; cropped.
+          Terminal photographs via Wikimedia Commons, cropped: Accra Terminal 3 by{" "}
+          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Jan_2019_Kotoka_Airport_Terminal_3.jpg" target="_blank" rel="noreferrer">Sm105</a> (CC BY-SA 4.0); Beijing Capital departure hall by{" "}
+          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Beijing_Capital_International_Airport_Terminal_3_Departure_hall_20090818.jpg" target="_blank" rel="noreferrer">颐园新居</a> (CC BY-SA 3.0); Taoyuan check-in hall by{" "}
+          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Taiwan_Taoyuan_International_Airport_Terminal_2_Check-in_Hall_20200815.jpg" target="_blank" rel="noreferrer">Cheng-en Cheng</a> (CC BY-SA 2.0).
         </p>
       </div>
     </footer>
