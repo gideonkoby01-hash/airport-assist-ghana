@@ -53,9 +53,11 @@ export function ThemeToggle({ className = "", label = false }) {
       onClick={toggle}
       aria-label={`Switch to ${text.toLowerCase()}`}
       title={text}
-      className={`inline-flex items-center gap-2 rounded-full p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
+      className={`group/theme inline-flex items-center gap-2 rounded-full p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`}
     >
-      {toNight ? <Moon className="w-[18px] h-[18px]" aria-hidden="true" /> : <Sun className="w-[18px] h-[18px]" aria-hidden="true" />}
+      <span key={theme} className="icon-turn inline-grid place-items-center transition-transform duration-500 group-hover/theme:rotate-[25deg]">
+        {toNight ? <Moon className="w-[18px] h-[18px]" aria-hidden="true" /> : <Sun className="w-[18px] h-[18px]" aria-hidden="true" />}
+      </span>
       {label && <span className="text-sm font-medium">{text}</span>}
     </button>
   );

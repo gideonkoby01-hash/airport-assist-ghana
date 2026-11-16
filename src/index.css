@@ -258,3 +258,30 @@
   .theme-fade, .theme-fade * { transition: none !important; }
 }
 
+/* Header effects: the bar drops in once, the call icon pulses, the gold button catches the light, the theme icon turns. */
+@keyframes header-in { from { opacity: 0; transform: translateY(-18px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes ring-ping { 0% { transform: scale(1); opacity: 0.55; } 80%, 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes shine { 0% { transform: translateX(-130%) skewX(-18deg); } 55%, 100% { transform: translateX(260%) skewX(-18deg); } }
+@keyframes icon-turn { from { transform: rotate(-90deg) scale(0.5); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes menu-item-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.site .header-in { animation: header-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.site .ring-ping::before { content: ""; position: absolute; inset: 0; border-radius: 9999px; background: hsl(var(--wa)); animation: ring-ping 2.4s ease-out infinite; }
+.site .shine-btn { position: relative; overflow: hidden; }
+.site .shine-btn::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 38%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  transform: translateX(-130%) skewX(-18deg);
+  animation: shine 5.5s ease-in-out 2s infinite;
+}
+.site .shine-btn:hover::after { animation: shine 0.9s ease-out 1; }
+.site .icon-turn { animation: icon-turn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.site .menu-item-in { opacity: 0; }
+.site .menu-open .menu-item-in { animation: menu-item-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .site .header-in, .site .icon-turn { animation: none; }
+  .site .ring-ping::before, .site .shine-btn::after { animation: none; display: none; }
+  .site .menu-item-in { opacity: 1; animation: none !important; }
+}
+
