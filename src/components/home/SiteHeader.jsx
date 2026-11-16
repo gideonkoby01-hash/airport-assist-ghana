@@ -33,7 +33,6 @@ export default function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const call = "press inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-[0.9rem] font-semibold text-[hsl(var(--wa-ink))] bg-[hsl(var(--wa))]";
   return (
     <header className={`sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border transition-shadow duration-300 ${scrolled ? "shadow-[0_8px_24px_-16px_hsl(var(--foreground)/0.4)]" : ""}`}>
       <div className={`mx-auto max-w-7xl px-5 sm:px-8 flex items-center gap-6 transition-[height] duration-300 ${scrolled ? "h-14" : "h-16"}`}>
@@ -41,16 +40,16 @@ export default function SiteHeader() {
           <img src="/images/logo-mark.webp" alt="" width="36" height="36" className="h-9 w-9 object-contain" />
           <span className="leading-none">
             <span className="block display text-[1.15rem] text-foreground">{settings.company_name}</span>
-            <span className="block eyebrow !text-[0.55rem] !tracking-[0.2em] mt-1 grad-text">Akwaaba Services</span>
+            <span className="block eyebrow !text-[0.55rem] !tracking-[0.2em] mt-1 text-gold">Akwaaba Services</span>
           </span>
         </Link>
 
-        <nav aria-label="Sections" className="hidden lg:flex items-center gap-7 mx-auto">
+        <nav aria-label="Sections" className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-secondary mx-auto">
           {NAV_LINKS.map((l) => {
             const on = active === l.href.slice(1);
             return (
               <a key={l.href} href={l.href} aria-current={on ? "true" : undefined}
-                className={`link-grow pb-1 text-[0.95rem] transition-colors ${on ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                className={`px-4 py-2 rounded-full text-[0.9rem] font-medium transition-all duration-300 ${on ? "bg-card text-foreground shadow-[0_2px_8px_-2px_hsl(var(--foreground)/0.25)]" : "text-muted-foreground hover:text-foreground"}`}>
                 {l.label}
               </a>
             );
@@ -62,8 +61,15 @@ export default function SiteHeader() {
           {isAuthenticated && (
             <Link to={signInDest} className="link-grow pb-1 px-1 text-[0.95rem] font-medium text-foreground">My account</Link>
           )}
-          <a href={callHref} className={call}><Phone className="w-4 h-4" aria-hidden="true" /> Call us</a>
-          <Link to={bookDest} className="press px-5 py-2.5 rounded-[14px] bg-primary text-primary-foreground text-[0.9rem] font-semibold">Book assistance</Link>
+          <a href={callHref} className="press group inline-flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full border border-border hover:border-accent transition-colors" aria-label={phone ? `Call ${phone}` : "Call us"}>
+            <span className="grid place-items-center w-8 h-8 rounded-full text-white bg-[hsl(var(--wa))]"><Phone className="w-4 h-4" aria-hidden="true" /></span>
+            <span className="leading-tight text-left">
+              <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Call 24/7</span>
+              <span className="hidden xl:block tabular text-[0.88rem] font-semibold text-foreground">{phone}</span>
+              <span className="block xl:hidden text-[0.88rem] font-semibold text-foreground">Call us</span>
+            </span>
+          </a>
+          <Link to={bookDest} className="press px-5 py-3 rounded-full text-[0.9rem] font-bold text-[hsl(var(--site-dark))]" style={{ background: "var(--grad-gold)" }}>Book assistance</Link>
         </div>
 
         <div className="lg:hidden ml-auto flex items-center">
@@ -84,8 +90,8 @@ export default function SiteHeader() {
               ))}
             </ul>
             <div className="mt-4 flex gap-3">
-              <Link to={bookDest} onClick={close} className="press flex-1 text-center py-3 rounded-[14px] bg-primary text-primary-foreground font-semibold">Book assistance</Link>
-              <a href={callHref} onClick={close} className="press flex-1 text-center py-3 rounded-[14px] text-[hsl(var(--wa-ink))] font-semibold bg-[hsl(var(--wa))]">Call us</a>
+              <Link to={bookDest} onClick={close} className="press flex-1 text-center py-3 rounded-full font-bold text-[hsl(var(--site-dark))]" style={{ background: "var(--grad-gold)" }}>Book assistance</Link>
+              <a href={callHref} onClick={close} className="press flex-1 text-center py-3 rounded-full text-white font-semibold bg-[hsl(var(--wa))]">Call us</a>
             </div>
             {isAuthenticated && (
               <Link to={signInDest} onClick={close} className="block text-center mt-3 py-2 text-foreground underline underline-offset-4">My account</Link>

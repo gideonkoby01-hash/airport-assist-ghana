@@ -25,7 +25,7 @@ export default function SiteFooter() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a href={callHref} className="press inline-flex items-center gap-2 px-5 py-3 rounded-[14px] font-semibold text-[hsl(var(--wa-ink))] bg-[hsl(var(--wa))]"><Phone className="w-4 h-4" aria-hidden="true" /> Call us</a>
-            <Link to={bookDest} className="press inline-flex items-center gap-2 px-5 py-3 rounded-[14px] font-semibold bg-white text-[#15121c]">Book assistance <ArrowUpRight className="w-4 h-4" aria-hidden="true" /></Link>
+            <Link to={bookDest} className="press inline-flex items-center gap-2 px-5 py-3 rounded-[14px] font-semibold bg-white text-[hsl(var(--site-dark))]">Book assistance <ArrowUpRight className="w-4 h-4" aria-hidden="true" /></Link>
           </div>
         </div>
 

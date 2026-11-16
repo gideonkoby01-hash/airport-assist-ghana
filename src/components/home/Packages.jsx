@@ -73,7 +73,7 @@ export default function Packages() {
                   <img src={p.image} alt="" loading="lazy" width="1024" height="1024" style={{ objectPosition: p.position }}
                     className={`w-full h-full object-cover transition-transform duration-[900ms] ease-out ${p.zoom ? "scale-[1.6] origin-[50%_60%] group-hover:scale-[1.7]" : "group-hover:scale-[1.06]"}`} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" aria-hidden="true" />
-                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/95 text-[0.68rem] font-bold tracking-widest text-[#15121c]">{p.tag}</span>
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/95 text-[0.68rem] font-bold tracking-widest text-[hsl(var(--site-dark))]">{p.tag}</span>
                   <p className="absolute bottom-3 left-3 flex items-center gap-1.5 text-[0.78rem] text-white"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> Accra, Ghana</p>
                 </div>
                 <div className="p-5 flex-1 flex flex-col">

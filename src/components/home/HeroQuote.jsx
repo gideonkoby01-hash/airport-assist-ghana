@@ -37,7 +37,7 @@ export default function HeroQuote({ slide, index, total, controls }) {
         </div>
         <div className="flex items-center gap-3">
           {controls}
-          <a href="#services" className="press hidden md:inline-flex items-center gap-1.5 px-4 py-2.5 rounded-[14px] text-[0.9rem] font-semibold text-[#15121c]" style={{ background: "var(--grad-gold)" }}>
+          <a href="#services" className="press hidden md:inline-flex items-center gap-1.5 px-4 py-2.5 rounded-[14px] text-[0.9rem] font-semibold text-[hsl(var(--site-dark))]" style={{ background: "var(--grad-gold)" }}>
             {slide.cta} <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
           </a>
         </div>

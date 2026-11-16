@@ -64,7 +64,7 @@ export default function ServicesBand() {
                   </ul>
                   <a href="#prices" className="mt-auto pt-5 border-t border-white/15 flex items-center justify-between text-white font-medium">
                     {s.link}
-                    <span className="grid place-items-center w-9 h-9 rounded-full text-[#15121c] transition-transform duration-300 group-hover:rotate-12" style={{ background: "var(--grad-gold)" }}>
+                    <span className="grid place-items-center w-9 h-9 rounded-full text-[hsl(var(--site-dark))] transition-transform duration-300 group-hover:rotate-12" style={{ background: "var(--grad-gold)" }}>
                       <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
                     </span>
                   </a>
@@ -75,7 +75,7 @@ export default function ServicesBand() {
         </ul>
 
         <Reveal className="mt-12 text-center">
-          <a href="#how-it-works" className="press inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-[#15121c]" style={{ background: "var(--grad-gold)" }}>
+          <a href="#how-it-works" className="press inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-[hsl(var(--site-dark))]" style={{ background: "var(--grad-gold)" }}>
             See how it works, start to finish <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
           </a>
         </Reveal>
