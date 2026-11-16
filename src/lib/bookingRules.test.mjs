@@ -70,3 +70,24 @@ test("today's tally counts each progress step", () => {
   const t = tallyToday([{ status: 'confirmed' }, { status: 'assigned' }, { status: 'assigned' }, { status: 'in_progress' }, { status: 'completed' }, { status: 'no_show' }]);
   assert.deepEqual(t, { waiting: 1, assigned: 2, in_progress: 1, completed: 1, other: 1, total: 6 });
 });
+
+import { canAssignPorter, waitingForPorter } from './bookingRules.js';
+
+test('porter assignment: management for website bookings, the supervisor for their own walk-ins', () => {
+  const online = { booking_channel: 'online', assigned_supervisor_id: 's1', status: 'assigned' };
+  const walkIn = { booking_channel: 'walk_in', assigned_supervisor_id: 's1', status: 'confirmed' };
+  assert.equal(canAssignPorter({ id: 'm', role: 'management' }, online), true);
+  assert.equal(canAssignPorter({ id: 's1', role: 'supervisor' }, online), false);
+  assert.equal(canAssignPorter({ id: 's1', role: 'supervisor' }, walkIn), true);
+  assert.equal(canAssignPorter({ id: 's2', role: 'supervisor' }, walkIn), false);
+  assert.equal(canAssignPorter({ id: 'm', role: 'management' }, { ...walkIn, status: 'cancelled' }), false);
+});
+test('website porter requests waiting for a porter', () => {
+  const rows = [
+    { package_code: 'porter_only', status: 'confirmed', porters: [] },
+    { package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo' }] },
+    { package_code: 'porter_only', status: 'cancelled', porters: [] },
+    { package_code: 'full_arrival', status: 'confirmed', porters: [] },
+  ];
+  assert.equal(waitingForPorter(rows).length, 1);
+});

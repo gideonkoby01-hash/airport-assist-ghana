@@ -104,3 +104,19 @@ export function tallyToday(bookings) {
   }
   return t;
 }
+
+/**
+ * Who puts a porter on a booking (mirrors supabase/functions/_shared/porters.ts; the server is the authority).
+ * A service requested on the website: management and admin. A walk-in at the desk: its supervisor, and management and admin.
+ */
+export function canAssignPorter(user, booking) {
+  if (!user || !booking) return false;
+  if (booking.status === "cancelled" || booking.status === "no_show") return false;
+  if (user.role === "admin" || user.role === "management") return true;
+  return user.role === "supervisor" && booking.booking_channel === "walk_in" && booking.assigned_supervisor_id === user.id;
+}
+
+/** Website porter requests still waiting for a porter: the porter-only service, not cancelled, nobody assigned yet. */
+export function waitingForPorter(bookings) {
+  return bookings.filter((b) => b.package_code === "porter_only" && ["confirmed", "assigned", "in_progress"].includes(b.status) && !(b.porters || []).length);
+}

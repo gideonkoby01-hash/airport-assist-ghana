@@ -248,6 +248,21 @@ const crm = {
   },
 };
 
+// Porter pay (admin and management): what each porter earned on a day, and paying it out.
+const porterPay = {
+  async earnings(/** @type {string} */ date) {
+    const { data, error } = await supabase.rpc('porter_earnings', { p_date: date });
+    if (error) fail(error);
+    return data || [];
+  },
+  async pay(/** @type {string} */ porterKey, /** @type {string} */ date) {
+    const { error } = await supabase.rpc('pay_porter', { p_porter_key: porterKey, p_date: date });
+    if (error) {
+      throw new ApiError(/nothing_due/.test(error.message || '') ? 'There is nothing left to pay this porter for that day.' : error.message, undefined, error);
+    }
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay };

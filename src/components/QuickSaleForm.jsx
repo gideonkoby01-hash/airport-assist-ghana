@@ -21,11 +21,14 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [direction, setDirection] = useState("arrival");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [flightNumber, setFlightNumber] = useState("");
+  const [airline, setAirline] = useState("");
+  const [flightTime, setFlightTime] = useState("");
   const [method, setMethod] = useState("cash");
   const [discounted, setDiscounted] = useState(false);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
-  const [porterName, setPorterName] = useState("");
+  const [porterId, setPorterId] = useState("");
   const [porterPax, setPorterPax] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -49,7 +52,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterName(""); setPorterPax(1); setError("");
+    setReason(""); setPorterId(""); setPorterPax(1); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
 
@@ -59,6 +62,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
     if (!pkg) return setError("Choose the service sold.");
     if (discounted && (!(Number(amount) > 0) || tooHigh)) return setError(`Enter a price above zero and not more than ${formatGHS(gross)}.`);
     if (discounted && reason.trim().length < 3) return setError("Give a reason for the lower price.");
+    if (flightNumber.trim() && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,9}$/.test(flightNumber.trim())) return setError("Enter the flight number as letters and numbers, for example KQ 510.");
+    if (porterId && !(Number(porterPax) >= 1 && Number(porterPax) <= Number(count))) return setError("The porter's passengers cannot be more than the passengers sold.");
     setSaving(true);
     try {
       const res = await api.functions.invoke("createQuickSale", {
@@ -71,8 +76,11 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         method,
         override_amount: discounted ? Number(amount) : undefined,
         override_reason: discounted ? reason.trim() : undefined,
-        porter_name: porterName || undefined,
-        porter_passengers: porterName ? Number(porterPax) : undefined,
+        flight_number: flightNumber.trim() || undefined,
+        airline: airline.trim() || undefined,
+        flight_time: flightTime || undefined,
+        porter_id: porterId || undefined,
+        porter_passengers: porterId ? Number(porterPax) : undefined,
       });
       if (res?.data?.error) throw new Error(res.data.error);
       setDone(res.data.booking);
@@ -148,6 +156,25 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         </div>
       </div>
 
+      <fieldset className="rounded-lg border border-border p-3 space-y-3">
+        <legend className="px-1 text-xs font-semibold text-muted-foreground">Flight (optional)</legend>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="qs-flight">Flight number</Label>
+            <Input id="qs-flight" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value)} placeholder="e.g. KQ 510" autoComplete="off" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="qs-airline">Airline</Label>
+            <Input id="qs-airline" value={airline} onChange={(e) => setAirline(e.target.value)} placeholder="e.g. Kenya Airways" autoComplete="off" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="qs-ftime">Flight time</Label>
+            <Input id="qs-ftime" type="time" value={flightTime} onChange={(e) => setFlightTime(e.target.value)} />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">Today's date is used. The flight shows on the booking and in your records.</p>
+      </fieldset>
+
       <div className="bg-secondary rounded-lg p-3 text-sm flex items-center justify-between">
         <span className="text-muted-foreground">Amount to collect</span>
         <span className="text-lg font-bold">{formatGHS(charge || 0)}</span>
@@ -184,19 +211,19 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="qs-porter">Porter (optional)</Label>
-            <Select value={porterName || "none"} onValueChange={(v) => setPorterName(v === "none" ? "" : v)}>
+            <Select value={porterId || "none"} onValueChange={(v) => setPorterId(v === "none" ? "" : v)}>
               <SelectTrigger id="qs-porter"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No porter</SelectItem>
-                {porters.map((p) => (<SelectItem key={p.id} value={p.full_name}>{p.full_name}</SelectItem>))}
+                {porters.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
-          {porterName && (
+          {porterId && (
             <div className="space-y-1.5">
               <Label htmlFor="qs-porter-pax">Passengers handled</Label>
-              <Input id="qs-porter-pax" type="number" min={1} max={50} value={porterPax} onChange={(e) => setPorterPax(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Commission {formatGHS(commissionPerPassenger * (Number(porterPax) || 0))}</p>
+              <Input id="qs-porter-pax" type="number" min={1} max={Number(count) || 1} value={porterPax} onChange={(e) => setPorterPax(e.target.value)} />
+              <p className="text-xs text-muted-foreground">The porter earns {formatGHS(commissionPerPassenger * (Number(porterPax) || 0))}, paid daily.</p>
             </div>
           )}
         </div>
