@@ -70,6 +70,12 @@ export default function SiteFooter() {
           <p>&copy; {new Date().getFullYear()} {settings.company_name}</p>
           <Link to="/privacy" className="hover:text-white">Privacy notice</Link>
         </div>
+        <p className="mx-auto max-w-6xl px-5 sm:px-8 pb-5 text-xs text-white/45">
+          Terminal 3 photographs by{" "}
+          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Jan_2019_Kotoka_Airport_Terminal_3.jpg" target="_blank" rel="noreferrer">Sm105</a> and{" "}
+          <a className="underline hover:text-white" href="https://commons.wikimedia.org/wiki/File:Kotoka_Int._Airport_T3.jpg" target="_blank" rel="noreferrer">Enock4seth</a>,{" "}
+          <a className="underline hover:text-white" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>, via Wikimedia Commons; cropped.
+        </p>
       </div>
     </footer>
   );
