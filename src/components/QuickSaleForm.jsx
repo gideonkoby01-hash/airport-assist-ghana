@@ -29,7 +29,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [porterId, setPorterId] = useState("");
-  const [porterPax, setPorterPax] = useState(1);
+  // Left blank, the porter is credited with everyone sold; the supervisor changes it when the load was shared.
+  const [porterPax, setPorterPax] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(null);
@@ -52,9 +53,11 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterId(""); setPorterPax(1); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
+    setReason(""); setPorterId(""); setPorterPax(""); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
+
+  const porterPaxNum = Number(porterPax === "" ? count : porterPax) || 0;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -63,7 +66,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
     if (discounted && (!(Number(amount) > 0) || tooHigh)) return setError(`Enter a price above zero and not more than ${formatGHS(gross)}.`);
     if (discounted && reason.trim().length < 3) return setError("Give a reason for the lower price.");
     if (flightNumber.trim() && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,9}$/.test(flightNumber.trim())) return setError("Enter the flight number as letters and numbers, for example KQ 510.");
-    if (porterId && !(Number(porterPax) >= 1 && Number(porterPax) <= Number(count))) return setError("The porter's passengers cannot be more than the passengers sold.");
+    if (!porterId) return setError(porters.length ? "Choose the porter handling this service." : "No porters are on the list yet. Ask an admin to add them under Porters.");
+    if (!(porterPaxNum >= 1 && porterPaxNum <= Number(count))) return setError("The porter's passengers cannot be more than the passengers sold.");
     setSaving(true);
     try {
       const res = await api.functions.invoke("createQuickSale", {
@@ -80,7 +84,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         airline: airline.trim() || undefined,
         flight_time: flightTime || undefined,
         porter_id: porterId || undefined,
-        porter_passengers: porterId ? Number(porterPax) : undefined,
+        porter_passengers: porterPaxNum,
       });
       if (res?.data?.error) throw new Error(res.data.error);
       setDone(res.data.booking);
@@ -207,27 +211,25 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         </Select>
       </div>
 
-      {porters.length > 0 && (
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="qs-porter">Porter (optional)</Label>
-            <Select value={porterId || "none"} onValueChange={(v) => setPorterId(v === "none" ? "" : v)}>
-              <SelectTrigger id="qs-porter"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No porter</SelectItem>
-                {porters.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
-              </SelectContent>
-            </Select>
-          </div>
-          {porterId && (
-            <div className="space-y-1.5">
-              <Label htmlFor="qs-porter-pax">Passengers handled</Label>
-              <Input id="qs-porter-pax" type="number" min={1} max={Number(count) || 1} value={porterPax} onChange={(e) => setPorterPax(e.target.value)} />
-              <p className="text-xs text-muted-foreground">The porter earns {formatGHS(commissionPerPassenger * (Number(porterPax) || 0))}, paid daily.</p>
-            </div>
-          )}
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="qs-porter">Porter</Label>
+          <Select value={porterId} onValueChange={setPorterId}>
+            <SelectTrigger id="qs-porter"><SelectValue placeholder="Choose a porter" /></SelectTrigger>
+            <SelectContent>
+              {porters.length === 0 && <SelectItem value="_none" disabled>No porters on the list yet</SelectItem>}
+              {porters.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
+        {porterId && (
+          <div className="space-y-1.5">
+            <Label htmlFor="qs-porter-pax">Passengers handled</Label>
+            <Input id="qs-porter-pax" type="number" min={1} max={Number(count) || 1} value={porterPax === "" ? Number(count) || 1 : porterPax} onChange={(e) => setPorterPax(e.target.value)} />
+            <p className="text-xs text-muted-foreground">The porter earns {formatGHS(commissionPerPassenger * porterPaxNum)}, paid daily.</p>
+          </div>
+        )}
+      </div>
 
       <Button type="submit" className="w-full h-12" disabled={saving || !pkg}>
         {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : `Record sale · ${formatGHS(charge || 0)}`}

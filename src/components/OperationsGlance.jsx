@@ -72,8 +72,8 @@ export default function OperationsGlance() {
     api.entities.Booking.filter({ status: { $in: LIVE_STATUSES }, flight_date: { $lt: today } }, { sort: "flight_date,scheduled_flight_time", limit: 5, fields })
       .then((p) => live && setOverdue(p.items || []))
       .catch(() => live && setOverdue([]));
-    // Website porter requests nobody has been assigned to yet: management assigns the porter.
-    api.entities.Booking.filter({ package_code: "porter_only", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters"] })
+    // Website bookings nobody has assigned a porter to yet: management assigns the porter.
+    api.entities.Booking.filter({ booking_channel: "online", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters"] })
       .then((p) => live && setNeedPorter(waitingForPorter(p.items || []).slice(0, 5)))
       .catch(() => live && setNeedPorter([]));
     return () => {
@@ -124,10 +124,10 @@ export default function OperationsGlance() {
         />
         <AttentionList
           title="Waiting for a porter"
-          hint="Porter requests from the website. Open the booking and assign a porter."
+          hint="Website bookings with no porter yet. Open the booking and assign one."
           rows={needPorter || []}
           loading={needPorter === null}
-          emptyText="Every porter request has a porter."
+          emptyText="Every website booking has a porter."
           to="/management?tab=bookings"
         />
         <AttentionList

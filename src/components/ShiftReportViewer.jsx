@@ -99,6 +99,9 @@ export default function ShiftReportViewer() {
                 {r.porter_total_commission != null && (
                   <p className="text-xs text-muted-foreground">Commission: {formatGHS(r.porter_total_commission)}</p>
                 )}
+                {r.net_after_commission != null && (
+                  <p className="text-xs font-semibold text-foreground">Net: {formatGHS(r.net_after_commission)}</p>
+                )}
               </div>
             </button>
             {isOpen && (
