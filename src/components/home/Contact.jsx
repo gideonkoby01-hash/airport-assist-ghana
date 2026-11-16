@@ -66,7 +66,7 @@ export default function Contact() {
                   <li key={t} className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" /> {t}</li>
                 ))}
               </ul>
-              <Link to={bookDest} className="press mt-auto flex items-center justify-center gap-2 rounded-[14px] bg-white py-3.5 font-semibold text-[#15121c]">
+              <Link to={bookDest} className="press mt-auto flex items-center justify-center gap-2 rounded-[14px] bg-white py-3.5 font-semibold text-[hsl(var(--site-dark))]">
                 Start booking <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>
