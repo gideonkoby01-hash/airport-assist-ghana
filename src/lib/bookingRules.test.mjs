@@ -82,12 +82,13 @@ test('porter assignment: management for website bookings, the supervisor for the
   assert.equal(canAssignPorter({ id: 's2', role: 'supervisor' }, walkIn), false);
   assert.equal(canAssignPorter({ id: 'm', role: 'management' }, { ...walkIn, status: 'cancelled' }), false);
 });
-test('website porter requests waiting for a porter', () => {
+test('website bookings waiting for a porter, whatever the service', () => {
   const rows = [
-    { package_code: 'porter_only', status: 'confirmed', porters: [] },
-    { package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo' }] },
-    { package_code: 'porter_only', status: 'cancelled', porters: [] },
-    { package_code: 'full_arrival', status: 'confirmed', porters: [] },
+    { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [] },
+    { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo' }] },
+    { booking_channel: 'online', package_code: 'porter_only', status: 'cancelled', porters: [] },
+    { booking_channel: 'online', package_code: 'full_arrival', status: 'assigned', porters: [] },
+    { booking_channel: 'walk_in', package_code: 'full_arrival', status: 'confirmed', porters: [] },
   ];
-  assert.equal(waitingForPorter(rows).length, 1);
+  assert.equal(waitingForPorter(rows).length, 2);
 });

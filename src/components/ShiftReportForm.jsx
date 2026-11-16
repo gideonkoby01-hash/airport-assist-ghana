@@ -135,13 +135,13 @@ export default function ShiftReportForm({ supervisor }) {
           <ShiftReportSummary report={{ ...preview, supervisor_name: supervisor.full_name || supervisor.email, created_date: null }} />
           {Number(preview.porters_missing) > 0 && (
             <p role="alert" className="text-sm rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-3">
-              {preview.porters_missing === 1 ? "A porter service" : `${preview.porters_missing} porter services`} sold in this shift ({(preview.porters_missing_refs || []).join(", ")}) {preview.porters_missing === 1 ? "has" : "have"} no porter on {preview.porters_missing === 1 ? "it" : "them"}.
-              Open {preview.porters_missing === 1 ? "the booking" : "each booking"} and assign a porter, then reload this page. The report cannot be submitted until every porter service has one.
+              {preview.porters_missing === 1 ? "A service" : `${preview.porters_missing} services`} sold in this shift ({(preview.porters_missing_refs || []).join(", ")}) {preview.porters_missing === 1 ? "has" : "have"} no porter on {preview.porters_missing === 1 ? "it" : "them"}.
+              Open {preview.porters_missing === 1 ? "the booking" : "each booking"} and assign a porter, then reload this page. The report cannot be submitted until every service has a porter.
             </p>
           )}
           {Number(preview.porters_awaiting_management) > 0 && (
             <p className="text-sm text-muted-foreground">
-              {preview.porters_awaiting_management} porter request{preview.porters_awaiting_management === 1 ? "" : "s"} from the website {preview.porters_awaiting_management === 1 ? "is" : "are"} still waiting for management to assign a porter. {preview.porters_awaiting_management === 1 ? "It does" : "They do"} not hold up your report.
+              {preview.porters_awaiting_management} website booking{preview.porters_awaiting_management === 1 ? "" : "s"} {preview.porters_awaiting_management === 1 ? "is" : "are"} still waiting for management to assign a porter. {preview.porters_awaiting_management === 1 ? "It does" : "They do"} not hold up your report.
             </p>
           )}
           {Number(preview.grand_total_paid) === 0 && Number(preview.booking_count) === 0 && (

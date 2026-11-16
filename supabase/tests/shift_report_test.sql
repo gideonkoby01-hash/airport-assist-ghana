@@ -30,14 +30,14 @@ insert into public.service_packages (code, name, price, flight_type, includes_lo
 on conflict (code) do nothing;
 
 -- ---- quick sales ----------------------------------------------------------------------------------
-select public.create_quick_sale('00000000-0000-0000-0000-0000000000c1', 'Ama', 'QS-1', 'full_arrival', 2, null, 'Kofi', '+233200000001', null, null, 'cash', null, null, 30);
+select public.create_quick_sale('00000000-0000-0000-0000-0000000000c1', 'Ama', 'QS-1', 'full_arrival', 2, null, 'Kofi', '+233200000001', null, null, 'cash', 'Kojo', 2, 30);
 select pg_temp.check_that('a quick sale is a completed, fully paid booking owned by the supervisor',
   (select status = 'completed' and payment_status = 'paid' and total_value = 1400 and amount_collected = 1400 and outstanding_balance = 0
           and is_quick_sale and assigned_supervisor_id = '00000000-0000-0000-0000-0000000000c1' and booking_channel = 'walk_in'
    from public.bookings where reference = 'QS-1'));
 select pg_temp.check_that('...with a ledger row', (select count(*) = 1 and bool_and(amount = 1400 and entry_type = 'payment') from public.payments where booking_reference = 'QS-1'));
 
-select public.create_quick_sale('00000000-0000-0000-0000-0000000000c1', 'Ama', 'QS-2', 'full_departure', 1, null, null, null, 800, 'Regular customer', 'mobile_money', null, null, 30);
+select public.create_quick_sale('00000000-0000-0000-0000-0000000000c1', 'Ama', 'QS-2', 'full_departure', 1, null, null, null, 800, 'Regular customer', 'mobile_money', 'Kojo', 1, 30);
 select pg_temp.check_that('a lower desk price keeps the original and records the reason',
   (select total_value = 800 and original_total = 850 and discount_amount = 50 and status_reason = 'Desk price adjustment: Regular customer' from public.bookings where reference = 'QS-2'));
 select pg_temp.raises('a price above the package price is refused',
@@ -81,8 +81,8 @@ select pg_temp.check_that('the report is built from the ledger',
       and b -> 'meet_assist_entries' @> '[{"service_type":"arrival","amount_paid":1400,"payment_method":"cash"}]'
       and b -> 'meet_assist_entries' @> '[{"service_type":"full_departure","amount_paid":800,"payment_method":"momo"}]'
       and b -> 'porter_entries' @> '[{"porter_name":"Yaw","passengers_handled":3,"commission":90}]'
-      and (b ->> 'porter_total_commission')::numeric = 90
-      and (b ->> 'net_after_commission')::numeric = 2410   -- 2500 sales less GHS 90 commission
+      and (b ->> 'porter_total_commission')::numeric = 180      -- Yaw 3 + Kojo 3 passengers at GHS 30
+      and (b ->> 'net_after_commission')::numeric = 2320        -- 2500 sales less GHS 180 commission
       and (b ->> 'porters_missing')::int = 0
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000c1', (select period from cur), (select shift from cur)) as b) x));
 select pg_temp.check_that('the other supervisor''s sale and the manager''s refund are not in it',
@@ -115,24 +115,24 @@ select pg_temp.check_that('the report is stored with the variance worked out by 
   (select system_generated and grand_total_paid = 2500 and cash_expected = 1700 and cash_counted = 1690 and cash_variance = -10
           and remarks = 'Short GHS 10 in the till' and supervisor_name = 'Ama' from public.shift_reports where supervisor_id = '00000000-0000-0000-0000-0000000000c1'));
 select pg_temp.check_that('the filed report keeps sales less commission',
-  (select net_after_commission = 2410 from public.shift_reports where supervisor_id = '00000000-0000-0000-0000-0000000000c1'));
+  (select net_after_commission = 2320 from public.shift_reports where supervisor_id = '00000000-0000-0000-0000-0000000000c1'));
 select pg_temp.raises('the same shift cannot be filed twice',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c1', 'Ama', (select period from cur), (select shift from cur), 1500, '')$q$, 'duplicate_report');
 select pg_temp.raises('the cash count is required',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c2', 'Kojo', current_date - 1, 'morning', null, '')$q$, 'cash_count_required');
 select pg_temp.raises('a future shift cannot be filed',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c2', 'Kojo', current_date + 1, 'morning', 0, '')$q$, 'future_period');
--- a porter service sold at the desk must have a porter on it before the shift can be closed
-select public.create_quick_sale('00000000-0000-0000-0000-0000000000c4', 'Efua', 'QS-6', 'porter_only', 2, null, null, null, null, null, 'cash', null, null, 30);
-select pg_temp.check_that('a porter sale with no porter is counted as missing',
-  (select (b ->> 'porters_missing')::int = 1 and (b ->> 'net_after_commission')::numeric = 200
+-- every service sold at the desk must have a porter on it before the shift can be closed
+select public.create_quick_sale('00000000-0000-0000-0000-0000000000c4', 'Efua', 'QS-6', 'full_arrival', 2, null, null, null, null, null, 'cash', null, null, 30);
+select pg_temp.check_that('a sale with no porter is counted as missing, whatever the service',
+  (select (b ->> 'porters_missing')::int = 1 and (b ->> 'porters_missing_refs') = '["QS-6"]' and (b ->> 'net_after_commission')::numeric = 1400
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000c4', (select period from cur), (select shift from cur)) as b) x));
-select pg_temp.raises('the shift cannot be filed while a porter service has no porter',
-  $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c4', 'Efua', (select period from cur), (select shift from cur), 200, '')$q$, 'porter_missing');
+select pg_temp.raises('the shift cannot be filed while a service has no porter',
+  $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c4', 'Efua', (select period from cur), (select shift from cur), 1400, '')$q$, 'porter_missing');
 update public.bookings set porters = '[{"porter_name":"Yaw","passengers_handled":2,"commission":60}]'::jsonb where reference = 'QS-6';
 select pg_temp.check_that('once a porter is assigned the shift closes with the commission taken off',
-  (select net_after_commission = 140 and total_commission = 60 and grand_total_paid = 200
-   from public.create_shift_report('00000000-0000-0000-0000-0000000000c4', 'Efua', (select period from cur), (select shift from cur), 200, '')));
+  (select net_after_commission = 1340 and total_commission = 60 and grand_total_paid = 1400
+   from public.create_shift_report('00000000-0000-0000-0000-0000000000c4', 'Efua', (select period from cur), (select shift from cur), 1400, '')));
 select pg_temp.check_that('a shift with no sales can still be filed as a nil return',
   (select grand_total_paid = 0 from public.create_shift_report('00000000-0000-0000-0000-0000000000c2', 'Kojo', current_date - 5, 'morning', 0, 'Quiet')));
 

@@ -116,7 +116,7 @@ export function canAssignPorter(user, booking) {
   return user.role === "supervisor" && booking.booking_channel === "walk_in" && booking.assigned_supervisor_id === user.id;
 }
 
-/** Website porter requests still waiting for a porter: the porter-only service, not cancelled, nobody assigned yet. */
+/** Website bookings (any service) still waiting for a porter: not cancelled or finished, nobody assigned yet. */
 export function waitingForPorter(bookings) {
-  return bookings.filter((b) => b.package_code === "porter_only" && ["confirmed", "assigned", "in_progress"].includes(b.status) && !(b.porters || []).length);
+  return bookings.filter((b) => b.booking_channel !== "walk_in" && ["confirmed", "assigned", "in_progress"].includes(b.status) && !(b.porters || []).length);
 }

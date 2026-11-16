@@ -1,5 +1,5 @@
--- Shift reports show sales minus porter commission, and cannot be filed while a porter service sold at the desk has no
--- porter on it. (Website porter requests are assigned by management, so they are listed but do not hold up the report.)
+-- Shift reports show sales minus porter commission, and cannot be filed while a service sold at the desk has no porter
+-- on it. (Website bookings are assigned by management, so they are listed but do not hold up the report.)
 alter table public.shift_reports add column net_after_commission numeric(12,2);
 -- Older reports: sales less the commission recorded on them.
 update public.shift_reports set net_after_commission = round(coalesce(grand_total_paid, total_revenue, 0) - coalesce(porter_total_commission, total_commission, 0), 2)
@@ -50,9 +50,9 @@ begin
            coalesce(sum(pax), 0) as pax, coalesce(sum(comm), 0) as comm
     from pr
   ),
-  porter_gaps as (  -- porter services in this shift that have no porter on them
+  porter_gaps as (  -- services in this shift that have no porter on them (every service needs one)
     select count(*) filter (where booking_channel = 'walk_in') as desk, count(*) filter (where booking_channel is distinct from 'walk_in') as website
-    from handled where package_code = 'porter_only' and jsonb_array_length(coalesce(porters, '[]'::jsonb)) = 0
+    from handled where jsonb_array_length(coalesce(porters, '[]'::jsonb)) = 0
   ),
   moves as (  -- status changes this supervisor made in the window
     select after ->> 'status' as status from public.audit_log
@@ -83,7 +83,7 @@ begin
     'net_after_commission', round(ma.total + po.amt - prj.comm, 2),
     'porters_missing', pg.desk,
     'porters_missing_refs', coalesce((select jsonb_agg(reference order by reference) from handled
-      where package_code = 'porter_only' and booking_channel = 'walk_in' and jsonb_array_length(coalesce(porters, '[]'::jsonb)) = 0), '[]'::jsonb),
+      where booking_channel = 'walk_in' and jsonb_array_length(coalesce(porters, '[]'::jsonb)) = 0), '[]'::jsonb),
     'porters_awaiting_management', pg.website,
     'total_outstanding', 0,
     'cash_expected', coalesce((select sum(amount) from pay where method = 'cash'), 0),
@@ -108,7 +108,7 @@ begin
   if p_cash_counted is null or p_cash_counted < 0 then raise exception 'cash_count_required' using errcode = 'P0001'; end if;
   if p_period > current_date then raise exception 'future_period' using errcode = 'P0001'; end if;
   built := public.build_shift_report(p_supervisor_id, p_period, p_shift);
-  -- Every porter service the supervisor sold at the desk needs a porter on it, so the commission can be taken off the sales.
+  -- Every service the supervisor sold at the desk needs a porter on it, so the commission can be taken off the sales.
   if (built ->> 'porters_missing')::int > 0 then raise exception 'porter_missing' using errcode = 'P0001'; end if;
 
   begin
