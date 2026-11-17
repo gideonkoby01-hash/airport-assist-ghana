@@ -79,7 +79,6 @@ export const SETTINGS: SettingDef[] = [
   { key: 'unassigned_alert_minutes', group: 'operations', label: 'Alert when no supervisor after', type: 'number', default: '15', env: 'UNASSIGNED_ALERT_MINUTES', min: 5, max: 240, unit: 'minutes', help: 'Management is alerted once if a booking has no supervisor this long after it was made.' },
   { key: 'porter_commission_per_passenger', group: 'operations', label: 'Porter commission', type: 'number', default: '30', min: 0, max: 1000, unit: 'GHS per passenger', public: true, help: 'Applies to commissions recorded from now on. Past commissions are not changed.' },
 
-  { key: 'extra_porter_fee', group: 'operations', label: 'Extra porter fee', type: 'number', default: '100', min: 0, max: 10000, unit: 'GHS per extra porter', public: true, help: 'Added to the service fee when a passenger needs more than one porter. The extra porter earns the porter commission rate as a flat amount. Applies to extra porters added from now on.' },
 
   { key: 'photo_retention_days', group: 'privacy', label: 'Keep passenger ID photos for', type: 'number', default: '30', env: 'PHOTO_RETENTION_DAYS', min: 1, max: 365, unit: 'days after the flight', help: 'After this the photo is deleted automatically. Update the privacy notice if you change it.' },
   { key: 'orphan_upload_days', group: 'privacy', label: 'Delete unused uploads after', type: 'number', default: '7', min: 1, max: 60, unit: 'days', help: 'Photos uploaded but never attached to a booking.' },

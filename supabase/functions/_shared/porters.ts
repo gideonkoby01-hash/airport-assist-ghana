@@ -39,15 +39,3 @@ export function canAssignPorter(user: Actor | null, booking: BookingForPorter | 
   return user.role === 'supervisor' && booking.booking_channel === 'walk_in' && booking.assigned_supervisor_id === user.id;
 }
 
-/**
- * An extra porter: a second or third porter on a service. The customer pays a fee for each, and the porter earns a flat
- * commission (the porter commission rate) whatever the number of passengers, so no passengers are credited to them.
- */
-export function extraPorterEntry(porter: { id: string; full_name: string }, commission: number, fee: number) {
-  return { porter_id: porter.id, porter_name: porter.full_name, passengers_handled: 0, commission: Math.round(commission * 100) / 100, extra: true, fee: Math.round(fee * 100) / 100 };
-}
-
-/** Extra porters change the price, so they can only be added or taken off while the service is still open. */
-export function canChangeExtraPorters(status: string | null | undefined): boolean {
-  return !['completed', 'cancelled', 'no_show'].includes(String(status || ''));
-}

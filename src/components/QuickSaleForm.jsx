@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, CheckCircle2, Trash2, UserPlus, Zap } from "lucide-react";
+import { Loader2, CheckCircle2, Zap } from "lucide-react";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,7 @@ const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 // A walk-in sale at the desk. It becomes a booking with its payment in one step, so it appears in the shift report
 // and the books like every other sale. The price comes from the package; it can be lowered with a reason, never raised.
 export default function QuickSaleForm({ onRecorded = undefined }) {
-  const { settings } = useSettings();
-  const commissionPerPassenger = Number(settings.porter_commission_per_passenger);
-  const extraPorterFee = Number(settings.extra_porter_fee);
+  const commissionPerPassenger = Number(useSettings().settings.porter_commission_per_passenger);
   const [packages, setPackages] = useState(PACKAGE_DEFINITIONS);
   const [porters, setPorters] = useState([]);
   const [code, setCode] = useState("");
@@ -31,8 +29,6 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [porterId, setPorterId] = useState("");
-  // Extra porters (ids): passengers who need more than one porter. Each adds the extra fee to the sale.
-  const [extraIds, setExtraIds] = useState([]);
   // Left blank, the porter is credited with everyone sold; the supervisor changes it when the load was shared.
   const [porterPax, setPorterPax] = useState("");
   const [saving, setSaving] = useState(false);
@@ -53,12 +49,11 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const pkg = useMemo(() => packages.find((p) => p.code === code), [packages, code]);
   const gross = pkg ? Number(pkg.price) * Math.max(1, Number(count) || 1) : 0;
   const charge = discounted && amount !== "" ? Number(amount) : gross;
-  const extrasTotal = extraIds.length * (extraPorterFee || 0);
   const tooHigh = discounted && Number(amount) > gross;
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterId(""); setExtraIds([]); setPorterPax(""); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
+    setReason(""); setPorterId(""); setPorterPax(""); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
 
@@ -72,7 +67,6 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
     if (discounted && reason.trim().length < 3) return setError("Give a reason for the lower price.");
     if (flightNumber.trim() && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,9}$/.test(flightNumber.trim())) return setError("Enter the flight number as letters and numbers, for example KQ 510.");
     if (!porterId) return setError(porters.length ? "Choose the porter handling this service." : "No porters are on the list yet. Ask an admin to add them under Porters.");
-    if (extraIds.some((id) => !id)) return setError("Choose a porter for each extra porter, or remove the empty one.");
     if (!(porterPaxNum >= 1 && porterPaxNum <= Number(count))) return setError("The porter's passengers cannot be more than the passengers sold.");
     setSaving(true);
     try {
@@ -91,7 +85,6 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         flight_time: flightTime || undefined,
         porter_id: porterId || undefined,
         porter_passengers: porterPaxNum,
-        extra_porter_ids: extraIds.filter(Boolean),
       });
       if (res?.data?.error) throw new Error(res.data.error);
       setDone(res.data.booking);
@@ -188,7 +181,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
       <div className="bg-secondary rounded-lg p-3 text-sm flex items-center justify-between">
         <span className="text-muted-foreground">Amount to collect</span>
-        <span className="text-lg font-bold">{formatGHS((charge || 0) + extrasTotal)}</span>
+        <span className="text-lg font-bold">{formatGHS(charge || 0)}</span>
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={discounted} onChange={(e) => setDiscounted(e.target.checked)} />
@@ -238,35 +231,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         )}
       </div>
 
-      {porterId && (
-        <div className="space-y-2">
-          {extraIds.map((id, i) => (
-            <div key={i} className="flex items-end gap-2">
-              <div className="space-y-1.5 flex-1">
-                <Label htmlFor={`qs-extra-${i}`}>Extra porter {i + 1}</Label>
-                <Select value={id} onValueChange={(v) => setExtraIds((list) => list.map((x, j) => (j === i ? v : x)))}>
-                  <SelectTrigger id={`qs-extra-${i}`}><SelectValue placeholder="Choose a porter" /></SelectTrigger>
-                  <SelectContent>
-                    {porters.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="button" variant="outline" size="icon" aria-label={`Remove extra porter ${i + 1}`} onClick={() => setExtraIds((list) => list.filter((_, j) => j !== i))}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
-          <Button type="button" variant="outline" size="sm" disabled={extraIds.length >= 5} onClick={() => setExtraIds((list) => [...list, ""])}>
-            <UserPlus className="w-4 h-4 mr-1.5" /> Add an extra porter (+{formatGHS(extraPorterFee)})
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            For passengers who need more than one porter. Each extra porter adds {formatGHS(extraPorterFee)} to the sale and earns {formatGHS(commissionPerPassenger)}.
-          </p>
-        </div>
-      )}
-
       <Button type="submit" className="w-full h-12" disabled={saving || !pkg}>
-        {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : `Record sale · ${formatGHS((charge || 0) + extrasTotal)}`}
+        {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : `Record sale · ${formatGHS(charge || 0)}`}
       </Button>
     </form>
   );
