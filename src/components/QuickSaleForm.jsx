@@ -111,7 +111,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   return (
     <form onSubmit={submit} className="bg-card rounded-2xl border border-border p-5 space-y-4 max-w-lg">
-      <h3 className="text-sm font-semibold flex items-center gap-2"><Zap className="w-4 h-4 text-accent" aria-hidden="true" /> Quick sale</h3>
+      <h3 className="text-sm font-semibold flex items-center gap-2"><Zap className="w-4 h-4 text-accent" aria-hidden="true" /> Sales</h3>
       <p className="text-xs text-muted-foreground">
         For a passenger paying at the desk now. It is saved as a completed booking with its payment and appears in your shift report.
         Use the Walk-in Booking tab instead when the passenger is travelling later and needs the full details.

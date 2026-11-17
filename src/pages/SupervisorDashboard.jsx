@@ -5,7 +5,6 @@ import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
-import BookingForm from "@/components/BookingForm";
 import BookingList from "@/components/BookingList";
 import { usePagedList } from "@/hooks/use-paged-list";
 import QuickSaleForm from "@/components/QuickSaleForm";
@@ -31,7 +30,9 @@ export default function SupervisorDashboard() {
 function SupervisorInner() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const tab = searchParams.get("tab") || "assigned";
+  // An old link to a tab that no longer exists (the walk-in booking page) opens the assigned bookings instead of a blank page.
+  const requestedTab = searchParams.get("tab");
+  const tab = ["assigned", "quick", "notifications", "report", "profile"].includes(requestedTab) ? requestedTab : "assigned";
   const [, setUnreadCount] = useState(0);
 
 
@@ -128,15 +129,6 @@ function SupervisorInner() {
       )}
 
       {tab === "quick" && <QuickSaleForm onRecorded={load} />}
-
-      {tab === "walkin" && (
-        <div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Create a walk-in booking. It will be auto-assigned to you so you can record payments, porters, and progress.
-          </p>
-          <BookingForm channel="walk_in" user={user} supervisor={user} onCreated={load} />
-        </div>
-      )}
 
       {tab === "notifications" && <SupervisorNotifications userId={user.id} onUnreadChange={setUnreadCount} />}
       {tab === "report" && <ShiftReportForm supervisor={user} />}

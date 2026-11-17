@@ -30,8 +30,7 @@ const NAV = {
       { label: "Notifications", to: "/supervisor", tab: "notifications", icon: Bell, primary: true },
     ] },
     { heading: "At the desk", items: [
-      { label: "Quick sale", to: "/supervisor", tab: "quick", icon: Zap, primary: true },
-      { label: "Walk-in booking", to: "/supervisor", tab: "walkin", icon: UserPlus, primary: true },
+      { label: "Sales", to: "/supervisor", tab: "quick", icon: Zap, primary: true },
       { label: "Shift report", to: "/supervisor", tab: "report", icon: FileText },
     ] },
     { heading: "You", items: [
@@ -255,7 +254,7 @@ export default function AppLayout({ children }) {
                     <Icon className="w-5 h-5" aria-hidden="true" />
                     {item.label === "Notifications" && unread > 0 && <span className="absolute top-0 right-2 w-2 h-2 rounded-full bg-accent" aria-hidden="true" />}
                   </span>
-                  <span className="truncate max-w-full px-1">{item.label.replace("Assigned bookings", "Assigned").replace("Walk-in booking", "Walk-in").replace("Book a service", "Book").replace("Staff accounts", "Staff").replace("All bookings", "Bookings")}</span>
+                  <span className="truncate max-w-full px-1">{item.label.replace("Assigned bookings", "Assigned").replace("Book a service", "Book").replace("Staff accounts", "Staff").replace("All bookings", "Bookings")}</span>
                 </Link>
               </li>
             );
