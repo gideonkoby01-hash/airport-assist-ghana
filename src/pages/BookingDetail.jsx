@@ -107,6 +107,10 @@ export default function BookingDetail() {
                 <p className="text-3xl font-bold text-foreground">{formatGHS(booking.total_value)}</p>
                 <p className="text-xs text-muted-foreground">
                   {formatGHS(booking.price_per_passenger)} × {booking.num_passengers} passenger(s)
+                  {(() => {
+                    const fees = (booking.porters || []).reduce((n, p) => n + (p.extra ? Number(p.fee) || 0 : 0), 0);
+                    return fees > 0 ? ` + ${formatGHS(fees)} extra porter${(booking.porters || []).filter((p) => p.extra).length === 1 ? "" : "s"}` : "";
+                  })()}
                 </p>
               </div>
             </div>
