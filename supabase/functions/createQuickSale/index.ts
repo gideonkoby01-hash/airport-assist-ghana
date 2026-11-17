@@ -67,7 +67,16 @@ serve('createQuickSale', async (req) => {
       p_flight_number: String(body.flight_number || '').trim().slice(0, 12), p_airline: String(body.airline || '').trim().slice(0, 60),
       p_flight_time: String(body.flight_time || '').trim(), p_porter_id: porterId,
     });
-    if (!error) return json({ ok: true, booking: data });
+    if (!error) {
+      // The supervisor's own commission, if they ticked it: a meet and assist earns it, Porter Service Only does not.
+      if (body.commission === true && data.package_code !== 'porter_only') {
+        const amount = settings.num('supervisor_commission_per_signup');
+        const { data: marked, error: markError } = await admin.rpc('set_supervisor_commission', { p_booking_id: data.id, p_paid: true, p_amount: amount, p_user_id: user.id });
+        if (markError) return json({ ok: true, booking: data, commission_warning: 'The sale was recorded, but your commission could not be marked. Open the booking and tick it there.' });
+        return json({ ok: true, booking: marked });
+      }
+      return json({ ok: true, booking: data });
+    }
     if (error.code === '23505') {
       if (error.message?.includes('bookings_idempotency_idx')) {
         const again = await first();

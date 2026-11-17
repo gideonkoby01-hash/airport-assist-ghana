@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, UserPlus, Trash2, Wallet, Users, Armchair, ClipboardList } from "lucide-react";
+import { BadgeDollarSign, Loader2, Save, UserPlus, Trash2, Wallet, Users, Armchair, ClipboardList } from "lucide-react";
 import {
   STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -18,7 +18,8 @@ import { acceptsPayments, canAssignPorter, isClosed, nextStatuses, ALL_STATUSES 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
 export default function BookingActions({ booking, user, onUpdated }) {
-  const commissionPerPassenger = Number(useSettings().settings.porter_commission_per_passenger);
+  const { settings } = useSettings();
+  const commissionPerPassenger = Number(settings.porter_commission_per_passenger);
   const role = user?.role || "passenger";
   const canOperate = ["supervisor", "management", "admin"].includes(role);
   const canAssignSupervisor = ["management", "admin"].includes(role);
@@ -40,6 +41,23 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const covered = (booking.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0);
   const [porterHandled, setPorterHandled] = useState(Math.max(1, (booking.num_passengers || 1) - covered));
   const mayAssignPorter = canAssignPorter(user, booking);
+  // The supervisor's own commission on a meet and assist: they tick it, and it comes off the day's takings in the shift report.
+  const supervisorCommission = Number(settings.supervisor_commission_per_signup);
+  const mayTickCommission =
+    booking.package_code !== "porter_only" && !["cancelled", "no_show"].includes(booking.status) && Boolean(booking.assigned_supervisor_id) &&
+    (role === "supervisor" ? booking.assigned_supervisor_id === user?.id : ["management", "admin"].includes(role));
+  const commissionTicked = Number(booking.supervisor_commission || 0) > 0;
+  const [savingCommission, setSavingCommission] = useState(false);
+  const toggleCommission = async (paid) => {
+    setSavingCommission(true);
+    try {
+      await callBooking("setSupervisorCommission", { paid });
+    } catch (err) {
+      notifyError(err.message || "Could not update the commission.");
+    } finally {
+      setSavingCommission(false);
+    }
+  };
   const [savingPorter, setSavingPorter] = useState(false);
 
   const [lounge, setLounge] = useState(booking.lounge_used || "");
@@ -238,6 +256,31 @@ export default function BookingActions({ booking, user, onUpdated }) {
         </Panel>
 
         </>
+      )}
+
+      {mayTickCommission && (
+        <Panel icon={BadgeDollarSign} title="Supervisor commission">
+          <label className={`flex items-start gap-3 text-sm ${booking.supervisor_commission_locked ? "opacity-70" : "cursor-pointer"}`}>
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={commissionTicked}
+              disabled={savingCommission || Boolean(booking.supervisor_commission_locked)}
+              onChange={(e) => toggleCommission(e.target.checked)}
+            />
+            <span>
+              <span className="font-medium text-foreground">Commission earned on this meet and assist: {formatGHS(supervisorCommission)}</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                {commissionTicked
+                  ? booking.supervisor_commission_locked
+                    ? "Recorded, and already in a submitted shift report."
+                    : "Recorded. It is taken off today's takings in your shift report."
+                  : "Tick this to record your commission. It is then taken off today's takings in your shift report."}
+              </span>
+            </span>
+            {savingCommission && <Loader2 className="w-4 h-4 animate-spin mt-1" aria-hidden="true" />}
+          </label>
+        </Panel>
       )}
 
       {mayAssignPorter && (
