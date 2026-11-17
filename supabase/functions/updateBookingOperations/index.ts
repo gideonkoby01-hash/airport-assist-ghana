@@ -2,7 +2,14 @@ import { adminClient, requireCaller } from '../_shared/auth.ts';
 import { loadSettings } from '../_shared/config.ts';
 import { canOperateBooking } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
-import { canAssignPorter, checkPorterShare, porterCommission } from '../_shared/porters.ts';
+import { canAssignPorter, canChangeExtraPorters, checkPorterShare, extraPorterEntry, porterCommission } from '../_shared/porters.ts';
+
+const MESSAGES: Record<string, [number, string]> = {
+  booking_closed: [409, 'This service is already finished, so its price cannot change. Extra porters can only be added or removed before it is completed.'],
+  refund_first: [409, 'The customer has already paid for this extra porter. Refund the fee first, then remove the porter.'],
+  porter_not_found: [400, 'That porter is no longer on this booking.'],
+  not_extra: [400, 'That porter is not an extra porter.'],
+};
 
 
 // Operational edits staff make from the booking page: the lounge used and the porter list.
@@ -32,6 +39,23 @@ serve('updateBookingOperations', async (req) => {
         : 'Porters for a website booking are assigned by management.');
     }
     const porters: Record<string, unknown>[] = Array.isArray(booking.porters) ? [...booking.porters] : [];
+    const settings = await loadSettings(admin);
+    if (action === 'add_porter' && body.extra === true) {
+      // A second or third porter for the same passengers: the fee is added to the price, the porter earns a flat commission.
+      if (!canChangeExtraPorters(booking.status)) throw new HttpError(409, MESSAGES.booking_closed[1]);
+      if (!porters.length) throw new HttpError(400, 'Add the first porter before an extra one.');
+      const { data: porter } = await admin.from('porters').select('id,full_name,active').eq('id', String(body.porter_id || '')).maybeSingle();
+      if (!porter || !porter.active) throw new HttpError(400, 'Choose a porter from the list. An admin can add porters under Porters.');
+      const entry = extraPorterEntry(porter, settings.num('porter_commission_per_passenger'), settings.num('extra_porter_fee'));
+      const { data: updated, error } = await admin.rpc('add_extra_porter', { p_booking_id: bookingId, p_porter: entry, p_fee: entry.fee, p_user_id: user.id });
+      if (error) { const known = MESSAGES[error.message]; if (known) throw new HttpError(known[0], known[1]); throw error; }
+      return json({ ok: true, booking: updated });
+    }
+    if (action === 'remove_porter' && Number.isInteger(Number(body.index)) && porters[Number(body.index)]?.extra === true) {
+      const { data: updated, error } = await admin.rpc('remove_extra_porter', { p_booking_id: bookingId, p_index: Number(body.index), p_user_id: user.id });
+      if (error) { const known = MESSAGES[error.message]; if (known) throw new HttpError(known[0], known[1]); throw error; }
+      return json({ ok: true, booking: updated });
+    }
     if (action === 'add_porter') {
       const handled = Number(body.passengers_handled);
       const problem = checkPorterShare(porters, handled, booking.num_passengers);
@@ -43,7 +67,7 @@ serve('updateBookingOperations', async (req) => {
         porter_id: porter.id,
         porter_name: porter.full_name,
         passengers_handled: handled,
-        commission: porterCommission((await loadSettings(admin)).num('porter_commission_per_passenger'), handled),
+        commission: porterCommission(settings.num('porter_commission_per_passenger'), handled),
       });
     } else {
       const index = Number(body.index);
