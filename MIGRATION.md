@@ -274,3 +274,23 @@ See `docs/PLATFORM_AUDIT.md` section "Status after the fixes" for the finding-by
 - **Not built, because they need an account, a provider or a decision from you:** SMS or WhatsApp alerts, online card or mobile-money payment, a cancellation and refund policy for the website to apply automatically, passenger self-service changes to a booking, VAT/levy fields and tax-invoice numbering, and a monthly period close.
 - The per-customer discount limit can still be exceeded by two simultaneous bookings from the same customer.
 - Flight date and time are validated but still stored as text; foreign keys between tables are not enforced (the integrity check watches for broken links instead).
+
+## Sign-up emails and Google sign-in (Supabase dashboard)
+
+**Email look.** The emails people get when they sign up or reset a password come from Supabase's sign-in service, not from this website, so their design is set in the dashboard. Ready-made branded versions are in `supabase/templates/`. In **Authentication > Emails > Templates**, open each template, paste the matching file into **Message body**, set the **Subject**, and save:
+
+| Supabase template | File | Subject |
+|---|---|---|
+| Confirm signup | `confirmation.html` | Confirm your email for Airport Assist Ghana |
+| Reset password | `recovery.html` | Reset your Airport Assist Ghana password |
+| Magic link | `magic_link.html` | Your Airport Assist Ghana sign-in link |
+| Change email address | `email_change.html` | Confirm your new email address |
+| Reauthentication | `reauthentication.html` | Your Airport Assist Ghana confirmation code |
+
+The sign-up email has a **Confirm my email** button and also shows a 6-digit code, and the website accepts either. The sender still reads "Supabase Auth" until you set up your own SMTP sender under **Authentication > Emails > SMTP Settings** (Admin > Settings > Email shows the values to use).
+
+**Google sign-in.** It only works once Google is switched on in Supabase, and until then the website hides the "Continue with Google" button. To turn it on:
+1. In Google Cloud Console, create an OAuth client (type **Web application**). Under **Authorized redirect URIs** add `https://<your-project-ref>.supabase.co/auth/v1/callback` (Supabase shows the exact address on the Google provider page).
+2. In Supabase, **Authentication > Sign In / Providers > Google**: switch it on and paste the **Client ID** and **Client Secret**. Save.
+3. In **Authentication > URL Configuration**, make sure the website address is in the Redirect URLs, for example `https://airport-assist-ghana.pages.dev/**`.
+The button appears on the sign-in and sign-up pages by itself within a minute of saving.

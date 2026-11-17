@@ -12,7 +12,6 @@ import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
-import StaffRequests from "@/components/StaffRequests";
 import ManagementNotifications from "@/components/ManagementNotifications";
 import { useAuth } from "@/lib/AuthContext";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
@@ -155,7 +154,6 @@ function AdminInner() {
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}
       {tab === "supervisors" && <SupervisorDirectory />}
-      {tab === "requests" && <StaffRequests />}
       {tab === "discounts" && <DiscountManager />}
       {tab === "reports" && <ShiftReportViewer />}
       {tab === "ratings" && <RatingsReviews />}

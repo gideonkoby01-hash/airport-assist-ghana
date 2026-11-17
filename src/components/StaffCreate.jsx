@@ -76,7 +76,7 @@ export default function StaffCreate({ onCreated }) {
           </dl>
           <p className="text-xs text-emerald-900/80 mt-3">
             This password is shown only once and cannot be looked up later. Give it to them in person or by phone, not in a public message.
-            If it is lost, use "Resend access email" on their row, or ask another admin to reset it.
+            If it is lost, use "Reset password" on their row in the list below.
           </p>
           <Button type="button" size="sm" variant="ghost" className="mt-2" onClick={() => setResult(null)}>Done</Button>
         </div>

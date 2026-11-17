@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { Link } from "react-router-dom";
-import { api } from "@/api/db";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { googleErrorMessage, useAuthProviders } from "@/lib/authProviders";
 
 export default function Register() {
   useDocumentTitle("Create your account");
@@ -22,8 +22,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
-  const [role, setRole] = useState("passenger");
-  const [fullName, setFullName] = useState("");
+  const { google } = useAuthProviders();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,7 +40,8 @@ export default function Register() {
       const { error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { full_name: fullName.trim() } },
+        // The link in the confirmation email brings the person back here, signed in.
+        options: { emailRedirectTo: window.location.origin + safeReturnTo() },
       });
       if (signUpError) throw signUpError;
       setShowOtp(true);
@@ -58,17 +58,7 @@ export default function Register() {
     try {
       const { error: verifyError } = await supabase.auth.verifyOtp({ email: email.trim(), token: otpCode, type: "signup" });
       if (verifyError) throw verifyError;
-      if (role === "supervisor" || role === "management") {
-        // Submit a staff access request; the account is held as "pending" until an admin approves.
-        const res = await api.functions.invoke("submitStaffRequest", {
-          requested_role: role,
-          full_name: fullName.trim(),
-        });
-        if (res?.data?.error) throw new Error(res.data.error);
-        window.location.href = "/pending";
-      } else {
-        window.location.href = safeReturnTo();
-      }
+      window.location.href = safeReturnTo();
     } catch (err) {
       setError(err.message || "Invalid verification code");
     } finally {
@@ -82,8 +72,8 @@ export default function Register() {
       const { error: resendError } = await supabase.auth.resend({ type: "signup", email: email.trim() });
       if (resendError) throw resendError;
       toast({
-        title: "Code sent",
-        description: "Check your email for the new code.",
+        title: "Email sent",
+        description: "Check your inbox for the new confirmation email.",
       });
     } catch (err) {
       setError(err.message || "Failed to resend code");
@@ -96,7 +86,7 @@ export default function Register() {
       provider: "google",
       options: { redirectTo: window.location.origin + safeReturnTo() },
     });
-    if (oauthError) setError(oauthError.message || "Google sign-in failed");
+    if (oauthError) setError(googleErrorMessage(oauthError));
   };
 
   if (showOtp) {
@@ -104,8 +94,11 @@ export default function Register() {
       <AuthLayout
         icon={Mail}
         title="Verify your email"
-        subtitle={`We sent a code to ${email}`}
+        subtitle={`We sent an email to ${email}`}
       >
+        <p className="text-sm text-muted-foreground text-center mb-5">
+          Open it and press <strong className="text-foreground">Confirm my email</strong>. If the email shows a 6-digit code instead, enter it below.
+        </p>
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
             {error}
@@ -144,9 +137,9 @@ export default function Register() {
           )}
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Didn't receive the code?{" "}
+          Didn't get the email? Check your spam folder, or{" "}
           <button onClick={handleResend} className="text-primary font-medium hover:underline">
-            Resend
+            send it again
           </button>
         </p>
       </AuthLayout>
@@ -157,7 +150,7 @@ export default function Register() {
     <AuthLayout
       icon={UserPlus}
       title="Create your account"
-      subtitle="Sign up to get started"
+      subtitle="Book airport assistance in a few minutes"
       footer={
         <>
           Already have an account?{" "}
@@ -170,23 +163,28 @@ export default function Register() {
         </>
       }
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
+      {google && (
+        <>
+        <Button
+          variant="outline"
+          className="w-full h-12 text-sm font-medium mb-6"
+          onClick={handleGoogle}
+        >
+          <GoogleIcon className="w-5 h-5 mr-2" />
+          Continue with Google
+        </Button>
 
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-3 text-muted-foreground">or</span>
+          </div>
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
-        </div>
-      </div>
+
+        </>
+      )}
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
@@ -195,41 +193,6 @@ export default function Register() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label>I am registering as</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {["passenger", "supervisor", "management"].map((r) => (
-              <button
-                type="button"
-                key={r}
-                onClick={() => setRole(r)}
-                className={`px-2 py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${
-                  role === r ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-          {role !== "passenger" && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Staff accounts require Admin approval before access.
-            </p>
-          )}
-        </div>
-        {role !== "passenger" && (
-          <div className="space-y-2">
-            <Label htmlFor="fullname">Full Name</Label>
-            <Input
-              id="fullname"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your full name"
-              className="h-12"
-              required
-            />
-          </div>
-        )}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">

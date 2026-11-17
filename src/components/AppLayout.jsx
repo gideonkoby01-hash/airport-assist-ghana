@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import {
   Armchair, Banknote, BarChart3, Bell, Contact, CalendarPlus, ClipboardList, FileText, LayoutDashboard, LogOut,
   Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Ticket, UserCheck,
-  UserCircle, UserPlus, Users, X, Zap,
+  UserCircle, Users, X, Zap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
@@ -61,7 +61,6 @@ const NAV = {
     { heading: "People", items: [
       { label: "Customers", to: "/admin", tab: "customers", icon: Contact },
       { label: "Staff accounts", to: "/admin", tab: "staff", icon: Users, primary: true },
-      { label: "Staff requests", to: "/admin", tab: "requests", icon: UserPlus },
       { label: "Supervisors", to: "/admin", tab: "supervisors", icon: UserCheck },
       { label: "Porters", to: "/admin", tab: "porters", icon: Luggage },
       { label: "Porter pay", to: "/admin", tab: "porter-pay", icon: Banknote },
