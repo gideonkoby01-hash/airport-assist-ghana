@@ -8,5 +8,4 @@ export const PUBLIC_DEFAULTS = {
   online_bookings_enabled: "true",
   online_bookings_message: "Online booking is paused right now. Please contact the Airport Assist desk.",
   porter_commission_per_passenger: "30",
-  extra_porter_fee: "100",
 };

@@ -18,9 +18,7 @@ import { acceptsPayments, canAssignPorter, isClosed, nextStatuses, ALL_STATUSES 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
 export default function BookingActions({ booking, user, onUpdated }) {
-  const { settings } = useSettings();
-  const commissionPerPassenger = Number(settings.porter_commission_per_passenger);
-  const extraPorterFee = Number(settings.extra_porter_fee);
+  const commissionPerPassenger = Number(useSettings().settings.porter_commission_per_passenger);
   const role = user?.role || "passenger";
   const canOperate = ["supervisor", "management", "admin"].includes(role);
   const canAssignSupervisor = ["management", "admin"].includes(role);
@@ -39,8 +37,6 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
   const [porterRegister, setPorterRegister] = useState([]);
   const [porterId, setPorterId] = useState("");
-  // An extra porter is a second or third porter for the same passengers: it adds a fee to the service.
-  const [extraPorter, setExtraPorter] = useState(false);
   const covered = (booking.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0);
   const [porterHandled, setPorterHandled] = useState(Math.max(1, (booking.num_passengers || 1) - covered));
   const mayAssignPorter = canAssignPorter(user, booking);
@@ -158,10 +154,9 @@ export default function BookingActions({ booking, user, onUpdated }) {
       await callBooking("updateBookingOperations", {
         action: "add_porter",
         porter_id: porterId,
-        ...(extraPorter ? { extra: true } : { passengers_handled: Number(porterHandled || 0) }),
+        passengers_handled: Number(porterHandled || 0),
       });
       setPorterId("");
-      setExtraPorter(false);
       setPorterHandled(1);
     } catch (err) {
       notifyError(err.message || "Failed to assign porter");
@@ -253,15 +248,6 @@ export default function BookingActions({ booking, user, onUpdated }) {
               : "A service requested on the website: management assigns the porter."}{" "}
             {formatGHS(commissionPerPassenger)} goes to the porter for each passenger handled, and is paid to them daily.
           </p>
-          {(booking.porters || []).length > 0 && !["completed", "cancelled", "no_show"].includes(booking.status) && (
-            <label className="flex items-start gap-2 text-sm mb-3 cursor-pointer">
-              <input type="checkbox" className="mt-1" checked={extraPorter} onChange={(e) => setExtraPorter(e.target.checked)} />
-              <span>
-                <span className="font-medium">Extra porter</span> for passengers who need a second pair of hands.
-                <span className="block text-xs text-muted-foreground">Adds {formatGHS(extraPorterFee)} to the service fee; the porter earns {formatGHS(commissionPerPassenger)}.</span>
-              </span>
-            </label>
-          )}
           {porterRegister.length === 0 ? (
             <p className="text-sm text-muted-foreground">No porters on the list yet. An admin adds them under Porters.</p>
           ) : (
@@ -275,19 +261,16 @@ export default function BookingActions({ booking, user, onUpdated }) {
                   </SelectContent>
                 </Select>
               </div>
-              {!extraPorter && (
-                <div className="space-y-1 w-28">
-                  <Label htmlFor="porter-pax" className="text-xs">Passengers handled</Label>
-                  <Input id="porter-pax" type="number" min={1} max={booking.num_passengers || 50} value={porterHandled} onChange={(e) => setPorterHandled(e.target.value)} />
-                </div>
-              )}
+              <div className="space-y-1 w-28">
+                <Label htmlFor="porter-pax" className="text-xs">Passengers handled</Label>
+                <Input id="porter-pax" type="number" min={1} max={booking.num_passengers || 50} value={porterHandled} onChange={(e) => setPorterHandled(e.target.value)} />
+              </div>
               <div className="text-sm text-muted-foreground pb-2">
-                Commission: <span className="font-semibold text-foreground">{formatGHS(extraPorter ? commissionPerPassenger : commissionPerPassenger * Number(porterHandled || 0))}</span>
-                {extraPorter && <span className="block text-xs">Fee added: {formatGHS(extraPorterFee)}</span>}
+                Commission: <span className="font-semibold text-foreground">{formatGHS(commissionPerPassenger * Number(porterHandled || 0))}</span>
               </div>
               <Button onClick={addPorter} disabled={savingPorter || !porterId}>
                 {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
-                {extraPorter ? `Add extra porter (+${formatGHS(extraPorterFee)})` : "Assign"}
+                Assign
               </Button>
             </div>
           )}

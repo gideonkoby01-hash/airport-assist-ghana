@@ -1,6 +1,6 @@
 // Run: deno test supabase/functions/_shared/porters_test.ts
 import { assertEquals } from 'jsr:@std/assert@1';
-import { canChangeExtraPorters, checkPorterShare, extraPorterEntry, porterCommission } from './porters.ts';
+import { checkPorterShare, porterCommission } from './porters.ts';
 
 Deno.test('a porter can be credited up to the passengers on the booking', () => {
   assertEquals(checkPorterShare([], 3, 3), null);
@@ -38,12 +38,4 @@ Deno.test('nobody changes porters on a cancelled booking', () => {
   const dead = { booking_channel: 'walk_in', assigned_supervisor_id: 's1', status: 'cancelled' };
   assertEquals(canAssignPorter({ id: 'm1', role: 'management' }, dead), false);
   assertEquals(canAssignPorter({ id: 's1', role: 'supervisor' }, dead), false);
-});
-
-Deno.test('an extra porter earns a flat commission, carries the fee and is credited with no passengers', () => {
-  assertEquals(extraPorterEntry({ id: 'p1', full_name: 'Yaw' }, 30, 100), { porter_id: 'p1', porter_name: 'Yaw', passengers_handled: 0, commission: 30, extra: true, fee: 100 });
-});
-Deno.test('extra porters can only change on a service that is still open', () => {
-  for (const s of ['confirmed', 'assigned', 'in_progress']) assertEquals(canChangeExtraPorters(s), true);
-  for (const s of ['completed', 'cancelled', 'no_show']) assertEquals(canChangeExtraPorters(s), false);
 });
