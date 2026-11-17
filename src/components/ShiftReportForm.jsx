@@ -146,7 +146,7 @@ export default function ShiftReportForm({ supervisor }) {
           )}
           {Number(preview.grand_total_paid) === 0 && Number(preview.booking_count) === 0 && (
             <p className="text-sm text-muted-foreground">
-              Nothing was recorded for this shift. If you did take money, record it first (Quick sale or the booking's Payment box) and reload this page; sales cannot be added to a report by hand.
+              Nothing was recorded for this shift. If you did take money, record it first (under Sales or the booking's Payment box) and reload this page; sales cannot be added to a report by hand.
             </p>
           )}
 
