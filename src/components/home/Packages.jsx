@@ -18,19 +18,19 @@ const PACKAGES = [
     code: "full_departure", kind: "departure", tag: "DEP", name: "Full Departure Service", price: 850,
     description: "Met at the kerb, checked in, taken through security and into the lounge.",
     inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track security and immigration", "Premium lounge access"],
-    image: "/images/terminal-departure-hall.webp", position: "50% 40%", place: "Departure hall",
+    image: "/images/card-lounge-welcome.webp", position: "50% 40%", place: "Executive lounge",
   },
   {
     code: "departure_priority", kind: "departure", tag: "DEP", name: "Departure Priority Only", price: 500,
     description: "The quick route to your gate, without the lounge.",
     inclusions: ["Check-in assistance", "Fast-track security and immigration"],
-    image: "/images/terminal-checkin-hall.webp", position: "50% 50%", place: "Check-in hall",
+    image: "/images/card-escort-path.webp", position: "50% 40%", place: "VIP escort path",
   },
   {
     code: "porter_only", kind: "porter", tag: "PTR", name: "Porter Service Only", price: 100,
     description: "A porter for your luggage, and an escort to the checkpoints.",
     inclusions: ["Luggage handling across the terminal", "Porter escort to checkpoints"],
-    image: "/images/terminal-trolleys.webp", position: "50% 50%", place: "Luggage trolleys",
+    image: "/images/card-priority-reclaim.webp", position: "50% 40%", place: "Priority reclaim",
   },
 ];
 
