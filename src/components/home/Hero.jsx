@@ -24,21 +24,21 @@ const SLIDES = [
     cta: "View departure service",
   },
   {
-    image: "/images/hero-t3-night.webp",
-    width: 1920,
-    height: 1080,
-    alt: "The front of Kotoka International Airport Terminal 3 at night, lit up, with taxis and trolleys at the kerb",
-    position: "50% 40%",
-    title: "Welcome to Accra · Curbside meet · Bags handled",
+    image: "/images/lounge.webp",
+    width: 1024,
+    height: 1024,
+    alt: "An Airport Assist escort walking a family through the departures hall",
+    fit: "contain",
+    title: "Meet at the airbridge · Fast-track · Bags handled",
     cta: "View arrival service",
   },
   {
-    image: "/images/hero-hall.webp",
-    width: 1920,
-    height: 1080,
-    alt: "A bright airport departure hall with rows of check-in counters under a long patterned ceiling",
-    position: "50% 45%",
-    title: "Check-in · Fast-track security · Gate escort",
+    image: "/images/porter-hero.webp",
+    width: 1024,
+    height: 1024,
+    alt: "A porter with a luggage trolley, standing with three travellers in the check-in hall",
+    fit: "contain",
+    title: "Curbside welcome · Check-in · Gate escort",
     cta: "View departure service",
   },
 ];
@@ -61,20 +61,31 @@ export default function Hero() {
     <section id="home" aria-roledescription="carousel" aria-label="Airport Assist at Accra airport">
       <h1 className="sr-only">{HEADLINE}</h1>
       <div className="relative h-[clamp(380px,50vw,700px)] overflow-hidden bg-[hsl(var(--site-dark))]">
-        {SLIDES.map((s, i) => (
-          <img
-            key={s.image}
-            src={s.image}
-            alt={i === index ? s.alt : ""}
-            aria-hidden={i === index ? undefined : "true"}
-            width={s.width}
-            height={s.height}
-            fetchPriority={i === 0 ? "high" : undefined}
-            loading={i === 0 ? undefined : "lazy"}
-            style={{ objectPosition: s.position }}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ${i === index ? "opacity-100 hero-settle" : "opacity-0"}`}
-          />
-        ))}
+        {SLIDES.map((s, i) => {
+          const on = i === index;
+          return (
+            <div key={s.image} className={`absolute inset-0 transition-opacity duration-[1200ms] ${on ? "opacity-100" : "opacity-0"}`} aria-hidden={on ? undefined : "true"}>
+              {/* The same photo, enlarged and blurred, fills whatever the photo itself does not cover. */}
+              <img src={s.image} alt="" aria-hidden="true" width={s.width} height={s.height} loading={i === 0 ? undefined : "lazy"}
+                className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl saturate-125 brightness-90" />
+              {/* Photos made for a wide screen fill it on a computer and show whole on a phone; square ones always show whole. */}
+              {/* The journey bar overlaps the bottom edge of the hero, so the photo stops above it and nothing in it is hidden. */}
+              <div className="absolute inset-x-0 top-0 bottom-14 sm:bottom-24">
+                <img
+                  src={s.image}
+                  alt={on ? s.alt : ""}
+                  aria-hidden={on ? undefined : "true"}
+                  width={s.width}
+                  height={s.height}
+                  fetchPriority={i === 0 ? "high" : undefined}
+                  loading={i === 0 ? undefined : "lazy"}
+                  style={{ objectPosition: s.position || "50% 50%" }}
+                  className={`w-full h-full ${s.fit === "contain" ? "object-contain" : "object-contain md:object-cover"} ${on ? "hero-settle" : ""}`}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <HeroQuote
