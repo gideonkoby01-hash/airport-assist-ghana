@@ -7,6 +7,7 @@ const HEADLINE = "Accra airport, with someone who knows the way.";
 const SLIDES = [
   {
     image: "/images/hero-welcome.webp",
+    phone: "/images/hero-welcome-m.webp",
     width: 2400,
     height: 1340,
     alt: "Airport Assist agents welcoming travellers at Accra airport and guiding a family through security",
@@ -16,6 +17,7 @@ const SLIDES = [
   },
   {
     image: "/images/hero-escort.webp",
+    phone: "/images/hero-escort-m.webp",
     width: 2400,
     height: 1340,
     alt: "An Airport Assist agent pointing a traveller towards the gates, and a family being met at the car",
@@ -60,7 +62,7 @@ export default function Hero() {
   return (
     <section id="home" aria-roledescription="carousel" aria-label="Airport Assist at Accra airport">
       <h1 className="sr-only">{HEADLINE}</h1>
-      <div className="relative h-[clamp(380px,50vw,700px)] overflow-hidden bg-[hsl(var(--site-dark))]">
+      <div className="relative h-[calc(100vw+3.5rem)] sm:h-[clamp(380px,50vw,700px)] overflow-hidden bg-[hsl(var(--site-dark))]">
         {SLIDES.map((s, i) => {
           const on = i === index;
           return (
@@ -71,17 +73,21 @@ export default function Hero() {
               {/* Photos made for a wide screen fill it on a computer and show whole on a phone; square ones always show whole. */}
               {/* The journey bar overlaps the bottom edge of the hero, so the photo stops above it and nothing in it is hidden. */}
               <div className="absolute inset-x-0 top-0 bottom-14 sm:bottom-24">
-                <img
-                  src={s.image}
-                  alt={on ? s.alt : ""}
-                  aria-hidden={on ? undefined : "true"}
-                  width={s.width}
-                  height={s.height}
-                  fetchPriority={i === 0 ? "high" : undefined}
-                  loading={i === 0 ? undefined : "lazy"}
-                  style={{ objectPosition: s.position || "50% 50%" }}
-                  className={`w-full h-full ${s.fit === "contain" ? "object-contain" : "object-contain md:object-cover"} ${on ? "hero-settle" : ""}`}
-                />
+                <picture>
+                  {/* On a phone, wide photos use a square crop made around the people, so the picture fills the screen. */}
+                  {s.phone && <source media="(max-width: 639px)" srcSet={s.phone} />}
+                  <img
+                    src={s.image}
+                    alt={on ? s.alt : ""}
+                    aria-hidden={on ? undefined : "true"}
+                    width={s.width}
+                    height={s.height}
+                    fetchPriority={i === 0 ? "high" : undefined}
+                    loading={i === 0 ? undefined : "lazy"}
+                    style={{ objectPosition: s.position || "50% 50%" }}
+                    className={`w-full h-full object-cover ${s.fit === "contain" ? "sm:object-contain" : "sm:object-contain md:object-cover"} ${on ? "hero-settle" : ""}`}
+                  />
+                </picture>
               </div>
             </div>
           );

@@ -9,6 +9,7 @@ const SERVICES = [
     link: "Explore arrival",
     image: "/images/lounge.webp",
     position: "50% 40%",
+    phonePosition: "50% 22%",
     text: "Long queues, heavy bags, a family to look after? We meet you at the airbridge and stay with you to the car.",
     points: ["Met at the airbridge with your name", "Fast-track through immigration", "Help with your luggage", "Handed over to your driver or transfer"],
   },
@@ -17,6 +18,7 @@ const SERVICES = [
     link: "Explore departure",
     image: "/images/porter-hero.webp",
     position: "40% 30%",
+    phonePosition: "50% 22%",
     text: "We meet you at the kerb, take the bags, and get you checked in, through security and on towards your gate.",
     points: ["Curbside welcome", "Check-in assistance", "Fast-track security and immigration", "Lounge access in the full package"],
   },
@@ -25,6 +27,7 @@ const SERVICES = [
     link: "Explore porter service",
     image: "/images/porter-hero.webp",
     position: "85% 95%",
+    phonePosition: "78% 80%",
     zoom: true,
     text: "Just need the bags handled? A porter takes your luggage across the terminal and walks you to the checkpoints.",
     points: ["Luggage handled across the terminal", "Escort to the checkpoints", "Add it to any trip"],
@@ -50,10 +53,15 @@ export default function ServicesBand() {
         <ul className="mt-12 grid md:grid-cols-3 gap-6">
           {SERVICES.map((s, i) => (
             <Reveal as="li" key={s.title} delay={i * 110} className="list-none">
-              <article className="lift group relative h-full min-h-[27rem] flex flex-col overflow-hidden rounded-[20px] border border-white/15 bg-[hsl(var(--site-dark-soft))]">
+              <article className="lift group relative h-full md:min-h-[27rem] flex flex-col overflow-hidden rounded-[20px] border border-white/15 bg-[hsl(var(--site-dark-soft))]">
+                {/* On a phone the photo is shown clearly at the top of the card. */}
+                <div className="relative h-48 md:hidden shrink-0">
+                  <img src={s.image} alt="" loading="lazy" width="1024" height="1024" style={{ objectPosition: s.phonePosition }} aria-hidden="true" className="w-full h-full object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[hsl(var(--site-dark-soft))] to-transparent" aria-hidden="true" />
+                </div>
                 <img src={s.image} alt="" loading="lazy" width="1024" height="1024" style={{ objectPosition: s.position }} aria-hidden="true"
-                  className={`absolute inset-0 w-full h-full object-cover opacity-30 blur-[3px] transition-transform duration-[1000ms] ease-out ${s.zoom ? "scale-[1.7] origin-[85%_95%]" : "scale-110"} group-hover:scale-[1.18]`} />
-                <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--site-dark)/0.45)] to-[hsl(var(--site-dark)/0.92)]" aria-hidden="true" />
+                  className={`hidden md:block absolute inset-0 w-full h-full object-cover opacity-30 blur-[3px] transition-transform duration-[1000ms] ease-out ${s.zoom ? "scale-[1.7] origin-[85%_95%]" : "scale-110"} group-hover:scale-[1.18]`} />
+                <div className="hidden md:block absolute inset-0 bg-gradient-to-b from-[hsl(var(--site-dark)/0.45)] to-[hsl(var(--site-dark)/0.92)]" aria-hidden="true" />
                 <div className="relative p-6 sm:p-7 flex-1 flex flex-col">
                   <h3 className="sora text-[1.8rem] font-semibold text-white">{s.title}</h3>
                   <p className="mt-3 text-white/80 leading-snug">{s.text}</p>
