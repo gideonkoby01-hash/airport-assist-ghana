@@ -12,7 +12,6 @@ import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
 import SupervisorDirectory from "@/components/SupervisorDirectory";
-import StaffRequests from "@/components/StaffRequests";
 import ManagementNotifications from "@/components/ManagementNotifications";
 import { useAuth } from "@/lib/AuthContext";
 import ShiftReportViewer from "@/components/ShiftReportViewer";
@@ -22,6 +21,7 @@ import RatingsReviews from "@/components/ratings/RatingsReviews";
 import StatCard from "@/components/StatCard";
 import CustomersPanel from "@/components/crm/CustomersPanel";
 import PorterPay from "@/components/PorterPay";
+import CommissionsPanel from "@/components/CommissionsPanel";
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
 
@@ -149,13 +149,13 @@ function AdminInner() {
       {tab === "customers" && <CustomersPanel tab="customers" isAdmin />}
       {tab === "staff" && <StaffManager />}
       {tab === "porter-pay" && <PorterPay />}
+      {tab === "commissions" && <CommissionsPanel />}
       {tab === "email" && <EmailIssues />}
       {tab === "settings" && <AdminSettings />}
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}
       {tab === "supervisors" && <SupervisorDirectory />}
-      {tab === "requests" && <StaffRequests />}
       {tab === "discounts" && <DiscountManager />}
       {tab === "reports" && <ShiftReportViewer />}
       {tab === "ratings" && <RatingsReviews />}

@@ -9,6 +9,7 @@ import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
+import { googleErrorMessage, useAuthProviders } from "@/lib/authProviders";
 
 export default function Login() {
   useDocumentTitle("Sign in");
@@ -20,6 +21,7 @@ export default function Login() {
   // with returnTo so the grant flow can resume). Same-origin paths only.
   // With no explicit destination, use /portal so each role lands on its
   // existing dashboard (staff) or the passenger portal via RoleRedirect.
+  const { google } = useAuthProviders();
   const returnTo = safeReturnTo();
   const postLoginDest = returnTo === "/" ? "/portal" : returnTo;
 
@@ -44,14 +46,14 @@ export default function Login() {
       provider: "google",
       options: { redirectTo: window.location.origin + postLoginDest },
     });
-    if (oauthError) setError(oauthError.message || "Google sign-in failed");
+    if (oauthError) setError(googleErrorMessage(oauthError));
   };
 
   return (
     <AuthLayout
       icon={LogIn}
       title="Welcome back"
-      subtitle="Log in to your account"
+      subtitle="Passengers and staff sign in here"
       footer={
         <>
           Don't have an account?{" "}
@@ -64,23 +66,28 @@ export default function Login() {
         </>
       }
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
+      {google && (
+        <>
+        <Button
+          variant="outline"
+          className="w-full h-12 text-sm font-medium mb-6"
+          onClick={handleGoogle}
+        >
+          <GoogleIcon className="w-5 h-5 mr-2" />
+          Continue with Google
+        </Button>
 
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-3 text-muted-foreground">or</span>
+          </div>
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
-        </div>
-      </div>
+
+        </>
+      )}
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">

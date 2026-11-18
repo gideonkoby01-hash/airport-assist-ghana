@@ -13,7 +13,9 @@ const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 // A walk-in sale at the desk. It becomes a booking with its payment in one step, so it appears in the shift report
 // and the books like every other sale. The price comes from the package; it can be lowered with a reason, never raised.
 export default function QuickSaleForm({ onRecorded = undefined }) {
-  const commissionPerPassenger = Number(useSettings().settings.porter_commission_per_passenger);
+  const { settings } = useSettings();
+  const commissionPerPassenger = Number(settings.porter_commission_per_passenger);
+  const supervisorCommission = Number(settings.supervisor_commission_per_signup);
   const [packages, setPackages] = useState(PACKAGE_DEFINITIONS);
   const [porters, setPorters] = useState([]);
   const [code, setCode] = useState("");
@@ -29,6 +31,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [porterId, setPorterId] = useState("");
+  // The supervisor's own commission on this sale (a meet and assist earns it; Porter Service Only does not).
+  const [takeCommission, setTakeCommission] = useState(false);
   // Left blank, the porter is credited with everyone sold; the supervisor changes it when the load was shared.
   const [porterPax, setPorterPax] = useState("");
   const [saving, setSaving] = useState(false);
@@ -53,7 +57,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterId(""); setPorterPax(""); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
+    setReason(""); setPorterId(""); setPorterPax(""); setTakeCommission(false); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
 
@@ -85,9 +89,10 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         flight_time: flightTime || undefined,
         porter_id: porterId || undefined,
         porter_passengers: porterPaxNum,
+        commission: takeCommission && pkg.code !== "porter_only",
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      setDone(res.data.booking);
+      setDone({ ...res.data.booking, commission_warning: res.data.commission_warning });
       if (onRecorded) onRecorded(res.data.booking);
     } catch (err) {
       setError(err.message || "The sale could not be saved. Check your connection and try again; it will not be recorded twice.");
@@ -104,6 +109,10 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         <p className="text-sm text-muted-foreground mt-1">
           {done.reference} · {done.package_name} · {formatGHS(done.total_value)} ({PAYMENT_METHOD_LABELS[done.payment_method] || done.payment_method})
         </p>
+        {Number(done.supervisor_commission) > 0 && (
+          <p className="text-xs text-emerald-700 mt-2">Your commission of {formatGHS(done.supervisor_commission)} is recorded and comes off today's takings.</p>
+        )}
+        {done.commission_warning && <p role="alert" className="text-xs text-destructive mt-2">{done.commission_warning}</p>}
         <Button className="mt-4" onClick={reset}>Record another sale</Button>
       </div>
     );
@@ -230,6 +239,16 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
           </div>
         )}
       </div>
+
+      {pkg && pkg.code !== "porter_only" && (
+        <label className="flex items-start gap-3 text-sm rounded-lg border border-border p-3 cursor-pointer">
+          <input type="checkbox" className="mt-1 h-4 w-4" checked={takeCommission} onChange={(e) => setTakeCommission(e.target.checked)} />
+          <span>
+            <span className="font-medium text-foreground">My commission on this sale: {formatGHS(supervisorCommission)}</span>
+            <span className="block text-xs text-muted-foreground">Tick to record it. It comes off today's takings in your shift report.</span>
+          </span>
+        </label>
+      )}
 
       <Button type="submit" className="w-full h-12" disabled={saving || !pkg}>
         {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : `Record sale · ${formatGHS(charge || 0)}`}

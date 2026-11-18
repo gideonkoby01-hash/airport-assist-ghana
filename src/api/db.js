@@ -263,6 +263,15 @@ const porterPay = {
   },
 };
 
+// Supervisor commissions marked in a date range (admin and management).
+const commissions = {
+  async list(/** @type {string | null} */ from, /** @type {string | null} */ to) {
+    const { data, error } = await supabase.rpc('supervisor_commissions', { p_from: from, p_to: to });
+    if (error) fail(error);
+    return data || [];
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm, porterPay };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions };

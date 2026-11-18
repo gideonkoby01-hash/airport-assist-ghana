@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Loader2, Users, Plane, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Loader2, Users, Plane, CheckCircle2, Pencil } from "lucide-react";
 import { validateBooking, todayUtc } from "@/lib/bookingFormRules";
 import { parseBookingPrefill } from "@/lib/bookingPrefill";
+import { AIRLINES, OTHER_AIRLINE, airlineCode, isListedAirline } from "@/lib/airlines";
 import PaymentInformation from "@/components/PaymentInformation";
 import DiscountCodeInput from "@/components/DiscountCodeInput";
 import {
@@ -19,6 +20,15 @@ import {
   formatGHS,
   packageByCode } from
 "@/lib/packages";
+
+// The booking is made in four short steps. Each step checks only its own fields before moving on.
+const STEPS = ["Service", "Flight", "Travellers", "Review"];
+const STEP_FIELDS = [
+  (k) => k === "package_code",
+  (k) => ["flight_number", "flight_date", "scheduled_flight_time"].includes(k),
+  (k) => k === "contact" || k.startsWith("passenger_"),
+  (k) => k === "consent",
+];
 
 const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, special_requests: "" };
 
@@ -66,6 +76,10 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   const [photoError, setPhotoError] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [step, setStep] = useState(0);
+  // The airline is picked from a list; "Other" opens a box for anything not on it.
+  const [otherAirline, setOtherAirline] = useState(false);
+  const top = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -100,6 +114,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   });
   const setField = (k, v) => {
     clearError(k);
+    setError("");
     setForm((f) => ({ ...f, [k]: v }));
   };
 
@@ -131,7 +146,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   };
 
   const setPassenger = (i, k, v) => {
-    if (k === "name") clearError(`passenger_${i}_name`);
+    if (k === "name") { clearError(`passenger_${i}_name`); setError(""); }
     setPassengers((ps) => ps.map((p, idx) => idx === i ? { ...p, [k]: v } : p));
   };
   const addPassenger = () => {
@@ -172,6 +187,43 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     });
   };
 
+  const goTo = (n) => {
+    setError("");
+    setStep(n);
+    // Bring the new step to the top of the screen so nobody has to scroll back up.
+    requestAnimationFrame(() => top.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  // Moves on only when this step's own fields are fine; otherwise shows what to fix and stays.
+  const next = () => {
+    const found = validateBooking({ form, passengers, channel, consented });
+    const mine = Object.fromEntries(Object.entries(found).filter(([k]) => STEP_FIELDS[step](k)));
+    const firstKey = Object.keys(mine)[0];
+    if (firstKey) {
+      setErrors((e) => ({ ...e, ...mine }));
+      setError(`Please fix ${Object.keys(mine).length === 1 ? "the highlighted field" : "the highlighted fields"} to continue.`);
+      document.getElementById(`bf-${firstKey}`)?.focus({ preventScroll: false });
+      return;
+    }
+    goTo(step + 1);
+  };
+
+  const onAirlineChange = (value) => {
+    clearError("flight_number");
+    if (value === OTHER_AIRLINE) {
+      setOtherAirline(true);
+      setForm((f) => ({ ...f, airline: isListedAirline(f.airline) ? "" : f.airline }));
+      return;
+    }
+    setOtherAirline(false);
+    setForm((f) => {
+      // Start the flight number with the airline's code (KQ for Kenya Airways) when it is still empty or only holds another code.
+      const code = airlineCode(value);
+      const keep = f.flight_number.trim() && !/^[A-Za-z0-9]{2}\s?$/.test(f.flight_number.trim());
+      return { ...f, airline: value, flight_number: keep || !code ? f.flight_number : `${code} ` };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -180,7 +232,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     if (firstKey) {
       setErrors(found);
       setError(`Please fix ${Object.keys(found).length === 1 ? "the highlighted field" : "the highlighted fields"} and try again.`);
-      document.getElementById(`bf-${firstKey}`)?.focus({ preventScroll: false });
+      const at = STEP_FIELDS.findIndex((match) => match(firstKey));
+      if (at >= 0 && at !== step) setStep(at);
+      setTimeout(() => document.getElementById(`bf-${firstKey}`)?.focus({ preventScroll: false }), 50);
       return;
     }
     setErrors({});
@@ -297,6 +351,8 @@ export default function BookingForm({ channel = "online", user, supervisor = und
                 lounge_used: ""
               });
               setPassengers([{ ...emptyPassenger }]);
+              setStep(0);
+              setOtherAirline(false);
               onPhotoRemove();
             }}>
             
@@ -308,14 +364,36 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={(e) => { e.preventDefault(); if (step < STEPS.length - 1) next(); else handleSubmit(e); }} className="space-y-6" noValidate>
+      <div ref={top} className="scroll-mt-24" />
+      <ol className="flex items-center" aria-label="Booking steps">
+        {STEPS.map((label, i) => (
+          <li key={label} className={`flex items-center ${i < STEPS.length - 1 ? "flex-1" : ""}`}>
+            <button
+              type="button"
+              onClick={() => (i < step ? goTo(i) : undefined)}
+              disabled={i > step}
+              aria-current={i === step ? "step" : undefined}
+              className={`flex items-center gap-2 text-sm font-medium ${i === step ? "text-foreground" : i < step ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <span className={`grid place-items-center w-8 h-8 rounded-full text-xs font-bold border-2 transition-colors ${i < step ? "bg-primary border-primary text-primary-foreground" : i === step ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`}>
+                {i < step ? <Check className="w-4 h-4" aria-hidden="true" /> : i + 1}
+              </span>
+              <span className={i === step ? "" : "hidden sm:inline"}>{label}</span>
+            </button>
+            {i < STEPS.length - 1 && <span className={`mx-2 sm:mx-3 h-0.5 flex-1 rounded ${i < step ? "bg-primary" : "bg-border"}`} aria-hidden="true" />}
+          </li>
+        ))}
+      </ol>
+
       {error && <div ref={errorBox} role="alert" className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
 
-      {/* Package selection */}
+      {step === 0 && (
       <section id="bf-package_code" tabIndex={-1} className="bg-card rounded-2xl border border-border p-5 outline-none">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Plane className="w-4 h-4 text-accent" /> Service Package
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Plane className="w-4 h-4 text-accent" aria-hidden="true" /> Choose your service
         </h3>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.</p>
         {loadingPkgs ?
         <div className="flex items-center text-muted-foreground text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…
@@ -346,66 +424,86 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         {fieldError("package_code")}
       </section>
 
-      {/* Flight details */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Flight Details</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-direction">Direction</Label>
-            <Select value={form.flight_type} onValueChange={(v) => setField("flight_type", v)}>
-              <SelectTrigger id="bf-direction"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="arrival">Arrival</SelectItem>
-                <SelectItem value="departure">Departure</SelectItem>
-              </SelectContent>
-            </Select>
+      )}
+
+      {step === 1 && (
+        <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Your flight</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">We use this to meet you at the right place and time.</p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-airline">Airline</Label>
-            <Input id="bf-airline" value={form.airline} onChange={(e) => setField("airline", e.target.value)} placeholder="e.g. Kenya Airways" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-flight_number">Flight number *</Label>
-            <Input {...fp("flight_number")} value={form.flight_number} onChange={(e) => setField("flight_number", e.target.value)} placeholder="e.g. KQ 510" />
-            {fieldError("flight_number")}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-flight_date">Flight date *</Label>
-            <Input {...fp("flight_date")} type="date" min={channel === "online" ? todayUtc() : undefined} value={form.flight_date} onChange={(e) => setField("flight_date", e.target.value)} />
-            {fieldError("flight_date")}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-scheduled_flight_time">Scheduled flight time *</Label>
-            <Input {...fp("scheduled_flight_time")} type="time" value={form.scheduled_flight_time} onChange={(e) => setField("scheduled_flight_time", e.target.value)} />
-            {fieldError("scheduled_flight_time")}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-contact">Primary contact *</Label>
-            <Input {...fp("contact")} type="tel" inputMode="tel" autoComplete="tel" value={form.contact} onChange={(e) => setField("contact", e.target.value)} placeholder="Phone / WhatsApp, e.g. 024 123 4567" />
-            {fieldError("contact")}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bf-nationality">Nationality</Label>
-            <Input id="bf-nationality" value={form.nationality} onChange={(e) => setField("nationality", e.target.value)} placeholder="e.g. Ghanaian" />
-          </div>
-          {selectedPkg?.includes_lounge &&
-          <div className="space-y-1.5">
-              <Label htmlFor="bf-lounge">Lounge preference</Label>
-              <Input id="bf-lounge" value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="e.g. Akwaaba Lounge" />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-direction">Direction</Label>
+              <Select value={form.flight_type} onValueChange={(v) => setField("flight_type", v)}>
+                <SelectTrigger id="bf-direction"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="arrival">Arrival into Accra</SelectItem>
+                  <SelectItem value="departure">Departure from Accra</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          }
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bf-special_requests">Special requests</Label>
-          <Textarea
-            id="bf-special_requests"
-            value={form.special_requests}
-            onChange={(e) => setField("special_requests", e.target.value)}
-            placeholder="Wheelchair, unaccompanied minor, VIP, etc."
-            rows={2} />
-          
-        </div>
-      </section>
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-airline">Airline</Label>
+              <Select value={otherAirline ? OTHER_AIRLINE : isListedAirline(form.airline) ? form.airline : ""} onValueChange={onAirlineChange}>
+                <SelectTrigger id="bf-airline"><SelectValue placeholder="Choose your airline" /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {AIRLINES.map((a) => (<SelectItem key={a.code} value={a.name}>{a.name}</SelectItem>))}
+                  <SelectItem value={OTHER_AIRLINE}>Another airline…</SelectItem>
+                </SelectContent>
+              </Select>
+              {(otherAirline || (form.airline && !isListedAirline(form.airline))) && (
+                <Input id="bf-airline-other" aria-label="Airline name" value={form.airline} onChange={(e) => setField("airline", e.target.value)} placeholder="Type the airline's name" autoComplete="off" />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-flight_number">Flight number *</Label>
+              <Input {...fp("flight_number")} value={form.flight_number} onChange={(e) => setField("flight_number", e.target.value.toUpperCase())} placeholder="e.g. KQ 510" autoComplete="off" />
+              {fieldError("flight_number")}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-flight_date">Flight date *</Label>
+              <Input {...fp("flight_date")} type="date" min={channel === "online" ? todayUtc() : undefined} value={form.flight_date} onChange={(e) => setField("flight_date", e.target.value)} />
+              {fieldError("flight_date")}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-scheduled_flight_time">Scheduled flight time *</Label>
+              <Input {...fp("scheduled_flight_time")} type="time" value={form.scheduled_flight_time} onChange={(e) => setField("scheduled_flight_time", e.target.value)} />
+              {fieldError("scheduled_flight_time")}
+            </div>
+            {selectedPkg?.includes_lounge && (
+              <div className="space-y-1.5">
+                <Label htmlFor="bf-lounge">Lounge preference <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+                <Input id="bf-lounge" value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="e.g. Akwaaba Lounge" />
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {step === 2 && (
+        <>
+      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Who should we call?</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Your supervisor uses this number to find you at the airport.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-contact">Phone / WhatsApp *</Label>
+              <Input {...fp("contact")} type="tel" inputMode="tel" autoComplete="tel" value={form.contact} onChange={(e) => setField("contact", e.target.value)} placeholder="e.g. 024 123 4567" />
+              {fieldError("contact")}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-nationality">Nationality <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+              <Input id="bf-nationality" value={form.nationality} onChange={(e) => setField("nationality", e.target.value)} placeholder="e.g. Ghanaian" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bf-special_requests">Anything we should know? <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
+            <Textarea id="bf-special_requests" value={form.special_requests} onChange={(e) => setField("special_requests", e.target.value)} placeholder="Wheelchair, unaccompanied minor, VIP, etc." rows={2} />
+          </div>
+        </section>
 
       {/* Passengers */}
       <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
@@ -510,16 +608,54 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         }
       </section>
 
-      <DiscountCodeInput
-        applied={appliedDiscount}
-        onApplied={setAppliedDiscount}
-        onRemoved={() => setAppliedDiscount(null)}
-        packageCode={form.package_code}
-        numPassengers={numPassengers}
-        disabled={submitting}
-      />
+        </>
+      )}
 
-      <PaymentInformation />
+      {step === 3 && (
+        <>
+          <section className="bg-card rounded-2xl border border-border overflow-hidden">
+            <div className="px-5 py-4 border-b border-border">
+              <h3 className="text-base font-semibold text-foreground">Check your booking</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Make sure everything is right, then confirm.</p>
+            </div>
+            <dl className="divide-y divide-border text-sm">
+              <div className="px-5 py-3 flex items-start justify-between gap-4">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Service</dt>
+                  <dd className="font-medium text-foreground mt-0.5">{selectedPkg?.name || "—"}</dd>
+                  <dd className="text-xs text-muted-foreground">{formatGHS(pricePerPassenger)} per passenger</dd>
+                </div>
+                <button type="button" onClick={() => goTo(0)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
+              </div>
+              <div className="px-5 py-3 flex items-start justify-between gap-4">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Flight</dt>
+                  <dd className="font-medium text-foreground mt-0.5">{form.flight_type === "departure" ? "Departure" : "Arrival"} · {form.airline ? `${form.airline} ` : ""}{form.flight_number}</dd>
+                  <dd className="text-xs text-muted-foreground">{form.flight_date} at {form.scheduled_flight_time}</dd>
+                </div>
+                <button type="button" onClick={() => goTo(1)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
+              </div>
+              <div className="px-5 py-3 flex items-start justify-between gap-4">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Travellers ({numPassengers})</dt>
+                  <dd className="font-medium text-foreground mt-0.5">{passengers.map((p) => p.name.trim()).filter(Boolean).join(", ")}</dd>
+                  <dd className="text-xs text-muted-foreground">Contact {form.contact}</dd>
+                </div>
+                <button type="button" onClick={() => goTo(2)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
+              </div>
+            </dl>
+          </section>
+
+          <DiscountCodeInput
+            applied={appliedDiscount}
+            onApplied={setAppliedDiscount}
+            onRemoved={() => setAppliedDiscount(null)}
+            packageCode={form.package_code}
+            numPassengers={numPassengers}
+            disabled={submitting}
+          />
+
+          <PaymentInformation />
 
       {channel === "online" && (
         <label className="flex items-start gap-3 text-sm bg-card rounded-xl border border-border p-4">
@@ -530,7 +666,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             checked={consented}
             aria-invalid={errors.consent ? true : undefined}
             aria-describedby={errors.consent ? "bf-consent-err" : undefined}
-            onChange={(e) => { setConsented(e.target.checked); clearError("consent"); }} />
+            onChange={(e) => { setConsented(e.target.checked); clearError("consent"); setError(""); }} />
           <span>
             I have read the <Link to="/privacy" target="_blank" className="text-primary underline">privacy notice</Link> and agree that
             Airport Assist Ghana may use my details to provide this service. I understand the photo of my ID is kept for 30 days after my flight and then deleted.
@@ -539,40 +675,39 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         </label>
       )}
 
-      {/* Summary */}
-      <div className="bg-primary text-primary-foreground rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-wide opacity-80">
-            {selectedPkg ? selectedPkg.name : "Select a package"}
-          </p>
-          <p className="text-2xl font-bold">
-            {formatGHS(appliedDiscount ? appliedDiscount.final_total : totalValue)}
-          </p>
-          <p className="text-xs opacity-80">
-            {formatGHS(pricePerPassenger)} × {numPassengers} passenger{numPassengers !== 1 ? "s" : ""}
-          </p>
-          {appliedDiscount && (
-            <div className="mt-2 space-y-0.5 text-xs">
-              <p className="opacity-80">
-                Original total: <span className="line-through">{formatGHS(appliedDiscount.gross_total)}</span>
-              </p>
-              <p className="text-accent font-medium">
-                Discount ({appliedDiscount.code}): −{formatGHS(appliedDiscount.discount_amount)}
-              </p>
-            </div>
-          )}
-        </div>
-        <Button type="submit" size="lg" disabled={submitting || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
-          {submitting ?
-          <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}
-            </> :
-          channel === "walk_in" ?
-          "Save walk-in booking" :
+        </>
+      )}
 
-          "Confirm booking"
-          }
-        </Button>
+      {/* Price and navigation: always in view at the bottom of the screen */}
+      <div className="sticky bottom-3 z-10">
+        <div className="bg-primary text-primary-foreground rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-3 shadow-[0_18px_40px_-20px_hsl(var(--foreground)/0.6)]">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wide opacity-80 truncate">{selectedPkg ? selectedPkg.name : "Choose a service"}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular">{formatGHS(appliedDiscount ? appliedDiscount.final_total : totalValue)}</p>
+            <p className="text-xs opacity-80">
+              {formatGHS(pricePerPassenger)} × {numPassengers} passenger{numPassengers !== 1 ? "s" : ""}
+              {appliedDiscount && <span className="text-accent font-medium"> · {appliedDiscount.code} −{formatGHS(appliedDiscount.discount_amount)}</span>}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {step > 0 && (
+              <Button type="button" variant="outline" onClick={() => goTo(step - 1)} disabled={submitting} className="bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
+                <ArrowLeft className="w-4 h-4 sm:mr-1.5" aria-hidden="true" /><span className="hidden sm:inline">Back</span>
+              </Button>
+            )}
+            {step < STEPS.length - 1 ? (
+              <Button type="submit" size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+                Continue <ArrowRight className="w-4 h-4 ml-1.5" aria-hidden="true" />
+              </Button>
+            ) : (
+              <Button type="submit" size="lg" disabled={submitting || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                {submitting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}</>
+                ) : channel === "walk_in" ? "Save walk-in booking" : "Confirm booking"}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </form>);
 

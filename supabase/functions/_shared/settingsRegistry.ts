@@ -80,6 +80,8 @@ export const SETTINGS: SettingDef[] = [
   { key: 'porter_commission_per_passenger', group: 'operations', label: 'Porter commission', type: 'number', default: '30', min: 0, max: 1000, unit: 'GHS per passenger', public: true, help: 'Applies to commissions recorded from now on. Past commissions are not changed.' },
 
 
+  { key: 'supervisor_commission_per_signup', group: 'operations', label: 'Supervisor commission', type: 'number', default: '50', min: 0, max: 10000, unit: 'GHS per meet and assist', public: true, help: 'A supervisor earns this for each meet and assist booking they mark. Applies to commissions marked from now on. Past commissions are not changed.' },
+
   { key: 'photo_retention_days', group: 'privacy', label: 'Keep passenger ID photos for', type: 'number', default: '30', env: 'PHOTO_RETENTION_DAYS', min: 1, max: 365, unit: 'days after the flight', help: 'After this the photo is deleted automatically. Update the privacy notice if you change it.' },
   { key: 'orphan_upload_days', group: 'privacy', label: 'Delete unused uploads after', type: 'number', default: '7', min: 1, max: 60, unit: 'days', help: 'Photos uploaded but never attached to a booking.' },
 ];

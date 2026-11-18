@@ -11,6 +11,7 @@ import QuickSaleForm from "@/components/QuickSaleForm";
 import ShiftReportForm from "@/components/ShiftReportForm";
 import SupervisorNotifications from "@/components/SupervisorNotifications";
 import SupervisorProfileForm from "@/components/supervisor/SupervisorProfileForm";
+import MyProfileSummary from "@/components/supervisor/MyProfileSummary";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
 import { supervisorView, LIVE_STATUSES } from "@/lib/bookingRules";
@@ -67,6 +68,15 @@ function SupervisorInner() {
       setTotals({ active: 0, collected: 0, outstanding: 0 });
     }
   };
+  const [commissionToday, setCommissionToday] = useState(0);
+  // Commission this supervisor marked today (UTC day): it comes off today's takings in the shift report.
+  const loadCommission = () =>
+    api.entities.Booking.filter(
+      { supervisor_commission_by: user.id, supervisor_commission: { $gte: 0.01 }, supervisor_commission_at: { $gte: `${today}T00:00:00.000Z` } },
+      { limit: 200, fields: ["id", "supervisor_commission"] }
+    )
+      .then((page) => setCommissionToday((page.items || []).reduce((n, b) => n + Number(b.supervisor_commission || 0), 0)))
+      .catch(() => {});
   const loadToday = () =>
     api.entities.Booking.count({ assigned_supervisor_id: user.id, status: { $in: LIVE_STATUSES }, flight_date: today })
       .then(setTodayCount)
@@ -75,11 +85,13 @@ function SupervisorInner() {
     await paged.reload();
     await loadTotals();
     await loadToday();
+    await loadCommission();
   };
 
   useEffect(() => {
     loadTotals();
     loadToday();
+    loadCommission();
     api.entities.Notification.count({ user_id: user.id, read: false }).then(setUnreadCount).catch(() => {});
 
   }, []);
@@ -90,8 +102,10 @@ function SupervisorInner() {
     <AppLayout>
       {tab === "assigned" && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <MyProfileSummary user={user} />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <StatCard label="Flights Today" value={todayCount} icon={CalendarClock} accent />
+            <StatCard label="My commission today" value={formatGHS(commissionToday)} icon={Wallet} />
             <StatCard label="Open Bookings" value={active} icon={ClipboardList} />
             <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
             <StatCard label="Outstanding" value={formatGHS(outstanding)} icon={Wallet} />

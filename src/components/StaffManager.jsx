@@ -2,31 +2,20 @@ import React, { useEffect, useState } from "react";
 import { notifyError } from "@/lib/notify";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, UserPlus, ShieldCheck } from "lucide-react";
+import { Check, Copy, Loader2, ShieldCheck } from "lucide-react";
 import { roleLabel } from "@/lib/packages";
 import ConfirmAction from "@/components/ConfirmAction";
 import StaffCreate from "@/components/StaffCreate";
 
 const ROLES = ["passenger", "supervisor", "management", "admin"];
 
-function inviteMessage(state, email, role) {
-  if (state === "role_applied") return `${email} already has an account. They are now ${roleLabel(role)}.`;
-  if (state === "reset_sent") return `${email} is already active. A password reset link was sent to them.`;
-  if (state === "invite_resent") return `A new invitation was sent to ${email}.`;
-  return `Invitation sent to ${email} as ${roleLabel(role)}. The link lets them choose a password.`;
-}
-
 export default function StaffManager() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("supervisor");
-  const [inviting, setInviting] = useState(false);
-  const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [reset, setReset] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -44,36 +33,25 @@ export default function StaffManager() {
     load();
   }, []);
 
-  const invite = async () => {
-    setErr("");
-    setMsg("");
-    if (!email.trim()) return setErr("Enter an email address.");
-    setInviting(true);
+  // A new temporary password for a staff member who forgot theirs. Shown once; they must replace it when they sign in.
+  const resetPassword = async (u) => {
     try {
-      // The inviteStaff function emails the invitation and records the role to apply:
-      // immediately for someone who already has an account, at signup otherwise.
-      const res = await api.functions.invoke("inviteStaff", { email: email.trim(), role });
+      const res = await api.functions.invoke("resetStaffPassword", { user_id: u.id });
       if (res?.data?.error) throw new Error(res.data.error);
-      setMsg(inviteMessage(res?.data?.state, email.trim(), role));
-      setEmail("");
-      load();
+      setReset(res.data);
+      setCopied(false);
     } catch (e) {
-      setErr(e.message || "Failed to invite user.");
-    } finally {
-      setInviting(false);
+      notifyError(e.response?.data?.error || e.message || "Could not reset that password.");
     }
   };
 
-  // Staff who never accepted get a fresh invitation; staff who are active get a password reset link.
-  const resendAccess = async (u) => {
+  const copyReset = async () => {
     try {
-      const res = await api.functions.invoke("inviteStaff", { email: u.email, role: u.role, resend: true });
-      if (res?.data?.error) throw new Error(res.data.error);
-      setErr("");
-      setMsg(inviteMessage(res?.data?.state, u.email, u.role));
-    } catch (e) {
-      setMsg("");
-      setErr(e.message || "Could not send the email.");
+      await navigator.clipboard.writeText(reset.temporary_password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked: the password is on screen to read out or copy by hand.
     }
   };
 
@@ -113,42 +91,28 @@ export default function StaffManager() {
     <div className="space-y-5">
       <StaffCreate onCreated={load} />
 
-      <div className="bg-card rounded-2xl border border-border p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
-          <UserPlus className="w-4 h-4 text-accent" /> Or send an invitation email
-        </h3>
-        <p className="text-xs text-muted-foreground mb-3">Needs email to be set up. The person chooses their own password from the link.</p>
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <div className="space-y-1.5 flex-1 w-full">
-            <Label className="text-xs">Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@example.com" />
+      {reset && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4" role="status">
+          <p className="text-sm font-medium text-emerald-900">New temporary password for {reset.full_name || reset.email}.</p>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <code className="font-mono text-base tracking-wide bg-white border border-emerald-200 rounded px-2 py-1 select-all">{reset.temporary_password}</code>
+            <Button type="button" size="sm" variant="outline" onClick={copyReset}>
+              {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
+              {copied ? "Copied" : "Copy"}
+            </Button>
           </div>
-          <div className="space-y-1.5 w-full sm:w-48">
-            <Label className="text-xs">Role</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="supervisor">Supervisor</SelectItem>
-                <SelectItem value="management">Management</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={invite} disabled={inviting}>
-            {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-            Send invite
-          </Button>
+          <p className="text-xs text-emerald-900/80 mt-2">
+            Shown only once. Give it to them in person or by phone. They sign in with {reset.email} and must choose their own password straight away.
+          </p>
+          <Button type="button" size="sm" variant="ghost" className="mt-1" onClick={() => setReset(null)}>Done</Button>
         </div>
-        {msg && <p className="text-sm text-emerald-600 mt-3">{msg}</p>}
-        {err && <p className="text-sm text-destructive mt-3">{err}</p>}
-        <p className="text-xs text-muted-foreground mt-2">
-          Only Admin can create Supervisor and Management accounts. They choose their own password from the emailed link. Public sign-ups always become Passengers.
-        </p>
-      </div>
+      )}
 
       <div className="bg-card rounded-2xl border border-border p-5">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-accent" /> User Accounts
         </h3>
+        {err && <p role="alert" className="text-sm text-destructive mb-3">{err}</p>}
         {loading ? (
           <div className="flex items-center text-muted-foreground text-sm py-6">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading users…
@@ -185,7 +149,14 @@ export default function StaffManager() {
                     </td>
                     <td className="py-2 whitespace-nowrap">
                       {["supervisor", "management"].includes(u.role) && !u.disabled && (
-                        <Button size="sm" variant="ghost" onClick={() => resendAccess(u)}>Resend access email</Button>
+                        <ConfirmAction
+                          title={`Reset the password for ${u.email}?`}
+                          description="Their current password stops working and a new temporary one is shown to you once. They must choose their own at next sign-in."
+                          confirmLabel="Reset password"
+                          onConfirm={() => resetPassword(u)}
+                        >
+                          <Button size="sm" variant="ghost">Reset password</Button>
+                        </ConfirmAction>
                       )}
                       {u.disabled ? (
                         <Button size="sm" variant="outline" onClick={() => setDisabled(u, false)}>Enable</Button>
