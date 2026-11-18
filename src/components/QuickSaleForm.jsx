@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PACKAGE_DEFINITIONS, PAYMENT_METHOD_LABELS, formatGHS } from "@/lib/packages";
 import { useSettings } from "@/lib/SettingsContext";
+import { AIRLINES, OTHER_AIRLINE, airlineCode, isListedAirline } from "@/lib/airlines";
 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
 
@@ -25,6 +26,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [phone, setPhone] = useState("");
   const [flightNumber, setFlightNumber] = useState("");
   const [airline, setAirline] = useState("");
+  // The airline is picked from a list; "Another airline" opens a box for any that is not on it.
+  const [otherAirline, setOtherAirline] = useState(false);
   const [flightTime, setFlightTime] = useState("");
   const [method, setMethod] = useState("cash");
   const [discounted, setDiscounted] = useState(false);
@@ -57,11 +60,25 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterId(""); setPorterPax(""); setTakeCommission(false); setFlightNumber(""); setAirline(""); setFlightTime(""); setError("");
+    setReason(""); setPorterId(""); setPorterPax(""); setTakeCommission(false); setFlightNumber(""); setAirline(""); setOtherAirline(false); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
 
   const porterPaxNum = Number(porterPax === "" ? count : porterPax) || 0;
+
+  const onAirlineChange = (value) => {
+    if (value === OTHER_AIRLINE) {
+      setOtherAirline(true);
+      if (isListedAirline(airline)) setAirline("");
+      return;
+    }
+    setOtherAirline(false);
+    setAirline(value);
+    // Start the flight number with the airline's code (KQ for Kenya Airways) when it is empty or holds only another code.
+    const code = airlineCode(value);
+    const keep = flightNumber.trim() && !/^[A-Za-z0-9]{2}\s?$/.test(flightNumber.trim());
+    if (code && !keep) setFlightNumber(`${code} `);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -174,11 +191,20 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         <div className="grid sm:grid-cols-3 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="qs-flight">Flight number</Label>
-            <Input id="qs-flight" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value)} placeholder="e.g. KQ 510" autoComplete="off" />
+            <Input id="qs-flight" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} placeholder="e.g. KQ 510" autoComplete="off" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="qs-airline">Airline</Label>
-            <Input id="qs-airline" value={airline} onChange={(e) => setAirline(e.target.value)} placeholder="e.g. Kenya Airways" autoComplete="off" />
+            <Select value={otherAirline ? OTHER_AIRLINE : isListedAirline(airline) ? airline : ""} onValueChange={onAirlineChange}>
+              <SelectTrigger id="qs-airline"><SelectValue placeholder="Choose the airline" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {AIRLINES.map((a) => (<SelectItem key={a.code} value={a.name}>{a.name}</SelectItem>))}
+                <SelectItem value={OTHER_AIRLINE}>Another airline…</SelectItem>
+              </SelectContent>
+            </Select>
+            {(otherAirline || (airline && !isListedAirline(airline))) && (
+              <Input id="qs-airline-other" aria-label="Airline name" value={airline} onChange={(e) => setAirline(e.target.value)} placeholder="Type the airline's name" autoComplete="off" />
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="qs-ftime">Flight time</Label>
