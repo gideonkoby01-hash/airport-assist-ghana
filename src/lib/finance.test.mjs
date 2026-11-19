@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agingTotals, change, changeLabel, compact, daysInclusive, profitAndLoss, rangeForPreset, share, shiftDays } from './finance.js';
+import { agingTotals, change, receivedByChannel, changeLabel, compact, daysInclusive, profitAndLoss, rangeForPreset, share, shiftDays } from './finance.js';
 
 test('date ranges for each preset', () => {
   assert.deepEqual(rangeForPreset('today', '2026-11-19'), { from: '2026-11-19', to: '2026-11-19' });
@@ -51,4 +51,11 @@ test('aged receivables totals', () => {
   assert.equal(t.amount, 850);
   assert.deepEqual(t.totals['0-7'], { count: 2, amount: 150 });
   assert.deepEqual(t.totals['31-60'], { count: 0, amount: 0 });
+});
+
+test('money received by cash, POS (mobile money plus card) and on account', () => {
+  const r = receivedByChannel([{ method: 'cash', net: 1300 }, { method: 'mobile_money', net: 300 }, { method: 'card', net: 200 }, { method: 'corporate_account', net: 50 }]);
+  assert.deepEqual(r, { cash: 1300, pos: 500, mobile: 300, card: 200, account: 50, total: 1850 });
+  assert.deepEqual(receivedByChannel([]), { cash: 0, pos: 0, mobile: 0, card: 0, account: 0, total: 0 });
+  assert.equal(receivedByChannel([{ method: 'cash', net: '25.5' }]).cash, 25.5);
 });

@@ -3,7 +3,7 @@ import { Download, ExternalLink } from "lucide-react";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { formatGHS } from "@/lib/packages";
-import { EXPENSE_CATEGORY_LABELS, profitAndLoss } from "@/lib/finance";
+import { EXPENSE_CATEGORY_LABELS, profitAndLoss, receivedByChannel } from "@/lib/finance";
 import { downloadCsv, toCsv } from "@/lib/csv";
 import { LoadState, Panel, fmtDate, fmtMonth, useLoad } from "./shared";
 
@@ -22,6 +22,7 @@ function Line({ label, amount, bold = false, indent = false, minus = false }) {
 export default function ProfitLoss({ from, to }) {
   const { data, loading, error } = useLoad(() => api.finance.summary(from, to), [from, to]);
   const pl = data ? profitAndLoss(data) : null;
+  const paid = data ? receivedByChannel(data.by_method, "collected") : null;
 
   const lines = () => {
     if (!pl) return [];
@@ -60,6 +61,7 @@ export default function ProfitLoss({ from, to }) {
               <tbody>
                 <tr><td colSpan={2} className="pt-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Income</td></tr>
                 <Line indent label="Payments received" amount={data.collected} />
+                <tr><td colSpan={2} className="pb-2 pl-9 text-xs text-muted-foreground">of which cash {formatGHS(paid.cash)}, POS {formatGHS(paid.pos)} (mobile money {formatGHS(paid.mobile)}, card {formatGHS(paid.card)}){paid.account > 0 ? `, on account ${formatGHS(paid.account)}` : ""}</td></tr>
                 <Line indent label="Less refunds given" amount={data.refunds} minus />
                 <Line bold label="Net income" amount={pl.netIncome} />
                 <tr><td colSpan={2} className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Commissions</td></tr>
