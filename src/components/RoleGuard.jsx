@@ -10,7 +10,7 @@ export default function RoleGuard({ allowedRoles, children }) {
   if (role === "pending") return <Navigate to="/pending" replace />;
   if (!allowedRoles.includes(role)) {
     const home =
-      role === "admin" ? "/admin" : role === "management" ? "/management" : role === "supervisor" ? "/supervisor" : "/passenger";
+      role === "admin" ? "/admin" : role === "management" ? "/management" : role === "supervisor" ? "/supervisor" : role === "accounts" ? "/accounts" : "/passenger";
     return <Navigate to={home} replace />;
   }
   return children;

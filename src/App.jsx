@@ -26,6 +26,7 @@ const SupervisorDashboard = lazy(() => import('@/pages/SupervisorDashboard'));
 const ManagementDashboard = lazy(() => import('@/pages/ManagementDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const BookingDetail = lazy(() => import('@/pages/BookingDetail'));
+const AccountsDashboard = lazy(() => import('@/pages/AccountsDashboard'));
 const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Security = lazy(() => import('@/pages/Security'));
 const Profile = lazy(() => import('@/pages/Profile'));
@@ -79,6 +80,7 @@ const AuthenticatedApp = () => {
         <Route path="/supervisor" element={<SupervisorDashboard />} />
         <Route path="/management" element={<ManagementDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/accounts" element={<AccountsDashboard />} />
         <Route path="/bookings/:id" element={<BookingDetail />} />
         <Route path="/pending" element={<PendingApproval />} />
         <Route path="/security" element={<Security />} />

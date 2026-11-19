@@ -98,6 +98,7 @@ export default function StaffCreate({ onCreated }) {
             <SelectContent>
               <SelectItem value="supervisor">Supervisor</SelectItem>
               <SelectItem value="management">Management</SelectItem>
+              <SelectItem value="accounts">Accounts</SelectItem>
             </SelectContent>
           </Select>
         </div>

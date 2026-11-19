@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import {
-  Armchair, BadgeDollarSign, Banknote, BarChart3, Bell, Contact, CalendarPlus, ClipboardList, FileText, LayoutDashboard, LogOut,
+  Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, CalendarPlus, ClipboardList, FileText, LayoutDashboard, LogOut,
   Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Ticket, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
@@ -50,8 +50,15 @@ const NAV = {
       { label: "Commissions", to: "/management", tab: "commissions", icon: BadgeDollarSign },
       { label: "Ratings & reviews", to: "/management", tab: "ratings", icon: Star },
     ] },
-    { heading: "Reports", items: [
+    { heading: "Finance", items: [
+      { label: "Accounts", to: "/management", tab: "accounts", icon: Calculator, primary: true },
       { label: "Shift reports", to: "/management", tab: "reports", icon: FileText, primary: true },
+    ] },
+  ],
+  accounts: [
+    { heading: "Finance", items: [
+      { label: "Summary", to: "/accounts", tab: null, icon: LayoutDashboard, primary: true },
+      { label: "Accounts", to: "/accounts", tab: "accounts", icon: Calculator, primary: true },
     ] },
   ],
   admin: [
@@ -72,7 +79,8 @@ const NAV = {
       { label: "Lounges", to: "/admin", tab: "lounges", icon: Armchair },
       { label: "Discounts", to: "/admin", tab: "discounts", icon: Percent },
     ] },
-    { heading: "Reports", items: [
+    { heading: "Finance", items: [
+      { label: "Accounts", to: "/admin", tab: "accounts", icon: Calculator, primary: true },
       { label: "Shift reports", to: "/admin", tab: "reports", icon: BarChart3 },
       { label: "Ratings & reviews", to: "/admin", tab: "ratings", icon: Star },
     ] },
@@ -83,7 +91,7 @@ const NAV = {
   ],
 };
 
-const CONSOLE_NAME = { passenger: "My account", supervisor: "Supervisor desk", management: "Management", admin: "Admin console" };
+const CONSOLE_NAME = { passenger: "My account", supervisor: "Supervisor desk", management: "Management", accounts: "Accounts", admin: "Admin console" };
 
 // Pages outside the role navigation still get a proper title in the top bar.
 const OTHER_TITLES = { "/profile": "My profile", "/security": "Account security" };
@@ -233,7 +241,7 @@ export default function AppLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-28 lg:pb-10">{children}</div>
         </main>
       </div>

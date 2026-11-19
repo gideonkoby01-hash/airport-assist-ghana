@@ -136,6 +136,7 @@ export function formatGHS(amount) {
 export function roleLabel(role) {
   if (role === "admin") return "Admin";
   if (role === "management") return "Management";
+  if (role === "accounts") return "Accounts";
   if (role === "supervisor") return "Supervisor";
   if (role === "pending") return "Pending Approval";
   return "Passenger";
