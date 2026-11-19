@@ -8,7 +8,7 @@ import { roleLabel } from "@/lib/packages";
 import ConfirmAction from "@/components/ConfirmAction";
 import StaffCreate from "@/components/StaffCreate";
 
-const ROLES = ["passenger", "supervisor", "management", "admin"];
+const ROLES = ["passenger", "supervisor", "management", "accounts", "admin"];
 
 export default function StaffManager() {
   const [users, setUsers] = useState([]);
@@ -148,7 +148,7 @@ export default function StaffManager() {
                       </Select>
                     </td>
                     <td className="py-2 whitespace-nowrap">
-                      {["supervisor", "management"].includes(u.role) && !u.disabled && (
+                      {["supervisor", "management", "accounts"].includes(u.role) && !u.disabled && (
                         <ConfirmAction
                           title={`Reset the password for ${u.email}?`}
                           description="Their current password stops working and a new temporary one is shown to you once. They must choose their own at next sign-in."

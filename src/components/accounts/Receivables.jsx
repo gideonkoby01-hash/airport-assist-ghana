@@ -8,11 +8,14 @@ import { formatGHS } from "@/lib/packages";
 import { agingTotals } from "@/lib/finance";
 import { downloadCsv, toCsv } from "@/lib/csv";
 import { todayUtc } from "@/lib/bookingFormRules";
+import { useAuth } from "@/lib/AuthContext";
 import { LoadState, Panel, fmtDate, useLoad } from "./shared";
 
 const BUCKETS = { not_due: "Flight not yet taken", "0-7": "0 to 7 days ago", "8-30": "8 to 30 days ago", "31-60": "31 to 60 days ago", "60+": "Over 60 days ago" };
 
 export default function Receivables() {
+  const { user } = useAuth();
+  const canOpen = user?.role === "admin" || user?.role === "management"; // the accounts role cannot open bookings
   const today = todayUtc();
   const { data, loading, error } = useLoad(() => api.finance.receivables(today), [today]);
   const [bucket, setBucket] = useState("all");
@@ -30,7 +33,7 @@ export default function Receivables() {
   ]));
 
   return (
-    <Panel title="Receivables" note="Every booking with money still owed, as at today, by how long since the flight. Record a payment from the booking." actions={<Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}><Download className="w-4 h-4 mr-1.5" /> Export</Button>}>
+    <Panel title="Receivables" note="Every booking with money still owed, as at today, by how long since the flight. Payments are recorded by the supervisors, or by management from the booking." actions={<Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}><Download className="w-4 h-4 mr-1.5" /> Export</Button>}>
       <LoadState loading={loading} error={error} hasData={Boolean(data)}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
           {[["all", "All owed", totals.amount, totals.count], ...totals.order.map((k) => [k, BUCKETS[k], totals.totals[k].amount, totals.totals[k].count])].map(([key, label, amount, count]) => (
@@ -56,7 +59,7 @@ export default function Receivables() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.booking_id} className="border-b border-border last:border-0 align-top">
-                    <td className="py-2 pr-3 font-mono text-xs"><Link to={`/bookings/${r.booking_id}`} className="underline underline-offset-2">{r.reference}</Link></td>
+                    <td className="py-2 pr-3 font-mono text-xs">{canOpen ? <Link to={`/bookings/${r.booking_id}`} className="underline underline-offset-2">{r.reference}</Link> : r.reference}</td>
                     <td className="py-2 pr-3">{r.customer}<span className="block text-xs text-muted-foreground">{r.phone || ""}{r.supervisor ? ` · ${r.supervisor}` : ""}</span></td>
                     <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(r.flight_date)}<span className="block text-xs text-muted-foreground capitalize">{String(r.status).replace("_", " ")}</span></td>
                     <td className="py-2 pr-3 text-right tabular">{formatGHS(r.total_value)}</td>

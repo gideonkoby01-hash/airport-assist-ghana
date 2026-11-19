@@ -55,6 +55,12 @@ const NAV = {
       { label: "Shift reports", to: "/management", tab: "reports", icon: FileText, primary: true },
     ] },
   ],
+  accounts: [
+    { heading: "Finance", items: [
+      { label: "Summary", to: "/accounts", tab: null, icon: LayoutDashboard, primary: true },
+      { label: "Accounts", to: "/accounts", tab: "accounts", icon: Calculator, primary: true },
+    ] },
+  ],
   admin: [
     { heading: "Overview", items: [
       { label: "Summary", to: "/admin", tab: null, icon: LayoutDashboard, primary: true },
@@ -85,7 +91,7 @@ const NAV = {
   ],
 };
 
-const CONSOLE_NAME = { passenger: "My account", supervisor: "Supervisor desk", management: "Management", admin: "Admin console" };
+const CONSOLE_NAME = { passenger: "My account", supervisor: "Supervisor desk", management: "Management", accounts: "Accounts", admin: "Admin console" };
 
 // Pages outside the role navigation still get a proper title in the top bar.
 const OTHER_TITLES = { "/profile": "My profile", "/security": "Account security" };

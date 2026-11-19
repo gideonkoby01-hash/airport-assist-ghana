@@ -16,7 +16,7 @@ serve('resetStaffPassword', async (req) => {
 
   const { data: target } = await admin.from('profiles').select('id,email,full_name,role,disabled').eq('id', userId).maybeSingle();
   if (!target) throw new HttpError(404, 'That account was not found.');
-  if (!['supervisor', 'management'].includes(target.role)) throw new HttpError(400, 'Only Supervisor and Management passwords can be reset here.');
+  if (!['supervisor', 'management', 'accounts'].includes(target.role)) throw new HttpError(400, 'Only staff passwords (Supervisor, Management, Accounts) can be reset here.');
   if (target.disabled) throw new HttpError(409, 'That account is switched off. Enable it first.');
 
   const password = generateTempPassword();

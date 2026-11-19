@@ -7,12 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatGHS } from "@/lib/packages";
 import { downloadCsv, toCsv } from "@/lib/csv";
+import { useAuth } from "@/lib/AuthContext";
 import { LoadState, Panel, fmtDate, methodLabel, useLoad } from "./shared";
 
 const TYPE_LABELS = { payment: "Payment", refund: "Refund", write_off: "Write-off" };
 const SHOWN = 200;
 
 export default function Ledger({ from, to }) {
+  const { user } = useAuth();
+  const canOpen = user?.role === "admin" || user?.role === "management"; // the accounts role cannot open bookings
   const [type, setType] = useState("all");
   const [method, setMethod] = useState("all");
   const [search, setSearch] = useState("");
@@ -74,7 +77,7 @@ export default function Ledger({ from, to }) {
                 {rows.slice(0, limit).map((r) => (
                   <tr key={r.id} className="border-b border-border last:border-0 align-top">
                     <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(r.entry_date)}</td>
-                    <td className="py-2 pr-3 font-mono text-xs"><Link to={`/bookings/${r.booking_id}`} className="underline underline-offset-2">{r.reference}</Link></td>
+                    <td className="py-2 pr-3 font-mono text-xs">{canOpen ? <Link to={`/bookings/${r.booking_id}`} className="underline underline-offset-2">{r.reference}</Link> : r.reference}</td>
                     <td className="py-2 pr-3">{r.customer}<span className="block text-xs text-muted-foreground">{r.package_name}</span></td>
                     <td className="py-2 pr-3">{TYPE_LABELS[r.entry_type] || r.entry_type}{r.reason && <span className="block text-xs text-muted-foreground">{r.reason}</span>}</td>
                     <td className="py-2 pr-3">{methodLabel(r.method)}</td>

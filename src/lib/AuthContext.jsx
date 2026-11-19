@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       const loaded = await loadUser(authUser);
       setAccountDisabled(Boolean(loaded.disabled));
       // A staff session that passed the check is already aal2; one with no factor yet must enrol first.
-      const isStaff = !loaded.disabled && ['admin', 'management'].includes(loaded.role);
+      const isStaff = !loaded.disabled && ['admin', 'management', 'accounts'].includes(loaded.role);
       setMfaEnrolRequired(isStaff && (await staffMfaEnforced()) && !(await hasVerifiedFactor()));
       setUser(loaded);
       setIsAuthenticated(true);

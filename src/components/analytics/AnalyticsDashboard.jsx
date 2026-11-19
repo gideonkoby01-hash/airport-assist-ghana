@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle, ArrowUpRight, Loader2, RefreshCw, Star } from "lucide-react";
 import { api } from "@/api/db";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { formatGHS, PAYMENT_METHOD_LABELS } from "@/lib/packages";
 import { todayUtc } from "@/lib/bookingFormRules";
@@ -37,6 +38,8 @@ function Section({ title, children, note = undefined }) {
 
 // The dashboard's analytics: one date range scopes every figure and chart below it, and every figure compares with the range just before.
 export default function AnalyticsDashboard() {
+  const { user } = useAuth();
+  const canOpenCustomers = user?.role === "admin" || user?.role === "management";
   const today = todayUtc();
   const [period, setPeriod] = useState({ preset: "30d", ...rangeForPreset("30d", today) });
   const [data, setData] = useState(null);
@@ -273,7 +276,7 @@ export default function AnalyticsDashboard() {
                   <div><p className="text-xl font-semibold tabular">{n(data.customers?.returning)}</p><p className="text-xs text-muted-foreground mt-1">Returning</p></div>
                   <div><p className="text-xl font-semibold tabular">{n(data.customers?.new)}</p><p className="text-xs text-muted-foreground mt-1">New</p></div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-4">Returning means more than one booking in all. <Link to="?tab=customers" className="underline">Open customers</Link></p>
+                <p className="text-xs text-muted-foreground mt-4">Returning means more than one booking in all.{canOpenCustomers && <> <Link to="?tab=customers" className="underline">Open customers</Link></>}</p>
               </ChartCard>
               <ChartCard title="Top customers" subtitle="By billed value."
                 columns={[{ key: "name", label: "Customer" }, { key: "bookings", label: "Bookings", align: "right" }, { key: "billed", label: "Billed", align: "right", render: (r) => formatGHS(r.billed) }]} rows={data.top_customers}>

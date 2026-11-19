@@ -5,7 +5,7 @@ export interface Profile {
   id: string;
   email: string;
   full_name: string;
-  role: 'passenger' | 'supervisor' | 'management' | 'admin' | 'pending';
+  role: 'passenger' | 'supervisor' | 'management' | 'admin' | 'accounts' | 'pending';
   disabled?: boolean;
 }
 

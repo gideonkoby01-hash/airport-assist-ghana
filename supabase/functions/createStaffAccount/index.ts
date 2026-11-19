@@ -3,9 +3,9 @@ import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { generateTempPassword } from '../_shared/tempPassword.ts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ROLES = ['supervisor', 'management'];
+const ROLES = ['supervisor', 'management', 'accounts'];
 
-// Admin creates a Supervisor or Management account directly, with no email involved. The temporary password
+// Admin creates a Supervisor, Management or Accounts account directly, with no email involved. The temporary password
 // is returned once for the admin to hand over; the new person must replace it at first sign-in.
 // The role is decided here by the admin, never by the new person. Admin accounts cannot be created this way.
 serve('createStaffAccount', async (req) => {
@@ -18,7 +18,7 @@ serve('createStaffAccount', async (req) => {
   const role = String(body.role ?? '');
   if (!EMAIL_REGEX.test(email)) throw new HttpError(400, 'Enter a valid email address.');
   if (!fullName) throw new HttpError(400, 'Enter the person\'s full name.');
-  if (!ROLES.includes(role)) throw new HttpError(400, 'Choose Supervisor or Management.');
+  if (!ROLES.includes(role)) throw new HttpError(400, 'Choose Supervisor, Management or Accounts.');
 
   const { data: existing } = await admin.from('profiles').select('id').ilike('email', email).maybeSingle();
   if (existing) {

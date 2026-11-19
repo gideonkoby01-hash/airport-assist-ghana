@@ -16,6 +16,8 @@ export default function RoleRedirect() {
       ? "/management"
       : role === "supervisor"
       ? "/supervisor"
+      : role === "accounts"
+      ? "/accounts"
       : "/passenger";
   return <Navigate to={dest} replace />;
 }
