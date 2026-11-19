@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api/db";
 import { formatGHS } from "@/lib/packages";
-import { compact, profitAndLoss, share } from "@/lib/finance";
+import { compact, profitAndLoss, receivedByChannel, share } from "@/lib/finance";
 import KpiTile from "@/components/charts/KpiTile";
 import ChartCard, { Key } from "@/components/charts/ChartCard";
 import TrendChart from "@/components/charts/TrendChart";
@@ -18,6 +18,7 @@ const n = (x) => Number(x) || 0;
 export default function Overview({ from, to }) {
   const { data, loading, error } = useLoad(() => api.finance.summary(from, to), [from, to]);
   const pl = data ? profitAndLoss(data) : null;
+  const got = data ? receivedByChannel(data.by_method) : null;
   const daily = (data?.daily || []).map((d) => ({ ...d, net_received: n(d.collected) - n(d.refunds) }));
   return (
     <LoadState loading={loading} error={error} hasData={Boolean(data)}>
@@ -25,13 +26,20 @@ export default function Overview({ from, to }) {
         <div className="space-y-5">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiTile accent label="Net profit (cash basis)" value={formatGHS(pl.netProfit)} sub={pl.margin === null ? "No income yet" : `${Math.round(pl.margin * 100)}% of income`} />
-            <KpiTile label="Money received" value={formatGHS(data.collected)} sub={`${formatGHS(data.refunds)} refunded`} trend={daily.map((d) => d.collected)} />
+            <KpiTile label="Payments received (before refunds)" value={formatGHS(data.collected)} sub={`${formatGHS(data.refunds)} refunded`} trend={daily.map((d) => d.collected)} />
             <KpiTile label="Commissions" value={formatGHS(pl.commissions)} sub={`Porters ${formatGHS(data.porter_commission)}, supervisors ${formatGHS(data.supervisor_commission)}`} />
             <KpiTile label="Expenses" value={formatGHS(data.expenses)} trend={daily.map((d) => d.expenses)} />
             <KpiTile label="Billed (service value)" value={formatGHS(data.billed)} sub={`${formatGHS(data.discounts)} in discounts`} />
             <KpiTile label="Owed on these bookings" value={formatGHS(data.outstanding_in_range)} sub={`${share(data.outstanding_in_range, data.billed)} of billed`} />
             <KpiTile label="Owed in total, all dates" value={formatGHS(data.outstanding_now)} sub="Every open balance" />
             <KpiTile label="Written off" value={formatGHS(data.write_offs)} />
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Money received, by how it was paid">
+            <KpiTile label="Received in cash" value={formatGHS(got.cash)} sub={`${share(got.cash, got.total)} of money received`} />
+            <KpiTile label="Received by POS" value={formatGHS(got.pos)} sub={`Mobile money ${formatGHS(got.mobile)}, card ${formatGHS(got.card)}`} />
+            <KpiTile label="Paid on account" value={formatGHS(got.account)} sub="Corporate accounts" />
+            <KpiTile label="Total received (net of refunds)" value={formatGHS(got.total)} sub={`${formatGHS(data.refunds)} refunded`} />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-4">

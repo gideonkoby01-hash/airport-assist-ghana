@@ -137,3 +137,18 @@ export function agingTotals(rows) {
   }
   return { order, totals, count: (rows || []).length, amount: Object.values(totals).reduce((a, t) => a + t.amount, 0) };
 }
+
+/**
+ * Money received split the way the till is counted: cash, and POS (mobile money plus card). Pay-on-account is kept apart.
+ * `byMethod` is the list from the finance summary or analytics: [{ method, collected?, refunds?, net }]. `field` picks the amount:
+ * "net" (default, after refunds) or "collected" (before refunds).
+ */
+export function receivedByChannel(byMethod, field = "net") {
+  const net = (m) => (byMethod || []).filter((x) => x.method === m).reduce((t, x) => t + (Number(x[field]) || 0), 0);
+  const cash = net("cash");
+  const mobile = net("mobile_money");
+  const card = net("card");
+  const account = net("corporate_account");
+  const pos = mobile + card;
+  return { cash, pos, mobile, card, account, total: cash + pos + account };
+}

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { formatGHS, PAYMENT_METHOD_LABELS } from "@/lib/packages";
 import { todayUtc } from "@/lib/bookingFormRules";
-import { compact, rangeForPreset, share } from "@/lib/finance";
+import { compact, rangeForPreset, receivedByChannel, share } from "@/lib/finance";
 import PeriodPicker from "@/components/charts/PeriodPicker";
 import KpiTile from "@/components/charts/KpiTile";
 import ChartCard, { Key } from "@/components/charts/ChartCard";
@@ -78,6 +78,7 @@ export default function AnalyticsDashboard() {
     };
   }, [cur, prev]);
 
+  const got = useMemo(() => receivedByChannel(data?.by_method), [data]);
   const avg = (k) => (n(k?.live_bookings) === 0 ? 0 : n(k.billed) / n(k.live_bookings));
   const spark = (key) => daily.map((d) => d[key]);
 
@@ -127,6 +128,12 @@ export default function AnalyticsDashboard() {
               <KpiTile label="Passengers" value={n(cur.passengers).toLocaleString("en-GB")} current={cur.passengers} previous={prev.passengers} trend={spark("passengers")} />
               <KpiTile label="Average booking value" value={formatGHS(avg(cur))} current={avg(cur)} previous={avg(prev)} />
               <KpiTile label="New customers" value={n(cur.new_customers).toLocaleString("en-GB")} current={cur.new_customers} previous={prev.new_customers} />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" aria-label="Money received, by how it was paid">
+              <KpiTile label="Received in cash" value={formatGHS(got.cash)} sub={`${share(got.cash, got.total)} of money received`} />
+              <KpiTile label="Received by POS" value={formatGHS(got.pos)} sub={`Mobile money ${formatGHS(got.mobile)}, card ${formatGHS(got.card)}`} />
+              <KpiTile label="Paid on account" value={formatGHS(got.account)} sub="Corporate accounts" />
+              <KpiTile label="Total received (net of refunds)" value={formatGHS(got.total)} sub="Cash + POS + on account" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <KpiTile label="Completed" value={pctLabel(derived.completion)} current={derived.completion} previous={derived.prevCompletion} sub={`${n(cur.completed)} of ${n(cur.bookings)}`} />
