@@ -102,7 +102,7 @@ export default function PorterPay() {
           No completed porter jobs on this day. When a supervisor completes a booking with a porter on it, the porter's earnings appear here.
         </div>
       ) : (
-        <div className="bg-card rounded-2xl border border-border overflow-x-auto">
+        <div className="relative bg-card rounded-2xl border border-border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-muted-foreground border-b border-border">

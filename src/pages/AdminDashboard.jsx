@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
@@ -22,6 +22,11 @@ import StatCard from "@/components/StatCard";
 import CustomersPanel from "@/components/crm/CustomersPanel";
 import PorterPay from "@/components/PorterPay";
 import CommissionsPanel from "@/components/CommissionsPanel";
+import LazyFallback from "@/components/analytics/LazyFallback";
+
+// The charts and the accounts pages are loaded only when a screen that uses them is opened.
+const AnalyticsDashboard = lazy(() => import("@/components/analytics/AnalyticsDashboard"));
+const AccountsPage = lazy(() => import("@/components/accounts/AccountsPage"));
 import { formatGHS, PORTER_COMMISSION_PER_PASSENGER } from "@/lib/packages";
 import { BarChart3, Wallet, Users, Armchair } from "lucide-react";
 
@@ -127,7 +132,12 @@ function AdminInner() {
   return (
     <AppLayout>
       {tab === "summary" && (
-        <div className="space-y-4">
+        <div className="space-y-8">
+          <Suspense fallback={<LazyFallback />}>
+            <AnalyticsDashboard />
+          </Suspense>
+          <div className="space-y-4">
+            <h2 className="text-base font-semibold text-foreground">From the submitted shift reports</h2>
           {loadingReports && (
             <div className="flex items-center text-muted-foreground text-sm">
               <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin mr-2" />
@@ -143,6 +153,7 @@ function AdminInner() {
           </div>
           <BookingFinancials />
           <ExportPanel />
+          </div>
         </div>
       )}
 
@@ -150,6 +161,11 @@ function AdminInner() {
       {tab === "staff" && <StaffManager />}
       {tab === "porter-pay" && <PorterPay />}
       {tab === "commissions" && <CommissionsPanel />}
+      {tab === "accounts" && (
+        <Suspense fallback={<LazyFallback />}>
+          <AccountsPage />
+        </Suspense>
+      )}
       {tab === "email" && <EmailIssues />}
       {tab === "settings" && <AdminSettings />}
       {tab === "packages" && <PackageManager />}

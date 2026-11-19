@@ -23,6 +23,7 @@ const TABLES = {
   DiscountCode: 'discount_codes',
   DiscountRedemption: 'discount_redemptions',
   EmailDelivery: 'email_deliveries',
+  Expense: 'expenses',
   Lounge: 'lounges',
   Notification: 'notifications',
   Payment: 'payments',
@@ -272,6 +273,35 @@ const commissions = {
   },
 };
 
+// Accounts and analytics (admin and management): every call is a database function that checks the role itself.
+const finance = {
+  async summary(/** @type {string} */ from, /** @type {string} */ to) {
+    const { data, error } = await supabase.rpc('finance_summary', { p_from: from, p_to: to });
+    if (error) fail(error);
+    return data || {};
+  },
+  async ledger(/** @type {string} */ from, /** @type {string} */ to, /** @type {string | null} */ type = null, /** @type {string | null} */ method = null) {
+    const { data, error } = await supabase.rpc('ledger_entries', { p_from: from, p_to: to, p_type: type, p_method: method });
+    if (error) fail(error);
+    return data || [];
+  },
+  async receivables(/** @type {string | null} */ asOf = null) {
+    const { data, error } = await supabase.rpc('receivables_aging', asOf ? { p_as_of: asOf } : {});
+    if (error) fail(error);
+    return data || [];
+  },
+  async cashBook(/** @type {string} */ from, /** @type {string} */ to) {
+    const { data, error } = await supabase.rpc('cash_book', { p_from: from, p_to: to });
+    if (error) fail(error);
+    return data || {};
+  },
+  async dashboard(/** @type {string} */ from, /** @type {string} */ to) {
+    const { data, error } = await supabase.rpc('analytics_dashboard', { p_from: from, p_to: to });
+    if (error) fail(error);
+    return data || {};
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance };

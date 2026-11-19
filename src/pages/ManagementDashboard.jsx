@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
@@ -14,6 +14,11 @@ import BookingFinancials from "@/components/BookingFinancials";
 import OperationsGlance from "@/components/OperationsGlance";
 import PorterPay from "@/components/PorterPay";
 import CommissionsPanel from "@/components/CommissionsPanel";
+import LazyFallback from "@/components/analytics/LazyFallback";
+
+// The charts and the accounts pages are loaded only when a screen that uses them is opened.
+const AnalyticsDashboard = lazy(() => import("@/components/analytics/AnalyticsDashboard"));
+const AccountsPage = lazy(() => import("@/components/accounts/AccountsPage"));
 import CustomersPanel from "@/components/crm/CustomersPanel";
 import { Input } from "@/components/ui/input";
 import { UNASSIGNED, managementView } from "@/lib/bookingRules";
@@ -166,6 +171,9 @@ function ManagementInner() {
             </button>
           )}
           <OperationsGlance />
+          <Suspense fallback={<LazyFallback />}>
+            <AnalyticsDashboard />
+          </Suspense>
           <BookingFinancials />
         </div>
       )}
@@ -207,6 +215,11 @@ function ManagementInner() {
       {tab === "customers" && <CustomersPanel tab="customers" />}
       {tab === "porter-pay" && <PorterPay />}
       {tab === "commissions" && <CommissionsPanel />}
+      {tab === "accounts" && (
+        <Suspense fallback={<LazyFallback />}>
+          <AccountsPage />
+        </Suspense>
+      )}
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
       {tab === "reports" && <ShiftReportViewer />}
       {tab === "ratings" && <RatingsReviews />}
