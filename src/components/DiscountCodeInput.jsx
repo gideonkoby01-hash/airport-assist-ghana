@@ -3,9 +3,10 @@ import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Tag, CheckCircle2, X } from "lucide-react";
-import { formatGHS } from "@/lib/packages";
+import { useMoney } from "@/lib/currency";
 
 export default function DiscountCodeInput({ applied, onApplied, onRemoved, packageCode, numPassengers, disabled }) {
+  const { format: money } = useMoney();
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +53,7 @@ export default function DiscountCodeInput({ applied, onApplied, onRemoved, packa
             <div>
               <p className="text-sm font-semibold text-emerald-900">Discount code {applied.code} applied</p>
               <p className="text-sm text-emerald-800 mt-0.5">
-                You save {formatGHS(applied.discount_amount)} on this booking.
+                You save {money(applied.discount_amount)} on this booking.
               </p>
               {applied.recipient_name && (
                 <p className="text-xs text-emerald-700 mt-1">Issued to {applied.recipient_name}</p>

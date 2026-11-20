@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useMoney } from "@/lib/currency";
+import { formatGHS } from "@/lib/packages";
+import GuestSignIn from "@/components/GuestSignIn";
+import { inclusionList, readDraft, saveDraft, clearDraft } from "@/lib/bookingDraft";
 import { useSettings } from "@/lib/SettingsContext";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/api/db";
@@ -17,7 +21,6 @@ import DiscountCodeInput from "@/components/DiscountCodeInput";
 import {
   PACKAGE_DEFINITIONS,
   computeTotal,
-  formatGHS,
   packageByCode } from
 "@/lib/packages";
 
@@ -30,6 +33,14 @@ const STEP_FIELDS = [
   (k) => k === "consent",
 ];
 
+// The services are listed under Arrival, Departure and Porter so each kind is easy to find.
+const SERVICE_GROUPS = [
+  { key: "arrival", label: "Arrival services" },
+  { key: "departure", label: "Departure services" },
+  { key: "both", label: "Porter service" },
+];
+const serviceGroup = (/** @type {{ flight_type?: string }} */ p) => (p.flight_type === "arrival" || p.flight_type === "departure" ? p.flight_type : "both");
+
 const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, special_requests: "" };
 
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -37,14 +48,18 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 
 // `user` and `supervisor` are still passed by the callers; the server now decides who a booking belongs to.
 // eslint-disable-next-line unused-imports/no-unused-vars
-export default function BookingForm({ channel = "online", user, supervisor = undefined, onCreated }) {
+export default function BookingForm({ channel = "online", user = undefined, supervisor = undefined, onCreated = undefined, standalone = false }) {
   const { user: me } = useAuth();
+  const { format: money, isUsd } = useMoney();
   // Choices made in the website's quick quote arrive in the address (package, date, number of travellers).
   const [searchParams] = useSearchParams();
   const prefill = useMemo(() => parseBookingPrefill(searchParams.toString()), []); // read once, when the form opens
+  // On the booking page, answers are kept as the person goes (and through signing in), unless the address brings a fresh quote.
+  const hasPrefill = Boolean(prefill.package_code || prefill.flight_date || prefill.passengers > 1);
+  const draft = useMemo(() => (standalone && !hasPrefill ? readDraft() : null), []);
   const [packages, setPackages] = useState([]);
   const [loadingPkgs, setLoadingPkgs] = useState(true);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => draft?.form || {
     package_code: prefill.package_code,
     flight_type: prefill.flight_type || "arrival",
     airline: "",
@@ -58,9 +73,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
     special_requests: "",
     lounge_used: ""
   });
-  const [passengers, setPassengers] = useState(() => Array.from({ length: prefill.passengers }, () => ({ ...emptyPassenger })));
+  const [passengers, setPassengers] = useState(() => draft?.passengers?.length ? draft.passengers : Array.from({ length: prefill.passengers }, () => ({ ...emptyPassenger })));
   const [submitting, setSubmitting] = useState(false);
-  const [consented, setConsented] = useState(false);
+  const [consented, setConsented] = useState(Boolean(draft?.consented));
   const { settings } = useSettings();
   // Online booking can be paused from Admin > Settings. Staff at the desk are never blocked.
   const paused = channel === "online" && settings.online_bookings_enabled === "false";
@@ -76,9 +91,9 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   const [photoError, setPhotoError] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState(null);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => Math.min(Number(draft?.step) || 0, STEPS.length - 1));
   // The airline is picked from a list; "Other" opens a box for anything not on it.
-  const [otherAirline, setOtherAirline] = useState(false);
+  const [otherAirline, setOtherAirline] = useState(Boolean(draft?.otherAirline));
   const top = useRef(null);
 
   useEffect(() => {
@@ -97,6 +112,33 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       active = false;
     };
   }, []);
+
+  // Keep the answers so signing in, a refresh or leaving and coming back does not start the booking again.
+  useEffect(() => {
+    if (!standalone || created) return;
+    saveDraft({ form, passengers, step, consented, otherAirline });
+  }, [standalone, created, form, passengers, step, consented, otherAirline]);
+
+  // Each step is a page in the browser's history, so Back goes to the previous step instead of out of the booking.
+  useEffect(() => {
+    if (!standalone) return undefined;
+    window.history.replaceState({ ...(window.history.state || {}), bookingStep: step }, "");
+    const onPop = (e) => {
+      const at = e.state?.bookingStep;
+      if (Number.isInteger(at) && at >= 0 && at < STEPS.length) {
+        setError("");
+        setStep(at);
+        requestAnimationFrame(() => top.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [standalone]);
+
+  // A passenger's own number comes from their profile once they are signed in, if they have not typed one.
+  useEffect(() => {
+    if (channel === "online" && me?.phone) setForm((f) => (f.contact ? f : { ...f, contact: me.phone }));
+  }, [me?.phone, channel]);
 
   const selectedPkg = useMemo(() => {
     const fromList = packages.find((p) => p.code === form.package_code);
@@ -189,6 +231,10 @@ export default function BookingForm({ channel = "online", user, supervisor = und
 
   const goTo = (n) => {
     setError("");
+    if (standalone) {
+      if (n > step) window.history.pushState({ bookingStep: n }, "");
+      else window.history.replaceState({ bookingStep: n }, "");
+    }
     setStep(n);
     // Bring the new step to the top of the screen so nobody has to scroll back up.
     requestAnimationFrame(() => top.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -227,6 +273,11 @@ export default function BookingForm({ channel = "online", user, supervisor = und
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!me) {
+      setError("Sign in or create an account below to confirm your booking.");
+      document.getElementById("bf-signin")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const found = validateBooking({ form, passengers, channel, consented });
     const firstKey = Object.keys(found)[0];
     if (firstKey) {
@@ -282,6 +333,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
       if (!data.booking) throw new Error("The booking could not be saved. Please try again.");
       setCreated(data.booking);
       idempotencyKey.current = crypto.randomUUID(); // the next booking is a new submission
+      clearDraft();
       setAppliedDiscount(null);
       if (onCreated) onCreated(data.booking);
     } catch (err) {
@@ -316,13 +368,14 @@ export default function BookingForm({ channel = "online", user, supervisor = und
           <span className="text-2xl font-bold text-primary tracking-wider mt-1">{created.reference}</span>
         </div>
         <p className="text-sm text-muted-foreground mt-4">
-          Total: <span className="font-semibold text-foreground">{formatGHS(created.total_value)}</span> ·{" "}
+          Total: <span className="font-semibold text-foreground">{money(created.total_value)}</span> ·{" "}
           {created.num_passengers} passenger{created.num_passengers !== 1 ? "s" : ""}
         </p>
+        {isUsd && <p className="text-xs text-muted-foreground mt-1">You pay in cedis at the airport: {formatGHS(created.total_value)}.</p>}
         {Number(created.discount_amount || 0) > 0 && (
           <p className="text-xs text-emerald-700 mt-1">
-            Discount {created.discount_code} applied (−{formatGHS(created.discount_amount)} from{" "}
-            {formatGHS(created.original_total)})
+            Discount {created.discount_code} applied (−{money(created.discount_amount)} from{" "}
+            {money(created.original_total)})
           </p>
         )}
         <p className="text-sm text-muted-foreground mt-4">
@@ -336,6 +389,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
           </Button>
           <Button
             onClick={() => {
+              clearDraft();
               setCreated(null);
               setForm({
                 package_code: "",
@@ -393,20 +447,27 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" aria-hidden="true" /> Choose your service
         </h3>
-        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.</p>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.{isUsd && " Dollar prices are for your information; you pay in cedis at the airport."}</p>
         {loadingPkgs ?
         <div className="flex items-center text-muted-foreground text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…
           </div> :
 
-        <div className="grid sm:grid-cols-2 gap-3">
-            {packages.map((p) =>
+        <div className="space-y-5">
+            {SERVICE_GROUPS.map((group) => {
+              const list = packages.filter((p) => serviceGroup(p) === group.key);
+              if (!list.length) return null;
+              return (
+                <div key={group.key}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{group.label}</h4>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {list.map((p) =>
           <button
             type="button"
             key={p.code}
             aria-pressed={form.package_code === p.code}
             onClick={() => onPackageChange(p.code)}
-            className={`text-left rounded-xl border p-4 transition-all ${
+            className={`text-left flex flex-col justify-start rounded-xl border p-4 transition-all ${
             form.package_code === p.code ?
             "border-accent ring-2 ring-accent/40 bg-accent/5" :
             "border-border hover:border-accent/50"}`
@@ -414,11 +475,19 @@ export default function BookingForm({ channel = "online", user, supervisor = und
             
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">{p.name}</span>
-                  <span className="text-lg font-bold text-primary">{formatGHS(p.price)}</span>
+                  <span className="text-lg font-bold text-primary">{money(p.price)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{p.inclusions}</p>
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  {inclusionList(p.inclusions).map((item) => (
+                    <li key={item} className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 mt-px shrink-0 text-accent" aria-hidden="true" /><span>{item}</span></li>
+                  ))}
+                </ul>
               </button>
-          )}
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         }
         {fieldError("package_code")}
@@ -623,7 +692,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-muted-foreground">Service</dt>
                   <dd className="font-medium text-foreground mt-0.5">{selectedPkg?.name || "—"}</dd>
-                  <dd className="text-xs text-muted-foreground">{formatGHS(pricePerPassenger)} per passenger</dd>
+                  <dd className="text-xs text-muted-foreground">{money(pricePerPassenger)} per passenger</dd>
                 </div>
                 <button type="button" onClick={() => goTo(0)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
               </div>
@@ -678,15 +747,17 @@ export default function BookingForm({ channel = "online", user, supervisor = und
         </>
       )}
 
+      {step === STEPS.length - 1 && channel === "online" && !me && <GuestSignIn returnTo="/book" />}
+
       {/* Price and navigation: always in view at the bottom of the screen */}
       <div className="sticky bottom-3 z-10">
         <div className="bg-primary text-primary-foreground rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-3 shadow-[0_18px_40px_-20px_hsl(var(--foreground)/0.6)]">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-wide opacity-80 truncate">{selectedPkg ? selectedPkg.name : "Choose a service"}</p>
-            <p className="text-xl sm:text-2xl font-bold tabular">{formatGHS(appliedDiscount ? appliedDiscount.final_total : totalValue)}</p>
+            <p className="text-xl sm:text-2xl font-bold tabular">{money(appliedDiscount ? appliedDiscount.final_total : totalValue)}</p>
             <p className="text-xs opacity-80">
-              {formatGHS(pricePerPassenger)} × {numPassengers} passenger{numPassengers !== 1 ? "s" : ""}
-              {appliedDiscount && <span className="text-accent font-medium"> · {appliedDiscount.code} −{formatGHS(appliedDiscount.discount_amount)}</span>}
+              {money(pricePerPassenger)} × {numPassengers} passenger{numPassengers !== 1 ? "s" : ""}
+              {appliedDiscount && <span className="text-accent font-medium"> · {appliedDiscount.code} −{money(appliedDiscount.discount_amount)}</span>}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -703,7 +774,7 @@ export default function BookingForm({ channel = "online", user, supervisor = und
               <Button type="submit" size="lg" disabled={submitting || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}</>
-                ) : channel === "walk_in" ? "Save walk-in booking" : "Confirm booking"}
+                ) : channel === "walk_in" ? "Save walk-in booking" : !me ? "Sign in to confirm" : "Confirm booking"}
               </Button>
             )}
           </div>

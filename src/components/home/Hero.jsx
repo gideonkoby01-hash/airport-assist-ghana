@@ -26,22 +26,34 @@ const SLIDES = [
     cta: "View departure service",
   },
   {
-    image: "/images/lounge.webp",
-    width: 1024,
-    height: 1024,
-    alt: "An Airport Assist escort walking a family through the departures hall",
-    fit: "contain",
-    title: "Meet at the airbridge · Fast-track · Bags handled",
-    cta: "View arrival service",
+    image: "/images/card-lounge-welcome.webp",
+    width: 960,
+    height: 480,
+    alt: "An Airport Assist agent welcoming a family at the entrance to the executive lounge",
+    position: "50% 0%",
+    landscape: true,
+    title: "Lounge welcome · Private greeting · Relax before your flight",
+    cta: "View departure service",
   },
   {
-    image: "/images/porter-hero.webp",
-    width: 1024,
-    height: 1024,
-    alt: "A porter with a luggage trolley, standing with three travellers in the check-in hall",
-    fit: "contain",
-    title: "Curbside welcome · Check-in · Gate escort",
+    image: "/images/card-escort-path.webp",
+    width: 960,
+    height: 480,
+    alt: "An Airport Assist agent leading a family along the VIP escort path past the queue",
+    position: "50% 40%",
+    landscape: true,
+    title: "VIP escort · Fast-track · Straight to the gate",
     cta: "View departure service",
+  },
+  {
+    image: "/images/card-priority-reclaim.webp",
+    width: 960,
+    height: 480,
+    alt: "An Airport Assist porter helping a family with their luggage at priority reclaim",
+    position: "50% 40%",
+    landscape: true,
+    title: "Porter service · Luggage handled · Priority reclaim",
+    cta: "View porter service",
   },
 ];
 
@@ -85,7 +97,7 @@ export default function Hero() {
                     fetchPriority={i === 0 ? "high" : undefined}
                     loading={i === 0 ? undefined : "lazy"}
                     style={{ objectPosition: s.position || "50% 50%" }}
-                    className={`w-full h-full object-cover ${s.fit === "contain" ? "sm:object-contain" : "sm:object-contain md:object-cover"} ${on ? "hero-settle" : ""}`}
+                    className={`w-full h-full ${s.landscape ? "object-contain md:object-cover" : `object-cover ${s.fit === "contain" ? "sm:object-contain" : "sm:object-contain md:object-cover"}`} ${on ? "hero-settle" : ""}`}
                   />
                 </picture>
               </div>

@@ -4,6 +4,7 @@ import { ArrowUpRight, Check, MapPin } from "lucide-react";
 import { useHomeCta } from "@/components/home/useHomeCta";
 import { bookingAddress } from "@/lib/bookingPrefill";
 import Reveal from "@/components/home/Reveal";
+import { CurrencyToggle, useMoney } from "@/lib/currency";
 
 // Fixed public pricing per passenger. The booking flow reads live ServicePackage records; prices shown here are the
 // advertised rates and match the canonical PACKAGE_DEFINITIONS in src/lib/packages.js.
@@ -11,19 +12,19 @@ const PACKAGES = [
   {
     code: "full_arrival", kind: "arrival", tag: "ARR", name: "Full Arrival Service", price: 700,
     description: "Met at the airbridge and taken through the airport to your transfer.",
-    inclusions: ["Meet and greet at the airbridge", "Fast-track immigration", "Baggage assistance", "Ground transfer coordination"],
+    inclusions: ["Meet and greet at the air-bridge", "Fast-track escort through security and immigration", "Luggage assistance", "Customs clearance support", "Ground transfer coordination"],
     image: "/images/terminal-arrivals-hall.webp", position: "50% 45%", place: "Arrivals hall",
   },
   {
     code: "full_departure", kind: "departure", tag: "DEP", name: "Full Departure Service", price: 850,
     description: "Met at the kerb, checked in, taken through security and into the lounge.",
-    inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track security and immigration", "Premium lounge access"],
+    inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track escort through immigration and screening", "Lounge access"],
     image: "/images/card-lounge-welcome.webp", position: "50% 40%", place: "Executive lounge",
   },
   {
     code: "departure_priority", kind: "departure", tag: "DEP", name: "Departure Priority Only", price: 500,
     description: "The quick route to your gate, without the lounge.",
-    inclusions: ["Check-in assistance", "Fast-track security and immigration"],
+    inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track escort through immigration and screening"],
     image: "/images/card-escort-path.webp", position: "50% 40%", place: "VIP escort path",
   },
   {
@@ -37,6 +38,7 @@ const PACKAGES = [
 const FILTERS = [["all", "All"], ["arrival", "Arrival"], ["departure", "Departure"], ["porter", "Porter"]];
 
 export default function Packages() {
+  const { format: money } = useMoney();
   const { bookingLink } = useHomeCta();
   const [filter, setFilter] = useState("all");
   const shown = PACKAGES.filter((p) => filter === "all" || p.kind === filter);
@@ -63,6 +65,7 @@ export default function Packages() {
               {label}
             </button>
           ))}
+          <CurrencyToggle className="ml-auto" />
         </div>
 
         <ul className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -87,7 +90,7 @@ export default function Packages() {
                   <div className="mt-auto pt-5 border-t border-border flex items-end justify-between gap-3">
                     <p>
                       <span className="block text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Per passenger</span>
-                      <span className="tabular text-[1.5rem] font-extrabold" style={{ color: "hsl(var(--pink))" }}>GHS {p.price}</span>
+                      <span className="tabular text-[1.5rem] font-extrabold" style={{ color: "hsl(var(--pink))" }}>{money(p.price)}</span>
                     </p>
                     <Link to={bookingLink(bookingAddress({ package_code: p.code }))} className="press inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:underline underline-offset-4">
                       Book <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />

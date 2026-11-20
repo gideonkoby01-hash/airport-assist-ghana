@@ -7,10 +7,10 @@ export const PACKAGE_DEFINITIONS = [
     name: "Full Arrival Assist",
     price: 700,
     flight_type: "arrival",
-    includes_lounge: true,
+    includes_lounge: false,
     inclusions:
-      "Meet & greet at the airbridge, Fast-track immigration, Luggage assistance, Customs clearance support, Lounge access, Ground transfer coordination.",
-    exclusions: "Airline ticket, Visa fees, Hotel accommodation.",
+      "Meet and greet at the air-bridge, Fast-track escort through security and immigration, Luggage assistance, Customs clearance support, Ground transfer coordination.",
+    exclusions: "",
   },
   {
     code: "full_departure",
@@ -19,8 +19,8 @@ export const PACKAGE_DEFINITIONS = [
     flight_type: "departure",
     includes_lounge: true,
     inclusions:
-      "Curbside meet & greet, Check-in assistance, Fast-track security & immigration, Lounge access, Boarding assistance.",
-    exclusions: "Airline ticket, Visa fees, In-flight meals.",
+      "Curbside meet & greet, Check-in assistance, Fast-track escort through immigration and screening, Lounge access.",
+    exclusions: "",
   },
   {
     code: "departure_priority",
@@ -28,8 +28,8 @@ export const PACKAGE_DEFINITIONS = [
     price: 500,
     flight_type: "departure",
     includes_lounge: false,
-    inclusions: "Fast-track security & immigration, Priority boarding.",
-    exclusions: "Lounge access, Check-in assistance, Ground transfer.",
+    inclusions: "Curbside meet & greet, Check-in assistance, Fast-track escort through immigration and screening.",
+    exclusions: "",
   },
   {
     code: "porter_only",
@@ -38,7 +38,7 @@ export const PACKAGE_DEFINITIONS = [
     flight_type: "both",
     includes_lounge: false,
     inclusions: "Luggage handling and porter escort across the terminal.",
-    exclusions: "Immigration fast-track, Lounge access, Any other service.",
+    exclusions: "",
   },
 ];
 

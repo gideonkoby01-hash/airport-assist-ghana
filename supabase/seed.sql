@@ -2,16 +2,16 @@
 -- Prices are the ones in src/lib/packages.js. Check them against your current price list before going live;
 -- admins can change prices later from Service Packages in the Admin area.
 insert into public.service_packages (code, name, price, flight_type, includes_lounge, inclusions, exclusions, active) values
-  ('full_arrival', 'Full Arrival Assist', 700, 'arrival', true,
-   'Meet & greet at the airbridge, Fast-track immigration, Luggage assistance, Customs clearance support, Lounge access, Ground transfer coordination.',
-   'Airline ticket, Visa fees, Hotel accommodation.', true),
+  ('full_arrival', 'Full Arrival Assist', 700, 'arrival', false,
+   'Meet and greet at the air-bridge, Fast-track escort through security and immigration, Luggage assistance, Customs clearance support, Ground transfer coordination.',
+   '', true),
   ('full_departure', 'Full Departure Assist', 850, 'departure', true,
-   'Curbside meet & greet, Check-in assistance, Fast-track security & immigration, Lounge access, Boarding assistance.',
-   'Airline ticket, Visa fees, In-flight meals.', true),
+   'Curbside meet & greet, Check-in assistance, Fast-track escort through immigration and screening, Lounge access.',
+   '', true),
   ('departure_priority', 'Departure Priority Only', 500, 'departure', false,
-   'Fast-track security & immigration, Priority boarding.',
-   'Lounge access, Check-in assistance, Ground transfer.', true),
+   'Curbside meet & greet, Check-in assistance, Fast-track escort through immigration and screening.',
+   '', true),
   ('porter_only', 'Porter Service Only', 100, 'both', false,
    'Luggage handling and porter escort across the terminal.',
-   'Immigration fast-track, Lounge access, Any other service.', true)
+   '', true)
 on conflict (code) do nothing;

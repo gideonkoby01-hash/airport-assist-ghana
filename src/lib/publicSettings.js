@@ -7,6 +7,7 @@ export const PUBLIC_DEFAULTS = {
   contact_address: "39 Ring Road East, Nyaniba [GL-030-6750]",
   online_bookings_enabled: "true",
   online_bookings_message: "Online booking is paused right now. Please contact the Airport Assist desk.",
+  usd_exchange_rate: "15",
   porter_commission_per_passenger: "30",
   supervisor_commission_per_signup: "50",
 };

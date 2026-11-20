@@ -16,11 +16,12 @@ import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import {
   PACKAGE_LABELS,
   PAYMENT_METHOD_LABELS,
-  formatGHS,
 } from "@/lib/packages";
 import { ArrowLeft, Plane, Calendar, Clock, Users, Phone, Globe, Luggage, StickyNote, Armchair, Tag } from "lucide-react";
+import { useMoney } from "@/lib/currency";
 
 export default function BookingDetail() {
+  const { format: money } = useMoney();
   useDocumentTitle("Booking");
   const { id } = useParams();
   const navigate = useNavigate();
@@ -104,12 +105,12 @@ export default function BookingDetail() {
                 </p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-3xl font-bold text-foreground">{formatGHS(booking.total_value)}</p>
+                <p className="text-3xl font-bold text-foreground">{money(booking.total_value)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatGHS(booking.price_per_passenger)} × {booking.num_passengers} passenger(s)
+                  {money(booking.price_per_passenger)} × {booking.num_passengers} passenger(s)
                   {(() => {
                     const fees = (booking.porters || []).reduce((n, p) => n + (p.extra ? Number(p.fee) || 0 : 0), 0);
-                    return fees > 0 ? ` + ${formatGHS(fees)} extra porter${(booking.porters || []).filter((p) => p.extra).length === 1 ? "" : "s"}` : "";
+                    return fees > 0 ? ` + ${money(fees)} extra porter${(booking.porters || []).filter((p) => p.extra).length === 1 ? "" : "s"}` : "";
                   })()}
                 </p>
               </div>
@@ -151,26 +152,26 @@ export default function BookingDetail() {
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Original total</dt>
-                  <dd>{formatGHS(booking.original_total ?? booking.total_value)}</dd>
+                  <dd>{money(booking.original_total ?? booking.total_value)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">
                     Discount ({booking.discount_code}
                     {booking.discount_type === "percentage" ? ` · ${booking.discount_value}%` : ""})
                   </dt>
-                  <dd className="text-emerald-700">−{formatGHS(booking.discount_amount)}</dd>
+                  <dd className="text-emerald-700">−{money(booking.discount_amount)}</dd>
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 font-semibold">
                   <dt>Booking total</dt>
-                  <dd>{formatGHS(booking.total_value)}</dd>
+                  <dd>{money(booking.total_value)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Collected</dt>
-                  <dd>{formatGHS(booking.amount_collected)}</dd>
+                  <dd>{money(booking.amount_collected)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Outstanding</dt>
-                  <dd>{formatGHS(booking.outstanding_balance)}</dd>
+                  <dd>{money(booking.outstanding_balance)}</dd>
                 </div>
               </dl>
               {booking.discount_recipient_name && (
