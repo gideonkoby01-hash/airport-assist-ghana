@@ -71,32 +71,38 @@ test("today's tally counts each progress step", () => {
   assert.deepEqual(t, { waiting: 1, assigned: 2, in_progress: 1, completed: 1, other: 1, total: 6 });
 });
 
-import { canAssignPorter, waitingForPorter } from './bookingRules.js';
+import { canAssignPorter, needsPorter, waitingForPorter } from './bookingRules.js';
 
-test('porter assignment: management for website bookings, the supervisor for their own walk-ins', () => {
+test('porter assignment: the supervisor a booking is assigned to chooses the porter, and management can too', () => {
   const online = { booking_channel: 'online', assigned_supervisor_id: 's1', status: 'assigned' };
   const walkIn = { booking_channel: 'walk_in', assigned_supervisor_id: 's1', status: 'confirmed' };
   assert.equal(canAssignPorter({ id: 'm', role: 'management' }, online), true);
-  assert.equal(canAssignPorter({ id: 's1', role: 'supervisor' }, online), false);
+  assert.equal(canAssignPorter({ id: 's1', role: 'supervisor' }, online), true);
+  assert.equal(canAssignPorter({ id: 's2', role: 'supervisor' }, online), false);
+  assert.equal(canAssignPorter({ id: 's1', role: 'supervisor' }, { ...online, assigned_supervisor_id: null }), false);
   assert.equal(canAssignPorter({ id: 's1', role: 'supervisor' }, walkIn), true);
   assert.equal(canAssignPorter({ id: 's2', role: 'supervisor' }, walkIn), false);
   assert.equal(canAssignPorter({ id: 'm', role: 'management' }, { ...walkIn, status: 'cancelled' }), false);
 });
-test('website bookings waiting for a porter, whatever the service', () => {
+test('website bookings waiting for the supervisor to choose a porter', () => {
   const rows = [
-    { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [] },
-    { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo', passengers_handled: 1 }] },
-    { booking_channel: 'online', package_code: 'porter_only', status: 'cancelled', porters: [] },
-    { booking_channel: 'online', package_code: 'full_arrival', status: 'assigned', porters: [] },
-    { booking_channel: 'walk_in', package_code: 'full_arrival', status: 'confirmed', porters: [] },
+    { booking_channel: 'online', assigned_supervisor_id: 's1', package_code: 'porter_only', status: 'confirmed', porters: [] },
+    { booking_channel: 'online', assigned_supervisor_id: 's1', package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo', passengers_handled: 1 }] },
+    { booking_channel: 'online', assigned_supervisor_id: 's1', package_code: 'porter_only', status: 'cancelled', porters: [] },
+    { booking_channel: 'online', assigned_supervisor_id: 's1', package_code: 'full_arrival', status: 'assigned', porters: [] },
+    { booking_channel: 'online', assigned_supervisor_id: null, package_code: 'full_arrival', status: 'confirmed', porters: [] }, // no supervisor yet: management assigns one first
+    { booking_channel: 'walk_in', assigned_supervisor_id: 's1', package_code: 'full_arrival', status: 'confirmed', porters: [] },
   ];
   assert.equal(waitingForPorter(rows).length, 2);
   // One porter handles one passenger: 3 passengers with 1 porter still waits; with 3 porters it does not.
-  const three = (n) => ({ booking_channel: 'online', status: 'confirmed', num_passengers: 3, porters: Array.from({ length: n }, () => ({ passengers_handled: 1 })) });
+  const three = (n) => ({ booking_channel: 'online', assigned_supervisor_id: 's1', status: 'confirmed', num_passengers: 3, porters: Array.from({ length: n }, () => ({ passengers_handled: 1 })) });
   assert.equal(waitingForPorter([three(1)]).length, 1);
   assert.equal(waitingForPorter([three(3)]).length, 0);
   // A meet and assist may need no porter for some or all passengers.
   assert.equal(waitingForPorter([{ ...three(1), porters_waived: 2 }]).length, 0);
   assert.equal(waitingForPorter([{ ...three(0), porters_waived: 3 }]).length, 0);
   assert.equal(waitingForPorter([{ ...three(1), porters_waived: 1 }]).length, 1);
+  // needsPorter is the same rule for any booking, walk-ins included
+  assert.equal(needsPorter({ status: 'assigned', num_passengers: 1, porters: [] }), true);
+  assert.equal(needsPorter({ status: 'completed', num_passengers: 1, porters: [] }), false);
 });

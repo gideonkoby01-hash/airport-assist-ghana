@@ -280,7 +280,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
           <p className="text-xs text-muted-foreground mb-3">
             {booking.booking_channel === "walk_in"
               ? "A walk-in at the desk: you choose the porter."
-              : "A service requested on the website: management assigns the porter."}{" "}
+              : "A service requested on the website: the supervisor it is assigned to chooses the porter, if one is used."}{" "}
             One porter handles one passenger, and each porter earns {formatGHS(commissionPerPassenger)} for the job, paid to them daily.
             {" "}<span className="font-medium text-foreground">{Math.min(covered, booking.num_passengers || 1)} of {booking.num_passengers || 1} passenger(s) have a porter{waived > 0 ? `, ${waived} need${waived === 1 ? "s" : ""} none` : ""}.</span>
           </p>

@@ -72,8 +72,8 @@ export default function OperationsGlance() {
     api.entities.Booking.filter({ status: { $in: LIVE_STATUSES }, flight_date: { $lt: today } }, { sort: "flight_date,scheduled_flight_time", limit: 5, fields })
       .then((p) => live && setOverdue(p.items || []))
       .catch(() => live && setOverdue([]));
-    // Website bookings nobody has assigned a porter to yet: management assigns the porter.
-    api.entities.Booking.filter({ booking_channel: "online", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters", "num_passengers", "porters_waived"] })
+    // Website bookings given to a supervisor who has not chosen a porter yet (the supervisor chooses it).
+    api.entities.Booking.filter({ booking_channel: "online", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters", "num_passengers", "porters_waived", "assigned_supervisor_id"] })
       .then((p) => live && setNeedPorter(waitingForPorter(p.items || []).slice(0, 5)))
       .catch(() => live && setNeedPorter([]));
     return () => {
@@ -124,10 +124,10 @@ export default function OperationsGlance() {
         />
         <AttentionList
           title="Waiting for a porter"
-          hint="Website bookings where a passenger has no porter yet. Open the booking and assign one porter for each passenger."
+          hint="Website bookings given to a supervisor who has not chosen a porter yet. The supervisor chooses the porter, or marks that none is needed."
           rows={needPorter || []}
           loading={needPorter === null}
-          emptyText="Every website booking has a porter."
+          emptyText="Every assigned website booking has a porter, or none is needed."
           to="/management?tab=bookings"
         />
         <AttentionList

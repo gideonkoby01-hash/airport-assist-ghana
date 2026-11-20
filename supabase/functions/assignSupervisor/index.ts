@@ -37,6 +37,7 @@ serve('assignSupervisor', async (req) => {
     `Service: ${booking.package_name || booking.package_code}`,
     `Flight: ${`${booking.airline || ''} ${booking.flight_number || ''}`.trim()}`,
     `Date/Time: ${flightInfo || '—'}`,
+    'If a porter is needed for this job, open the booking and choose one.',
   ].join('\n');
 
   const { error: notifyError } = await admin.from('notifications').insert({

@@ -31,12 +31,12 @@ serve('updateBookingOperations', async (req) => {
   if (action === 'set_lounge') {
     changes = { lounge_used: String(body.lounge_used || '').trim().slice(0, 120) };
   } else if (action === 'add_porter' || action === 'remove_porter') {
-    // Porter assignment decides pay. For a service requested on the website, management assigns the porter. For a walk-in
-    // at the desk, the supervisor it is assigned to chooses the porter on the spot.
+    // Porter assignment decides pay. Management gives a website booking to a supervisor; that supervisor chooses the porter if
+    // one is used (a walk-in is chosen at the desk by the supervisor it belongs to). Management and admin can also do it.
     if (!canAssignPorter(user, booking)) {
       throw new HttpError(403, booking.status === 'cancelled' || booking.status === 'no_show'
         ? 'This booking was cancelled, so porters cannot be changed.'
-        : 'Porters for a website booking are assigned by management.');
+        : 'The supervisor this booking is assigned to chooses its porter.');
     }
     const porters: Record<string, unknown>[] = Array.isArray(booking.porters) ? [...booking.porters] : [];
     const settings = await loadSettings(admin);
