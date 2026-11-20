@@ -40,8 +40,8 @@ export default function Book() {
       <main className="mx-auto max-w-3xl px-4 sm:px-6 pt-4 pb-10">
         {!summary.done && (
           <div className="mt-6 mb-7 text-center">
-            <h1 className="serif text-[clamp(1.9rem,5vw,2.6rem)] leading-tight">We will meet you at Kotoka.</h1>
-            <p className="text-muted-foreground mt-2 text-sm sm:text-base">Your confirmation and updates are sent to your email.</p>
+            <h1 className="sora text-[clamp(1.7rem,5vw,2.5rem)] font-extrabold uppercase tracking-[0.04em] leading-tight">Book airport assistance</h1>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">We will meet you at Kotoka. Your confirmation and updates are sent to your email.</p>
           </div>
         )}
         <div className={summary.done ? "mt-7" : ""}>
