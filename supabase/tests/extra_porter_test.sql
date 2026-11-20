@@ -20,7 +20,7 @@ set local role service_role;
 select pg_temp.check_that('there is no way left to add an extra porter',
   (select count(*) = 0 from pg_proc where proname = 'add_extra_porter'));
 select pg_temp.check_that('quick sale has one version, with no extra-porter fee parameters',
-  (select count(*) = 1 and bool_and(pronargs = 20) from pg_proc where proname = 'create_quick_sale'));
+  (select count(*) = 1 and bool_and(pronargs = 21) from pg_proc where proname = 'create_quick_sale'));
 
 -- bookings that already carry an extra porter (recorded before this change)
 insert into public.bookings (reference, package_code, package_name, price_per_passenger, num_passengers, original_total, total_value, amount_collected, outstanding_balance,

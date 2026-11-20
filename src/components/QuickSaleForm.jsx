@@ -65,6 +65,9 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const passengerCount = Math.max(1, Math.min(50, Math.trunc(Number(count)) || 1));
   const slots = Array.from({ length: passengerCount }, (_, i) => porterIds[i] || "");
+  const NO_PORTER = "none"; // a meet and assist does not always need a porter
+  const mayGoWithoutPorter = Boolean(pkg) && pkg.code !== "porter_only";
+  const waivedCount = slots.filter((v) => v === NO_PORTER).length;
   const setSlot = (i, value) => setPorterIds(slots.map((v, k) => (k === i ? value : v)));
 
   const onAirlineChange = (value) => {
@@ -88,9 +91,11 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
     if (discounted && (!(Number(amount) > 0) || tooHigh)) return setError(`Enter a price above zero and not more than ${formatGHS(gross)}.`);
     if (discounted && reason.trim().length < 3) return setError("Give a reason for the lower price.");
     if (flightNumber.trim() && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,9}$/.test(flightNumber.trim())) return setError("Enter the flight number as letters and numbers, for example KQ 510.");
-    if (!porters.length) return setError("No porters are on the list yet. Ask an admin to add them under Porters.");
+    if (!porters.length && !(mayGoWithoutPorter && slots.every((v) => v === NO_PORTER))) return setError("No porters are on the list yet. Ask an admin to add them under Porters.");
     if (slots.some((v) => !v)) return setError(passengerCount === 1 ? "Choose the porter handling this service." : `Choose a porter for each of the ${passengerCount} passengers. One porter handles one passenger.`);
-    if (new Set(slots).size !== slots.length) return setError("Each porter can handle only one passenger. Choose a different porter for each.");
+    if (waivedCount > 0 && !mayGoWithoutPorter) return setError("Porter Service Only needs a porter for each passenger.");
+    const chosenPorters = slots.filter((v) => v !== NO_PORTER);
+    if (new Set(chosenPorters).size !== chosenPorters.length) return setError("Each porter can handle only one passenger. Choose a different porter for each.");
     setSaving(true);
     try {
       const res = await api.functions.invoke("createQuickSale", {
@@ -106,7 +111,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         flight_number: flightNumber.trim() || undefined,
         airline: airline.trim() || undefined,
         flight_time: flightTime || undefined,
-        porter_ids: slots,
+        porter_ids: chosenPorters,
+        porters_waived: waivedCount,
         commission: takeCommission && pkg.code !== "porter_only",
       });
       if (res?.data?.error) throw new Error(res.data.error);
@@ -250,7 +256,8 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">
           One porter handles one passenger, and each earns {formatGHS(commissionPerPassenger)}, paid daily.
-          {passengerCount > 1 && <> This sale needs {passengerCount} different porters.</>}
+          {passengerCount > 1 && <> This sale needs {passengerCount} different porters{mayGoWithoutPorter ? ", unless a passenger needs none" : ""}.</>}
+          {mayGoWithoutPorter && <> A meet and assist does not always need a porter: choose "No porter needed" for a passenger who does not.</>}
         </p>
         <div className="grid sm:grid-cols-2 gap-3">
           {slots.map((value, i) => (
@@ -260,6 +267,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
                 <SelectTrigger id={`qs-porter-${i}`}><SelectValue placeholder="Choose a porter" /></SelectTrigger>
                 <SelectContent>
                   {porters.length === 0 && <SelectItem value="_none" disabled>No porters on the list yet</SelectItem>}
+                  {mayGoWithoutPorter && <SelectItem value={NO_PORTER}>No porter needed</SelectItem>}
                   {porters.filter((p) => p.id === value || !slots.includes(p.id)).map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
                 </SelectContent>
               </Select>

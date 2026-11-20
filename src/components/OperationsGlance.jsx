@@ -73,7 +73,7 @@ export default function OperationsGlance() {
       .then((p) => live && setOverdue(p.items || []))
       .catch(() => live && setOverdue([]));
     // Website bookings nobody has assigned a porter to yet: management assigns the porter.
-    api.entities.Booking.filter({ booking_channel: "online", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters"] })
+    api.entities.Booking.filter({ booking_channel: "online", status: { $in: LIVE_STATUSES } }, { sort: "flight_date,scheduled_flight_time", limit: 100, fields: [...fields, "package_code", "porters", "num_passengers", "porters_waived"] })
       .then((p) => live && setNeedPorter(waitingForPorter(p.items || []).slice(0, 5)))
       .catch(() => live && setNeedPorter([]));
     return () => {

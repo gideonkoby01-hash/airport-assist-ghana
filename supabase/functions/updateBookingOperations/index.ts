@@ -24,7 +24,7 @@ serve('updateBookingOperations', async (req) => {
   const action = String(body.action || '');
   if (!bookingId) throw new HttpError(400, 'booking_id is required');
 
-  const { data: booking } = await admin.from('bookings').select('id,porters,assigned_supervisor_id,num_passengers,status,booking_channel').eq('id', bookingId).maybeSingle();
+  const { data: booking } = await admin.from('bookings').select('id,porters,assigned_supervisor_id,num_passengers,status,booking_channel,package_code,porters_waived').eq('id', bookingId).maybeSingle();
   if (!booking || !canOperateBooking(user, booking)) throw new HttpError(404, 'Booking not found');
 
   let changes: Record<string, unknown>;
@@ -40,6 +40,7 @@ serve('updateBookingOperations', async (req) => {
     }
     const porters: Record<string, unknown>[] = Array.isArray(booking.porters) ? [...booking.porters] : [];
     const settings = await loadSettings(admin);
+    const waivedNow = Number(booking.porters_waived) || 0;
     // Extra porters can no longer be added, but any already recorded can still be taken off (the fee comes off the price).
     if (action === 'remove_porter' && Number.isInteger(Number(body.index)) && porters[Number(body.index)]?.extra === true) {
       const { data: updated, error } = await admin.rpc('remove_extra_porter', { p_booking_id: bookingId, p_index: Number(body.index), p_user_id: user.id });
@@ -49,7 +50,7 @@ serve('updateBookingOperations', async (req) => {
     if (action === 'add_porter') {
       // One porter handles one passenger, so each porter added covers one passenger and earns the commission once.
       const handled = 1;
-      const problem = checkPorterShare(porters, handled, booking.num_passengers);
+      const problem = checkPorterShare(porters, handled, Number(booking.num_passengers) - waivedNow);
       if (problem) throw new HttpError(400, problem);
       // The porter must be on the register, so their daily pay is tied to a real person.
       const { data: porter } = await admin.from('porters').select('id,full_name,active').eq('id', String(body.porter_id || '')).maybeSingle();
@@ -67,6 +68,16 @@ serve('updateBookingOperations', async (req) => {
       porters.splice(index, 1);
     }
     changes = { porters };
+  } else if (action === 'set_porters_waived') {
+    // A meet and assist does not always need a porter. This sets how many passengers need none; porters already added still count.
+    if (!canAssignPorter(user, booking)) throw new HttpError(403, 'Porters for this booking cannot be changed.');
+    if (booking.package_code === 'porter_only') throw new HttpError(400, 'Porter Service Only always needs a porter for each passenger.');
+    const count = Number(body.count);
+    const covered = (Array.isArray(booking.porters) ? booking.porters : []).reduce((s: number, p: Record<string, unknown>) => s + (Number(p.passengers_handled) || 0), 0);
+    if (!Number.isInteger(count) || count < 0 || covered + count > Number(booking.num_passengers)) {
+      throw new HttpError(400, 'That is more passengers than this booking has without a porter.');
+    }
+    changes = { porters_waived: count };
   } else {
     throw new HttpError(400, 'Unknown action');
   }
