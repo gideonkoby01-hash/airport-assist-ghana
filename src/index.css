@@ -285,3 +285,31 @@
   .site .menu-item-in { opacity: 1; animation: none !important; }
 }
 
+
+/* ---------------------------------------------------------------------------
+   Booking page. The motion here answers what the passenger does: each step flies in from the side it comes from, the plane on the flight path moves to the step they reach, and confirming a booking sends one plane off.
+   Everything is switched off for people who ask for reduced motion.
+   --------------------------------------------------------------------------- */
+.flight-plane { transition: left 0.8s cubic-bezier(0.5, 0, 0.2, 1); }
+.flight-trail { transition: width 0.8s cubic-bezier(0.5, 0, 0.2, 1); }
+
+/* Rolls along the runway above the boarding pass, lifts off and climbs out of view. */
+@keyframes takeoff {
+  0% { left: 0%; transform: translateY(0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  48% { left: 46%; transform: translateY(0) rotate(0deg); }
+  100% { left: 104%; transform: translateY(-52px) rotate(-16deg); opacity: 0; }
+}
+@keyframes step-in { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+@keyframes step-in-back { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: none; } }
+@keyframes stamp { 0% { transform: scale(1.12) rotate(-2deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .takeoff { animation: takeoff 2.8s cubic-bezier(0.5, 0, 0.75, 0.6) 0.35s both; }
+  .step-in { animation: step-in 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .step-in-back { animation: step-in-back 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .pass-stamp { animation: stamp 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .takeoff { display: none; }
+  .flight-plane, .flight-trail { transition: none; }
+}
