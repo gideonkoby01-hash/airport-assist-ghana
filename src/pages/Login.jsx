@@ -24,6 +24,8 @@ export default function Login() {
   const { google } = useAuthProviders();
   const returnTo = safeReturnTo();
   const postLoginDest = returnTo === "/" ? "/portal" : returnTo;
+  // Someone who came from a Book button is a passenger: say so, and keep staff out of the wording.
+  const forBooking = returnTo.startsWith("/passenger");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,8 +54,8 @@ export default function Login() {
   return (
     <AuthLayout
       icon={LogIn}
-      title="Welcome back"
-      subtitle="Passengers and staff sign in here"
+      title={forBooking ? "Sign in to book" : "Welcome back"}
+      subtitle={forBooking ? "Sign in to your passenger account to book airport assistance" : "Passengers and staff sign in here"}
       footer={
         <>
           Don't have an account?{" "}
