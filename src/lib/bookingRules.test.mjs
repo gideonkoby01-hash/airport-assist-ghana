@@ -95,4 +95,8 @@ test('website bookings waiting for a porter, whatever the service', () => {
   const three = (n) => ({ booking_channel: 'online', status: 'confirmed', num_passengers: 3, porters: Array.from({ length: n }, () => ({ passengers_handled: 1 })) });
   assert.equal(waitingForPorter([three(1)]).length, 1);
   assert.equal(waitingForPorter([three(3)]).length, 0);
+  // A meet and assist may need no porter for some or all passengers.
+  assert.equal(waitingForPorter([{ ...three(1), porters_waived: 2 }]).length, 0);
+  assert.equal(waitingForPorter([{ ...three(0), porters_waived: 3 }]).length, 0);
+  assert.equal(waitingForPorter([{ ...three(1), porters_waived: 1 }]).length, 1);
 });

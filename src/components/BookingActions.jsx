@@ -39,7 +39,20 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const [porterRegister, setPorterRegister] = useState([]);
   const [porterId, setPorterId] = useState("");
   const covered = (booking.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0);
-  const passengersLeft = Math.max(0, (booking.num_passengers || 1) - covered);
+  // A meet and assist does not always need a porter: staff can mark passengers who need none.
+  const waived = Number(booking.porters_waived) || 0;
+  const passengersLeft = Math.max(0, (booking.num_passengers || 1) - covered - waived);
+  const canGoWithoutPorter = booking.package_code !== "porter_only";
+  const setWaived = async (count) => {
+    setSavingPorter(true);
+    try {
+      await callBooking("updateBookingOperations", { action: "set_porters_waived", count });
+    } catch (err) {
+      notifyError(err.message || "Could not update the porters.");
+    } finally {
+      setSavingPorter(false);
+    }
+  };
   const mayAssignPorter = canAssignPorter(user, booking);
   // The supervisor's own commission on a meet and assist: they tick it, and it comes off the day's takings in the shift report.
   const supervisorCommission = Number(settings.supervisor_commission_per_signup);
@@ -288,10 +301,24 @@ export default function BookingActions({ booking, user, onUpdated }) {
               ? "A walk-in at the desk: you choose the porter."
               : "A service requested on the website: management assigns the porter."}{" "}
             One porter handles one passenger, and each porter earns {formatGHS(commissionPerPassenger)} for the job, paid to them daily.
-            {" "}<span className="font-medium text-foreground">{Math.min(covered, booking.num_passengers || 1)} of {booking.num_passengers || 1} passenger(s) have a porter.</span>
+            {" "}<span className="font-medium text-foreground">{Math.min(covered, booking.num_passengers || 1)} of {booking.num_passengers || 1} passenger(s) have a porter{waived > 0 ? `, ${waived} need${waived === 1 ? "s" : ""} none` : ""}.</span>
           </p>
+          {canGoWithoutPorter && (passengersLeft > 0 || waived > 0) && (
+            <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
+              {passengersLeft > 0 && (
+                <Button type="button" variant="outline" size="sm" disabled={savingPorter} onClick={() => setWaived(waived + passengersLeft)}>
+                  No porter needed for {passengersLeft === 1 ? "the other passenger" : `the other ${passengersLeft} passengers`}
+                </Button>
+              )}
+              {waived > 0 && (
+                <Button type="button" variant="ghost" size="sm" disabled={savingPorter} onClick={() => setWaived(0)}>
+                  Undo: these passengers do need a porter
+                </Button>
+              )}
+            </div>
+          )}
           {passengersLeft === 0 ? (
-            <p className="text-sm text-muted-foreground">Every passenger has a porter.</p>
+            <p className="text-sm text-muted-foreground">{waived > 0 ? "Every passenger is covered: a porter, or none needed." : "Every passenger has a porter."}</p>
           ) : porterRegister.length === 0 ? (
             <p className="text-sm text-muted-foreground">No porters on the list yet. An admin adds them under Porters.</p>
           ) : (
