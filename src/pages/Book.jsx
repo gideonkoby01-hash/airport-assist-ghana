@@ -6,23 +6,14 @@ import { ThemeToggle } from "@/lib/theme";
 import { CurrencyToggle } from "@/lib/currency";
 import { LOGO_URL } from "@/components/Logo";
 import BookingForm from "@/components/BookingForm";
-import FlapBoard from "@/components/booking/FlapBoard";
 
 // The booking page: one clear path from choosing a service to a confirmed booking, like booking a flight. No dashboard,
 // no menus, and no account: the booking is tied to the email address the passenger gives. The priority check-in desk is
-// the page's background, faded so the form stays easy to read; a departure board fills in as the passenger
-// makes their choices.
+// the page's background, faded so the form stays easy to read.
 export default function Book() {
   useDocumentTitle("Book airport assistance");
   const [summary, setSummary] = useState({ service: "", flight: "", direction: "arrival", when: "", pax: 1, done: false });
 
-  // The board is short: "Full Departure Assist" is shown as "Full Departure".
-  const service = summary.service.replace(/ (assist|only|service)$/i, "");
-  const rows = [
-    service || "Kotoka Airport",
-    summary.flight ? `${summary.flight} ${summary.direction === "departure" ? "dep" : "arr"} ${summary.pax} pax` : "Meet and assist",
-    summary.when || (summary.service ? "Add your flight" : "Book in minutes"),
-  ];
 
   return (
     <div className="site relative isolate min-h-screen bg-background text-foreground">
@@ -47,11 +38,8 @@ export default function Book() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 sm:px-6 pt-4 pb-10">
-        <div className="mx-auto max-w-md">
-          <FlapBoard rows={rows} />
-        </div>
         {!summary.done && (
-          <div className="mt-7 mb-7 text-center">
+          <div className="mt-6 mb-7 text-center">
             <h1 className="serif text-[clamp(1.9rem,5vw,2.6rem)] leading-tight">We will meet you at Kotoka.</h1>
             <p className="text-muted-foreground mt-2 text-sm sm:text-base">Your confirmation and updates are sent to your email.</p>
           </div>

@@ -287,50 +287,29 @@
 
 
 /* ---------------------------------------------------------------------------
-   Booking page. The motion here answers what the passenger does: the departure board flips only the letters that
-   change, the plane on the flight path moves to the step they reach, and confirming a booking sends one plane off.
+   Booking page. The motion here answers what the passenger does: each step flies in from the side it comes from, the plane on the flight path moves to the step they reach, and confirming a booking sends one plane off.
    Everything is switched off for people who ask for reduced motion.
    --------------------------------------------------------------------------- */
-.flap-row { display: flex; justify-content: center; perspective: 420px; }
-.flap {
-  display: inline-grid;
-  place-items: center;
-  position: relative;
-  width: var(--flap-w, 1.12rem);
-  height: var(--flap-h, 1.62rem);
-  margin: 0 1.5px;
-  border-radius: 4px;
-  background: linear-gradient(#1a3866 0 49.5%, #12294d 50.5% 100%);
-  color: #f6c73a;
-  font: 700 var(--flap-f, 1rem) / 1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.35);
-}
-.flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(0 0 0 / 0.55); }
-@keyframes flap-in {
-  0% { transform: rotateX(-88deg); filter: brightness(0.35); }
-  60% { transform: rotateX(14deg); filter: none; }
-  100% { transform: none; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .flap { animation: flap-in 0.5s cubic-bezier(0.3, 0.7, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 26ms); transform-origin: 50% 50%; }
-}
-
 .flight-plane { transition: left 0.8s cubic-bezier(0.5, 0, 0.2, 1); }
 .flight-trail { transition: width 0.8s cubic-bezier(0.5, 0, 0.2, 1); }
 
+/* Rolls along the runway above the boarding pass, lifts off and climbs out of view. */
 @keyframes takeoff {
-  0% { transform: translate(-6vw, 0) rotate(0deg); opacity: 0; }
-  12% { opacity: 1; }
-  100% { transform: translate(105vw, -22vh) rotate(-10deg); opacity: 0; }
+  0% { left: 0%; transform: translateY(0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  48% { left: 46%; transform: translateY(0) rotate(0deg); }
+  100% { left: 104%; transform: translateY(-52px) rotate(-16deg); opacity: 0; }
 }
-@keyframes trail-draw { from { transform: scaleX(0); opacity: 0.9; } to { transform: scaleX(1); opacity: 0; } }
+@keyframes step-in { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+@keyframes step-in-back { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: none; } }
 @keyframes stamp { 0% { transform: scale(1.12) rotate(-2deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: no-preference) {
-  .takeoff { animation: takeoff 2.6s cubic-bezier(0.55, 0, 0.7, 0.4) 0.2s both; }
-  .takeoff-trail { transform-origin: left; animation: trail-draw 2.6s ease-out 0.2s both; }
+  .takeoff { animation: takeoff 2.8s cubic-bezier(0.5, 0, 0.75, 0.6) 0.35s both; }
+  .step-in { animation: step-in 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .step-in-back { animation: step-in-back 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   .pass-stamp { animation: stamp 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .takeoff, .takeoff-trail { display: none; }
+  .takeoff { display: none; }
   .flight-plane, .flight-trail { transition: none; }
 }

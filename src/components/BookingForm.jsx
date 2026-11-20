@@ -98,6 +98,8 @@ export default function BookingForm({ channel = "online", user = undefined, supe
   // The airline is picked from a list; "Other" opens a box for anything not on it.
   const [otherAirline, setOtherAirline] = useState(Boolean(draft?.otherAirline));
   const top = useRef(null);
+  // Which way the last step change went, so the new step flies in from the right side.
+  const direction = useRef("forward");
 
   useEffect(() => {
     let active = true;
@@ -130,7 +132,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
       const at = e.state?.bookingStep;
       if (Number.isInteger(at) && at >= 0 && at < STEPS.length) {
         setError("");
-        setStep(at);
+        setStep((current) => { direction.current = at < current ? "back" : "forward"; return at; });
         requestAnimationFrame(() => top.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
       }
     };
@@ -242,6 +244,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
   const goTo = (n) => {
     setError("");
+    direction.current = n < step ? "back" : "forward";
     if (standalone) {
       if (n > step) window.history.pushState({ bookingStep: n }, "");
       else window.history.replaceState({ bookingStep: n }, "");
@@ -377,8 +380,10 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           confirmed
           direction={form.flight_type}
           service={created.package_name || selectedPkg?.name}
-          flight={[form.airline, form.flight_number].filter(Boolean).join(" ")}
-          when={[form.flight_date, form.scheduled_flight_time].filter(Boolean).join(" at ")}
+          airline={form.airline}
+          flightNumber={form.flight_number}
+          date={form.flight_date}
+          time={form.scheduled_flight_time}
           travellers={passengers.map((p) => p.name.trim()).filter(Boolean)}
           contact={form.contact}
           email={created.contact_email || form.contact_email}
@@ -469,6 +474,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
       {error && <div ref={errorBox} role="alert" className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
 
+      <div key={step} className={`space-y-6 ${direction.current === "back" ? "step-in-back" : "step-in"}`}>
       {step === 0 && (
       <section id="bf-package_code" tabIndex={-1} className="bg-card rounded-3xl border border-border p-5 sm:p-6 shadow-[0_22px_44px_-32px_hsl(var(--foreground)/0.5)] outline-none">
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -720,12 +726,13 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
       {step === 3 && (
         <>
-            <p className="text-sm text-muted-foreground">Check your boarding pass. Change anything that is not right, then confirm.</p>
-          <BoardingPass
+            <BoardingPass
             direction={form.flight_type}
             service={selectedPkg?.name}
-            flight={[form.airline, form.flight_number].filter(Boolean).join(" ")}
-            when={[form.flight_date, form.scheduled_flight_time].filter(Boolean).join(" at ")}
+            airline={form.airline}
+            flightNumber={form.flight_number}
+            date={form.flight_date}
+            time={form.scheduled_flight_time}
             travellers={passengers.map((p) => p.name.trim()).filter(Boolean)}
             contact={form.contact}
             email={form.contact_email}
@@ -767,6 +774,8 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
         </>
       )}
+
+      </div>
 
       {/* Price and navigation: always in view at the bottom of the screen */}
       <div className="sticky bottom-3 z-10">
