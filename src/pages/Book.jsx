@@ -32,7 +32,7 @@ export default function Book() {
       <main className="mx-auto max-w-3xl px-4 sm:px-6 pt-6 pb-10">
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Book airport assistance</h1>
-          <p className="text-sm text-muted-foreground mt-1">Four quick steps. No account or sign-in: your confirmation and updates are sent to your email.</p>
+          <p className="text-sm text-muted-foreground mt-1">Your confirmation and updates are sent to your email.</p>
         </div>
         <BookingForm channel="online" standalone />
       </main>
