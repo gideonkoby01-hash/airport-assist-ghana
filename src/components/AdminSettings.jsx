@@ -357,6 +357,12 @@ export default function AdminSettings() {
                       <li>Sender: <span className="font-mono text-foreground">{drafts.email_from || "(not set)"}</span></li>
                     </ul>
                   )}
+                  <p className="pt-1">
+                    <span className="font-medium text-foreground">Email confirmation at sign-up is currently a Supabase setting.</span>{" "}
+                    While it is off, new passengers are signed in straight away. Once the mail server above works (use Send me a test email, and
+                    enter the same details in Supabase), switch it on under Authentication &gt; Sign In / Providers &gt; Email &gt; Confirm email, and new
+                    accounts will be asked to confirm their email.
+                  </p>
                 </div>
               )}
             </div>
