@@ -62,6 +62,7 @@ select pg_temp.raises('a negative amount is refused',
 select pg_temp.check_that('the shift report takes the commission off the takings',
   (select (b ->> 'supervisor_commission')::numeric = 50 and (b ->> 'supervisor_commission_count')::int = 1
       and (b ->> 'net_after_commission')::numeric = 1500 - 90 - 50
+      and (b ->> 'cash_expected')::numeric = 1500 - 50 and (b ->> 'cash_sales')::numeric = 1500   -- the supervisor keeps their commission out of the cash
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000f1', (select period from cur), (select shift from cur)) as b) x));
 
 -- unmarking before the report is filed
@@ -73,7 +74,7 @@ select public.set_supervisor_commission((select id from public.bookings where re
 
 -- filing the report stores the figure and locks the ticks
 select pg_temp.check_that('the filed report keeps the supervisor commission and the net',
-  (select supervisor_commission = 100 and net_after_commission = 1500 - 90 - 100
+  (select supervisor_commission = 100 and net_after_commission = 1500 - 90 - 100 and cash_expected = 1400 and cash_variance = 0
    from public.create_shift_report('00000000-0000-0000-0000-0000000000f1', 'Sam', (select period from cur), (select shift from cur), 1400, '')));
 select pg_temp.raises('a commission in a filed report cannot be changed',
   $q$select public.set_supervisor_commission((select id from public.bookings where reference = 'SC-1'), false, 0, 'f1')$q$, 'report_filed');
