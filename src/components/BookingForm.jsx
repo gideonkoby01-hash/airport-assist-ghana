@@ -49,7 +49,7 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 // eslint-disable-next-line unused-imports/no-unused-vars
 export default function BookingForm({ channel = "online", user = undefined, supervisor = undefined, onCreated = undefined, standalone = false }) {
   const { user: me } = useAuth();
-  const { format: money, isUsd } = useMoney();
+  const { formatFor, isUsd } = useMoney();
   // Choices made in the website's quick quote arrive in the address (package, date, number of travellers).
   const [searchParams] = useSearchParams();
   const prefill = useMemo(() => parseBookingPrefill(searchParams.toString()), []); // read once, when the form opens
@@ -146,6 +146,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
     return fromList || packageByCode(form.package_code);
   }, [packages, form.package_code]);
 
+  const money = formatFor(selectedPkg);
   const pricePerPassenger = Number(selectedPkg?.price || 0);
   const numPassengers = passengers.length;
   const totalValue = computeTotal(pricePerPassenger, numPassengers);
@@ -370,7 +371,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           Total: <span className="font-semibold text-foreground">{money(created.total_value)}</span> ·{" "}
           {created.num_passengers} passenger{created.num_passengers !== 1 ? "s" : ""}
         </p>
-        {isUsd && <p className="text-xs text-muted-foreground mt-1">You pay in cedis at the airport: {formatGHS(created.total_value)}.</p>}
+        {isUsd && <p className="text-xs text-muted-foreground mt-1">Recorded at the airport as {formatGHS(created.total_value)}.</p>}
         {Number(created.discount_amount || 0) > 0 && (
           <p className="text-xs text-emerald-700 mt-1">
             Discount {created.discount_code} applied (−{money(created.discount_amount)} from{" "}
@@ -449,7 +450,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" aria-hidden="true" /> Choose your service
         </h3>
-        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.{isUsd && " Dollar prices are for your information; you pay in cedis at the airport."}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.{isUsd && " Dollar prices are the ones Airport Assist has set for each service. You pay at the airport."}</p>
         {loadingPkgs ?
         <div className="flex items-center text-muted-foreground text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…
@@ -477,7 +478,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">{p.name}</span>
-                  <span className="text-lg font-bold text-primary">{money(p.price)}</span>
+                  <span className="text-lg font-bold text-primary">{formatFor(p)(p.price)}</span>
                 </div>
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                   {inclusionList(p.inclusions).map((item) => (
@@ -732,6 +733,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             packageCode={form.package_code}
             numPassengers={numPassengers}
             contactEmail={form.contact_email}
+            formatAmount={money}
             disabled={submitting}
           />
 

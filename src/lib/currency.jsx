@@ -1,11 +1,12 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { useSettings } from "@/lib/SettingsContext";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
-import { formatMoney } from "@/lib/money";
+import { formatForPackage, formatGhsAmount, hasUsdPrice } from "@/lib/money";
 
-// Which currency a passenger views prices in. Staff always see cedis, because shift reports, accounts and cash counts are in cedis.
+// Which currency a passenger views prices in. Management sets a dollar price on each service; a service without one shows cedis.
+// Staff always see cedis, because shift reports, accounts and cash counts are in cedis.
 const KEY = "aag-currency";
-const CurrencyContext = createContext({ currency: "GHS", setCurrency: (/** @type {string} */ _c) => {} });
+const CurrencyContext = createContext({ currency: "GHS", setCurrency: (/** @type {string} */ _c) => {}, packages: /** @type {any[]} */ ([]) });
 
 function read() {
   try {
@@ -17,6 +18,7 @@ function read() {
 
 export function CurrencyProvider({ children }) {
   const [currency, setCurrencyState] = useState(read);
+  const [packages, setPackages] = useState([]);
   const setCurrency = useCallback((c) => {
     const next = c === "USD" ? "USD" : "GHS";
     setCurrencyState(next);
@@ -26,25 +28,38 @@ export function CurrencyProvider({ children }) {
       // the choice lasts for this visit only
     }
   }, []);
-  const value = useMemo(() => ({ currency, setCurrency }), [currency, setCurrency]);
+  // The service list (anyone can read it) carries each service's dollar price.
+  useEffect(() => {
+    api.entities.ServicePackage.filter({ active: true }, { sort: "price" })
+      .then((page) => setPackages(page.items || []))
+      .catch(() => {});
+  }, []);
+  const value = useMemo(() => ({ currency, setCurrency, packages }), [currency, setCurrency, packages]);
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
 }
 
-/** `format(cedis)` shows a price in the viewer's chosen currency (cedis for staff). `isUsd` says dollars are being shown. */
+/**
+ * `format(cedis)` always shows cedis. `formatFor(service)(cedis)` shows an amount on a booking for that service (a service, or its
+ * code) in the chosen currency: in dollars it is the service's own dollar price. `usdAvailable` says at least one service has one.
+ */
 export function useMoney() {
-  const { currency, setCurrency } = useContext(CurrencyContext);
-  const { settings } = useSettings();
+  const { currency, setCurrency, packages } = useContext(CurrencyContext);
   const { user } = useAuth();
   const staff = Boolean(user) && !["passenger", "user", undefined, null, ""].includes(user.role);
-  const effective = staff ? "GHS" : currency;
-  const rate = Number(settings.usd_exchange_rate);
-  const format = useCallback((amountGhs) => formatMoney(amountGhs, effective, rate), [effective, rate]);
-  return { currency: effective, setCurrency, format, isUsd: effective === "USD", rate, canChoose: !staff };
+  const usdAvailable = packages.some(hasUsdPrice);
+  const effective = staff || !usdAvailable ? "GHS" : currency;
+  const formatFor = useCallback((service) => {
+    const pkg = typeof service === "string"
+      ? packages.find((p) => p.code === service)
+      : service && service.price_usd === undefined ? { ...service, ...(packages.find((p) => p.code === service.code) || {}), price: service.price } : service;
+    return (/** @type {number} */ amountGhs) => formatForPackage(amountGhs, pkg, effective);
+  }, [packages, effective]);
+  return { currency: effective, chosen: currency, setCurrency, format: formatGhsAmount, formatFor, isUsd: effective === "USD", usdAvailable, canChoose: !staff && usdAvailable };
 }
 
-/** A small GHS | USD switch. */
+/** A small GHS | USD switch. It only appears once management has set a dollar price on a service. */
 export function CurrencyToggle({ className = "" }) {
-  const { currency, setCurrency, canChoose } = useMoney();
+  const { chosen, setCurrency, canChoose } = useMoney();
   if (!canChoose) return null;
   return (
     <div role="group" aria-label="Show prices in" className={`inline-flex rounded-full border border-border bg-card p-0.5 text-xs font-semibold ${className}`}>
@@ -52,9 +67,9 @@ export function CurrencyToggle({ className = "" }) {
         <button
           key={c}
           type="button"
-          aria-pressed={currency === c}
+          aria-pressed={chosen === c}
           onClick={() => setCurrency(c)}
-          className={`px-3 py-1.5 rounded-full transition-colors ${currency === c ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          className={`px-3 py-1.5 rounded-full transition-colors ${chosen === c ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           {c === "GHS" ? "GH₵ GHS" : "$ USD"}
         </button>
