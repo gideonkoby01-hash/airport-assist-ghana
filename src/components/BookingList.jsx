@@ -2,12 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
 import { PACKAGE_LABELS } from "@/lib/packages";
-import { isOverdue } from "@/lib/bookingRules";
+import { isOverdue, needsPorter } from "@/lib/bookingRules";
 import { useMoney } from "@/lib/currency";
 import { todayUtc } from "@/lib/bookingFormRules";
 import { Plane, Calendar, Users } from "lucide-react";
 
-export default function BookingList({ bookings, loading, emptyMessage = "No bookings yet.", hasMore = false, loadingMore = false, onLoadMore = undefined }) {
+export default function BookingList({ bookings, loading, emptyMessage = "No bookings yet.", hasMore = false, loadingMore = false, onLoadMore = undefined, showPorter = false }) {
   const { format: money } = useMoney();
   if (loading) {
     return (
@@ -35,6 +35,9 @@ export default function BookingList({ bookings, loading, emptyMessage = "No book
                 <span className="font-mono text-sm font-semibold text-primary">{b.reference}</span>
                 <BookingStatusBadge status={b.status} />
                 <PaymentBadge status={b.payment_status} />
+                {showPorter && needsPorter(b) && (
+                  <span className="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-xs font-semibold">Choose a porter</span>
+                )}
               </div>
               <p className="text-sm text-foreground mt-1 font-medium">{PACKAGE_LABELS[b.package_code] || b.package_name}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">

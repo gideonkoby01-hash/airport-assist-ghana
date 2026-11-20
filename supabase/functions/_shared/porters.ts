@@ -28,14 +28,14 @@ type Actor = { id: string; role: string };
 type BookingForPorter = { booking_channel?: string | null; assigned_supervisor_id?: string | null; status?: string | null };
 
 /**
- * Who puts a porter on a booking. A service requested on the website: management and admin. A walk-in at the desk:
- * the supervisor it is assigned to (they choose the porter on the spot), and management and admin too.
+ * Who puts a porter on a booking. The supervisor a booking is assigned to chooses the porter, if one is used: for a website
+ * booking that management has given them, and for a walk-in at the desk alike. Management and admin can also do it.
  * Nobody can change porters on a booking that was cancelled.
  */
 export function canAssignPorter(user: Actor | null, booking: BookingForPorter | null): boolean {
   if (!user || !booking) return false;
   if (booking.status === 'cancelled' || booking.status === 'no_show') return false;
   if (user.role === 'admin' || user.role === 'management') return true;
-  return user.role === 'supervisor' && booking.booking_channel === 'walk_in' && booking.assigned_supervisor_id === user.id;
+  return user.role === 'supervisor' && !!booking.assigned_supervisor_id && booking.assigned_supervisor_id === user.id;
 }
 

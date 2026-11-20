@@ -107,16 +107,24 @@ export function tallyToday(bookings) {
 
 /**
  * Who puts a porter on a booking (mirrors supabase/functions/_shared/porters.ts; the server is the authority).
- * A service requested on the website: management and admin. A walk-in at the desk: its supervisor, and management and admin.
+ * The supervisor the booking is assigned to chooses the porter, if one is used, on a website booking and a walk-in alike.
+ * Management and admin can also do it.
  */
 export function canAssignPorter(user, booking) {
   if (!user || !booking) return false;
   if (booking.status === "cancelled" || booking.status === "no_show") return false;
   if (user.role === "admin" || user.role === "management") return true;
-  return user.role === "supervisor" && booking.booking_channel === "walk_in" && booking.assigned_supervisor_id === user.id;
+  return user.role === "supervisor" && Boolean(booking.assigned_supervisor_id) && booking.assigned_supervisor_id === user.id;
 }
 
-/** Website bookings (any service) still waiting for a porter: not cancelled or finished, nobody assigned yet. */
+/** An open booking with fewer porters than passengers, not counting passengers marked as needing none. */
+export function needsPorter(b) {
+  if (!["confirmed", "assigned", "in_progress"].includes(b.status)) return false;
+  const covered = (b.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0);
+  return covered < (Number(b.num_passengers) || 1) - (Number(b.porters_waived) || 0);
+}
+
+/** Website bookings already given to a supervisor that still have no porter chosen (the supervisor chooses it, or marks that none is needed). */
 export function waitingForPorter(bookings) {
-  return bookings.filter((b) => b.booking_channel !== "walk_in" && ["confirmed", "assigned", "in_progress"].includes(b.status) && (b.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0) < (Number(b.num_passengers) || 1) - (Number(b.porters_waived) || 0));
+  return bookings.filter((b) => b.booking_channel !== "walk_in" && Boolean(b.assigned_supervisor_id) && needsPorter(b));
 }

@@ -21,11 +21,13 @@ Deno.test('commission is the rate times passengers handled', () => {
 
 import { canAssignPorter } from './porters.ts';
 
-Deno.test('website requests: management assigns the porter, a supervisor does not', () => {
+Deno.test('website requests: the assigned supervisor chooses the porter, another supervisor does not, management can', () => {
   const online = { booking_channel: 'online', assigned_supervisor_id: 's1', status: 'assigned' };
   assertEquals(canAssignPorter({ id: 'm1', role: 'management' }, online), true);
   assertEquals(canAssignPorter({ id: 'a1', role: 'admin' }, online), true);
-  assertEquals(canAssignPorter({ id: 's1', role: 'supervisor' }, online), false);
+  assertEquals(canAssignPorter({ id: 's1', role: 'supervisor' }, online), true);
+  assertEquals(canAssignPorter({ id: 's2', role: 'supervisor' }, online), false);
+  assertEquals(canAssignPorter({ id: 's1', role: 'supervisor' }, { ...online, assigned_supervisor_id: null }), false);
   assertEquals(canAssignPorter({ id: 'p1', role: 'passenger' }, online), false);
 });
 Deno.test('walk-ins: the supervisor it belongs to assigns the porter, another supervisor does not', () => {

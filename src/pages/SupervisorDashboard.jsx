@@ -14,7 +14,7 @@ import SupervisorProfileForm from "@/components/supervisor/SupervisorProfileForm
 import MyProfileSummary from "@/components/supervisor/MyProfileSummary";
 import StatCard from "@/components/StatCard";
 import { formatGHS } from "@/lib/packages";
-import { supervisorView, LIVE_STATUSES } from "@/lib/bookingRules";
+import { supervisorView, LIVE_STATUSES, needsPorter } from "@/lib/bookingRules";
 import { todayUtc } from "@/lib/bookingFormRules";
 import { Input } from "@/components/ui/input";
 import { ClipboardList, Wallet, CalendarClock, Search } from "lucide-react";
@@ -97,6 +97,7 @@ function SupervisorInner() {
   }, []);
 
   const { active, collected, outstanding } = totals;
+  const needPorter = bookings.filter(needsPorter).length;
 
   return (
     <AppLayout>
@@ -138,7 +139,12 @@ function SupervisorInner() {
               />
             </div>
           </div>
-          <BookingList bookings={bookings} loading={loading} emptyMessage={emptyFor(view, search)} hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
+          {needPorter > 0 && (
+            <p role="status" className="text-sm rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-3">
+              {needPorter} booking{needPorter === 1 ? "" : "s"} below {needPorter === 1 ? "has" : "have"} no porter yet. Open {needPorter === 1 ? "it" : "each one"} to choose a porter, or to mark that none is needed.
+            </p>
+          )}
+          <BookingList showPorter bookings={bookings} loading={loading} emptyMessage={emptyFor(view, search)} hasMore={paged.hasMore} loadingMore={paged.loadingMore} onLoadMore={paged.loadMore} />
         </div>
       )}
 

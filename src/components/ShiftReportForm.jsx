@@ -141,7 +141,7 @@ export default function ShiftReportForm({ supervisor }) {
           )}
           {Number(preview.porters_awaiting_management) > 0 && (
             <p className="text-sm text-muted-foreground">
-              {preview.porters_awaiting_management} website booking{preview.porters_awaiting_management === 1 ? "" : "s"} {preview.porters_awaiting_management === 1 ? "is" : "are"} still waiting for management to assign a porter. {preview.porters_awaiting_management === 1 ? "It does" : "They do"} not hold up your report.
+              {preview.porters_awaiting_management} website booking{preview.porters_awaiting_management === 1 ? "" : "s"} {preview.porters_awaiting_management === 1 ? "is" : "are"} still waiting for a porter to be chosen (or marked as not needed). Open {preview.porters_awaiting_management === 1 ? "it" : "each one"} to choose one. {preview.porters_awaiting_management === 1 ? "It does" : "They do"} not hold up your report.
             </p>
           )}
           {Number(preview.grand_total_paid) === 0 && Number(preview.booking_count) === 0 && (
