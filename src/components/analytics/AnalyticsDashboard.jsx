@@ -135,14 +135,15 @@ export default function AnalyticsDashboard() {
               <KpiTile label="Paid on account" value={formatGHS(got.account)} sub="Corporate accounts" />
               <KpiTile label="Total received (net of refunds)" value={formatGHS(got.total)} sub="Cash + POS + on account" />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <KpiTile label="Completed" value={pctLabel(derived.completion)} current={derived.completion} previous={derived.prevCompletion} sub={`${n(cur.completed)} of ${n(cur.bookings)}`} />
               <KpiTile label="Cancelled" value={pctLabel(derived.cancel)} current={derived.cancel} previous={derived.prevCancel} upIsGood={false} sub={`${n(cur.cancelled)} bookings`} />
               <KpiTile label="No-shows" value={pctLabel(derived.noShow)} current={derived.noShow} previous={derived.prevNoShow} upIsGood={false} sub={`${n(cur.no_show)} bookings`} />
               <KpiTile label="Booked on the website" value={pctLabel(derived.online)} current={derived.online} previous={derived.prevOnline} sub={`${n(cur.online_bookings)} online, ${n(cur.walk_in_bookings)} at the desk`} />
               <KpiTile label="Discounts given" value={formatGHS(cur.discounts)} current={cur.discounts} previous={prev.discounts} upIsGood={false} />
               <KpiTile label="Refunds" value={formatGHS(cur.refunds)} current={cur.refunds} previous={prev.refunds} upIsGood={false} />
-              <KpiTile label="Porter and supervisor commission" value={formatGHS(n(cur.porter_commission) + n(cur.supervisor_commission))} current={n(cur.porter_commission) + n(cur.supervisor_commission)} previous={n(prev.porter_commission) + n(prev.supervisor_commission)} upIsGood={false} sub={`Porters ${formatGHS(cur.porter_commission)}, supervisors ${formatGHS(cur.supervisor_commission)}`} />
+              <KpiTile label="Porter commission" value={formatGHS(cur.porter_commission)} current={n(cur.porter_commission)} previous={n(prev.porter_commission)} upIsGood={false} sub="GHS 30 per porter job, paid daily" />
+              <KpiTile label="Supervisor commission" value={formatGHS(cur.supervisor_commission)} current={n(cur.supervisor_commission)} previous={n(prev.supervisor_commission)} upIsGood={false} sub="On meet and assist bookings" />
               <KpiTile label="Expenses" value={formatGHS(cur.expenses)} current={cur.expenses} previous={prev.expenses} upIsGood={false} sub={<Link to="?tab=accounts&sub=expenses" className="underline">Open accounts</Link>} />
             </div>
           </Section>
