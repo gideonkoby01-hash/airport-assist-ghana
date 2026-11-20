@@ -33,13 +33,13 @@ const STEP_FIELDS = [
   (k) => k === "consent",
 ];
 
-// The services are listed under Arrival, Departure and Porter so each kind is easy to find.
+// The services are listed under Arrival and Departure. A service that works in both directions (Porter Service Only) is
+// listed under each, so there is one under Arrival and one under Departure.
 const SERVICE_GROUPS = [
   { key: "arrival", label: "Arrival services" },
   { key: "departure", label: "Departure services" },
-  { key: "both", label: "Porter service" },
 ];
-const serviceGroup = (/** @type {{ flight_type?: string }} */ p) => (p.flight_type === "arrival" || p.flight_type === "departure" ? p.flight_type : "both");
+const inGroup = (/** @type {{ flight_type?: string }} */ p, /** @type {string} */ group) => p.flight_type === group || (p.flight_type !== "arrival" && p.flight_type !== "departure");
 
 const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, special_requests: "" };
 
@@ -179,9 +179,10 @@ export default function BookingForm({ channel = "online", user = undefined, supe
     if (error) errorBox.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [error]);
 
-  const onPackageChange = (code) => {
+  // `group` is the list the card was chosen from: it sets the direction for a service that works both ways.
+  const onPackageChange = (code, group) => {
     const pkg = packages.find((p) => p.code === code) || packageByCode(code);
-    const ft = pkg?.flight_type === "departure" ? "departure" : pkg?.flight_type === "arrival" ? "arrival" : form.flight_type;
+    const ft = pkg?.flight_type === "departure" ? "departure" : pkg?.flight_type === "arrival" ? "arrival" : group || form.flight_type;
     setAppliedDiscount(null);
     clearError("package_code");
     setForm((f) => ({ ...f, package_code: code, flight_type: ft }));
@@ -455,7 +456,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
         <div className="space-y-5">
             {SERVICE_GROUPS.map((group) => {
-              const list = packages.filter((p) => serviceGroup(p) === group.key);
+              const list = packages.filter((p) => inGroup(p, group.key));
               if (!list.length) return null;
               return (
                 <div key={group.key}>
@@ -465,10 +466,10 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           <button
             type="button"
             key={p.code}
-            aria-pressed={form.package_code === p.code}
-            onClick={() => onPackageChange(p.code)}
+            aria-pressed={form.package_code === p.code && (p.flight_type === "arrival" || p.flight_type === "departure" || form.flight_type === group.key)}
+            onClick={() => onPackageChange(p.code, group.key)}
             className={`text-left flex flex-col justify-start rounded-xl border p-4 transition-all ${
-            form.package_code === p.code ?
+            form.package_code === p.code && (p.flight_type === "arrival" || p.flight_type === "departure" || form.flight_type === group.key) ?
             "border-accent ring-2 ring-accent/40 bg-accent/5" :
             "border-border hover:border-accent/50"}`
             }>
