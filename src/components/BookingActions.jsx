@@ -39,7 +39,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const [porterRegister, setPorterRegister] = useState([]);
   const [porterId, setPorterId] = useState("");
   const covered = (booking.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0);
-  const [porterHandled, setPorterHandled] = useState(Math.max(1, (booking.num_passengers || 1) - covered));
+  const passengersLeft = Math.max(0, (booking.num_passengers || 1) - covered);
   const mayAssignPorter = canAssignPorter(user, booking);
   // The supervisor's own commission on a meet and assist: they tick it, and it comes off the day's takings in the shift report.
   const supervisorCommission = Number(settings.supervisor_commission_per_signup);
@@ -172,10 +172,8 @@ export default function BookingActions({ booking, user, onUpdated }) {
       await callBooking("updateBookingOperations", {
         action: "add_porter",
         porter_id: porterId,
-        passengers_handled: Number(porterHandled || 0),
       });
       setPorterId("");
-      setPorterHandled(1);
     } catch (err) {
       notifyError(err.message || "Failed to assign porter");
     } finally {
@@ -289,9 +287,12 @@ export default function BookingActions({ booking, user, onUpdated }) {
             {booking.booking_channel === "walk_in"
               ? "A walk-in at the desk: you choose the porter."
               : "A service requested on the website: management assigns the porter."}{" "}
-            {formatGHS(commissionPerPassenger)} goes to the porter for each passenger handled, and is paid to them daily.
+            One porter handles one passenger, and each porter earns {formatGHS(commissionPerPassenger)} for the job, paid to them daily.
+            {" "}<span className="font-medium text-foreground">{Math.min(covered, booking.num_passengers || 1)} of {booking.num_passengers || 1} passenger(s) have a porter.</span>
           </p>
-          {porterRegister.length === 0 ? (
+          {passengersLeft === 0 ? (
+            <p className="text-sm text-muted-foreground">Every passenger has a porter.</p>
+          ) : porterRegister.length === 0 ? (
             <p className="text-sm text-muted-foreground">No porters on the list yet. An admin adds them under Porters.</p>
           ) : (
             <div className="flex flex-wrap items-end gap-3">
@@ -300,16 +301,12 @@ export default function BookingActions({ booking, user, onUpdated }) {
                 <Select value={porterId} onValueChange={setPorterId}>
                   <SelectTrigger id="porter-pick"><SelectValue placeholder="Choose a porter" /></SelectTrigger>
                   <SelectContent>
-                    {porterRegister.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
+                    {porterRegister.filter((p) => !(booking.porters || []).some((x) => x.porter_id === p.id)).map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1 w-28">
-                <Label htmlFor="porter-pax" className="text-xs">Passengers handled</Label>
-                <Input id="porter-pax" type="number" min={1} max={booking.num_passengers || 50} value={porterHandled} onChange={(e) => setPorterHandled(e.target.value)} />
-              </div>
               <div className="text-sm text-muted-foreground pb-2">
-                Commission: <span className="font-semibold text-foreground">{formatGHS(commissionPerPassenger * Number(porterHandled || 0))}</span>
+                Commission: <span className="font-semibold text-foreground">{formatGHS(commissionPerPassenger)}</span> for this job
               </div>
               <Button onClick={addPorter} disabled={savingPorter || !porterId}>
                 {savingPorter ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1" />}
@@ -323,7 +320,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
                 <div key={i} className="flex items-center justify-between bg-secondary rounded-lg px-3 py-2 text-sm">
                   <span>
                     <span className="font-medium">{p.porter_name}</span>
-                    {p.extra ? <> · <span className="text-xs font-semibold rounded-full bg-accent/20 px-2 py-0.5">Extra porter +{formatGHS(p.fee)}</span></> : <> · {p.passengers_handled} passenger(s)</>} ·{" "}
+                    {p.extra ? <> · <span className="text-xs font-semibold rounded-full bg-accent/20 px-2 py-0.5">Extra porter +{formatGHS(p.fee)}</span></> : <> · 1 passenger</>} ·{" "}
                     {formatGHS(p.commission)}
                   </span>
                   <button aria-label={`Remove ${p.porter_name}`} onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">

@@ -124,7 +124,7 @@ export default function OperationsGlance() {
         />
         <AttentionList
           title="Waiting for a porter"
-          hint="Website bookings with no porter yet. Open the booking and assign one."
+          hint="Website bookings where a passenger has no porter yet. Open the booking and assign one porter for each passenger."
           rows={needPorter || []}
           loading={needPorter === null}
           emptyText="Every website booking has a porter."

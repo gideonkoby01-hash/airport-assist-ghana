@@ -118,5 +118,5 @@ export function canAssignPorter(user, booking) {
 
 /** Website bookings (any service) still waiting for a porter: not cancelled or finished, nobody assigned yet. */
 export function waitingForPorter(bookings) {
-  return bookings.filter((b) => b.booking_channel !== "walk_in" && ["confirmed", "assigned", "in_progress"].includes(b.status) && !(b.porters || []).length);
+  return bookings.filter((b) => b.booking_channel !== "walk_in" && ["confirmed", "assigned", "in_progress"].includes(b.status) && (b.porters || []).reduce((n, p) => n + (Number(p.passengers_handled) || 0), 0) < (Number(b.num_passengers) || 1));
 }

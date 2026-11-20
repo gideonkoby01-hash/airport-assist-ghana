@@ -135,8 +135,8 @@ export default function ShiftReportForm({ supervisor }) {
           <ShiftReportSummary report={{ ...preview, supervisor_name: supervisor.full_name || supervisor.email, created_date: null }} />
           {Number(preview.porters_missing) > 0 && (
             <p role="alert" className="text-sm rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-3">
-              {preview.porters_missing === 1 ? "A service" : `${preview.porters_missing} services`} sold in this shift ({(preview.porters_missing_refs || []).join(", ")}) {preview.porters_missing === 1 ? "has" : "have"} no porter on {preview.porters_missing === 1 ? "it" : "them"}.
-              Open {preview.porters_missing === 1 ? "the booking" : "each booking"} and assign a porter, then reload this page. The report cannot be submitted until every service has a porter.
+              {preview.porters_missing === 1 ? "A service" : `${preview.porters_missing} services`} sold in this shift ({(preview.porters_missing_refs || []).join(", ")}) {preview.porters_missing === 1 ? "has" : "have"} too few porters on {preview.porters_missing === 1 ? "it" : "them"}.
+              Open {preview.porters_missing === 1 ? "the booking" : "each booking"} and assign porters, then reload this page. One porter handles one passenger, so the report cannot be submitted until every passenger has a porter.
             </p>
           )}
           {Number(preview.porters_awaiting_management) > 0 && (

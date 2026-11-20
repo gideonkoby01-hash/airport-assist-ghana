@@ -85,10 +85,14 @@ test('porter assignment: management for website bookings, the supervisor for the
 test('website bookings waiting for a porter, whatever the service', () => {
   const rows = [
     { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [] },
-    { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo' }] },
+    { booking_channel: 'online', package_code: 'porter_only', status: 'confirmed', porters: [{ porter_name: 'Kojo', passengers_handled: 1 }] },
     { booking_channel: 'online', package_code: 'porter_only', status: 'cancelled', porters: [] },
     { booking_channel: 'online', package_code: 'full_arrival', status: 'assigned', porters: [] },
     { booking_channel: 'walk_in', package_code: 'full_arrival', status: 'confirmed', porters: [] },
   ];
   assert.equal(waitingForPorter(rows).length, 2);
+  // One porter handles one passenger: 3 passengers with 1 porter still waits; with 3 porters it does not.
+  const three = (n) => ({ booking_channel: 'online', status: 'confirmed', num_passengers: 3, porters: Array.from({ length: n }, () => ({ passengers_handled: 1 })) });
+  assert.equal(waitingForPorter([three(1)]).length, 1);
+  assert.equal(waitingForPorter([three(3)]).length, 0);
 });
