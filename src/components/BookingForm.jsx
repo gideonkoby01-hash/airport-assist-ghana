@@ -33,6 +33,14 @@ const STEP_FIELDS = [
   (k) => k === "consent",
 ];
 
+// The services are listed under Arrival, Departure and Porter so each kind is easy to find.
+const SERVICE_GROUPS = [
+  { key: "arrival", label: "Arrival services" },
+  { key: "departure", label: "Departure services" },
+  { key: "both", label: "Porter service" },
+];
+const serviceGroup = (/** @type {{ flight_type?: string }} */ p) => (p.flight_type === "arrival" || p.flight_type === "departure" ? p.flight_type : "both");
+
 const emptyPassenger = { name: "", contact: "", nationality: "", total_bags: 0, special_requests: "" };
 
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -445,14 +453,21 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…
           </div> :
 
-        <div className="grid sm:grid-cols-2 gap-3">
-            {packages.map((p) =>
+        <div className="space-y-5">
+            {SERVICE_GROUPS.map((group) => {
+              const list = packages.filter((p) => serviceGroup(p) === group.key);
+              if (!list.length) return null;
+              return (
+                <div key={group.key}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{group.label}</h4>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {list.map((p) =>
           <button
             type="button"
             key={p.code}
             aria-pressed={form.package_code === p.code}
             onClick={() => onPackageChange(p.code)}
-            className={`text-left rounded-xl border p-4 transition-all ${
+            className={`text-left flex flex-col justify-start rounded-xl border p-4 transition-all ${
             form.package_code === p.code ?
             "border-accent ring-2 ring-accent/40 bg-accent/5" :
             "border-border hover:border-accent/50"}`
@@ -468,7 +483,11 @@ export default function BookingForm({ channel = "online", user = undefined, supe
                   ))}
                 </ul>
               </button>
-          )}
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         }
         {fieldError("package_code")}
