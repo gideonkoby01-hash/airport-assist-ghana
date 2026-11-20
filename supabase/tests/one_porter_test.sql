@@ -61,5 +61,5 @@ select pg_temp.raises('the shift cannot be filed',
   $q$select public.create_shift_report('00000000-0000-0000-0000-0000000000c9', 'Sam', (select period from cur), (select shift from cur), 3500, '')$q$, 'porter_missing');
 update public.bookings set porters = porters || '[{"porter_name":"Yaw","passengers_handled":1,"commission":30}]'::jsonb where reference = 'OP-2';
 select pg_temp.check_that('with a porter for each passenger the shift closes',
-  (select net_after_commission = 6300 - 180 from public.create_shift_report('00000000-0000-0000-0000-0000000000c9', 'Sam', (select period from cur), (select shift from cur), 3500, '')));
+  (select net_after_commission = 6300 - 180 - 200 from public.create_shift_report('00000000-0000-0000-0000-0000000000c9', 'Sam', (select period from cur), (select shift from cur), 3500, '')));
 rollback;

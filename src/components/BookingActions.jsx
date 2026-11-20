@@ -54,23 +54,12 @@ export default function BookingActions({ booking, user, onUpdated }) {
     }
   };
   const mayAssignPorter = canAssignPorter(user, booking);
-  // The supervisor's own commission on a meet and assist: they tick it, and it comes off the day's takings in the shift report.
+  // The supervisor's own commission on a meet and assist is added automatically when the payment is recorded, and comes off the day's takings in the shift report.
   const supervisorCommission = Number(settings.supervisor_commission_per_signup);
   const mayTickCommission =
     booking.package_code !== "porter_only" && !["cancelled", "no_show"].includes(booking.status) && Boolean(booking.assigned_supervisor_id) &&
     (role === "supervisor" ? booking.assigned_supervisor_id === user?.id : ["management", "admin"].includes(role));
   const commissionTicked = Number(booking.supervisor_commission || 0) > 0;
-  const [savingCommission, setSavingCommission] = useState(false);
-  const toggleCommission = async (paid) => {
-    setSavingCommission(true);
-    try {
-      await callBooking("setSupervisorCommission", { paid });
-    } catch (err) {
-      notifyError(err.message || "Could not update the commission.");
-    } finally {
-      setSavingCommission(false);
-    }
-  };
   const [savingPorter, setSavingPorter] = useState(false);
 
   const [lounge, setLounge] = useState(booking.lounge_used || "");
@@ -271,26 +260,18 @@ export default function BookingActions({ booking, user, onUpdated }) {
 
       {mayTickCommission && (
         <Panel icon={BadgeDollarSign} title="Supervisor commission">
-          <label className={`flex items-start gap-3 text-sm ${booking.supervisor_commission_locked ? "opacity-70" : "cursor-pointer"}`}>
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4"
-              checked={commissionTicked}
-              disabled={savingCommission || Boolean(booking.supervisor_commission_locked)}
-              onChange={(e) => toggleCommission(e.target.checked)}
-            />
-            <span>
-              <span className="font-medium text-foreground">Commission earned on this meet and assist: {formatGHS(supervisorCommission)}</span>
-              <span className="block text-xs text-muted-foreground mt-0.5">
-                {commissionTicked
-                  ? booking.supervisor_commission_locked
-                    ? "Recorded, and already in a submitted shift report."
-                    : "Recorded. It is taken off today's takings in your shift report."
-                  : "Tick this to record your commission. It is then taken off today's takings in your shift report."}
-              </span>
+          <p className="text-sm">
+            <span className="font-medium text-foreground">
+              {commissionTicked ? `Commission earned on this meet and assist: ${formatGHS(booking.supervisor_commission)}` : `Every meet and assist earns the supervisor ${formatGHS(supervisorCommission)}`}
             </span>
-            {savingCommission && <Loader2 className="w-4 h-4 animate-spin mt-1" aria-hidden="true" />}
-          </label>
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              {commissionTicked
+                ? booking.supervisor_commission_locked
+                  ? "Added automatically, and already in a submitted shift report."
+                  : "Added automatically when the payment was recorded. It is taken off the day's takings in the shift report."
+                : "It is added automatically when the payment is recorded, and taken off the day's takings in the shift report."}
+            </span>
+          </p>
         </Panel>
       )}
 

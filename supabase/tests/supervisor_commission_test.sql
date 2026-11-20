@@ -45,8 +45,12 @@ create temp table cur as
          case when extract(hour from now() at time zone 'utc') between 6 and 17 then 'morning' else 'night' end as shift;
 grant select on cur to service_role, authenticated;
 
-select pg_temp.check_that('before any tick the report takes nothing off for supervisor commission',
-  (select (b ->> 'supervisor_commission')::numeric = 0 and (b ->> 'net_after_commission')::numeric = 1500 - 90
+select pg_temp.check_that('every meet and assist earns the commission by itself; the porter-only sale does not',
+  (select (select count(*) from public.bookings where reference in ('SC-1', 'SC-2') and supervisor_commission = 50) = 2
+      and (select supervisor_commission = 0 from public.bookings where reference = 'SC-3')
+      and (b ->> 'supervisor_commission')::numeric = 100 and (b ->> 'supervisor_commission_count')::int = 2
+      and (b ->> 'net_after_commission')::numeric = 1500 - 90 - 100
+      and (b ->> 'cash_expected')::numeric = 1500   -- the supervisor records the full amount
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000f1', (select period from cur), (select shift from cur)) as b) x));
 
 -- marking
@@ -60,8 +64,8 @@ select pg_temp.raises('a negative amount is refused',
 
 -- the report applies it to the day's takings
 select pg_temp.check_that('the shift report takes the commission off the takings',
-  (select (b ->> 'supervisor_commission')::numeric = 50 and (b ->> 'supervisor_commission_count')::int = 1
-      and (b ->> 'net_after_commission')::numeric = 1500 - 90 - 50
+  (select (b ->> 'supervisor_commission')::numeric = 100 and (b ->> 'supervisor_commission_count')::int = 2
+      and (b ->> 'net_after_commission')::numeric = 1500 - 90 - 100
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000f1', (select period from cur), (select shift from cur)) as b) x));
 
 -- unmarking before the report is filed
@@ -82,6 +86,17 @@ select pg_temp.raises('a commission in a filed report cannot be changed',
 select pg_temp.check_that('another supervisor is not affected',
   (select (b ->> 'supervisor_commission')::numeric = 0
    from (select public.build_shift_report('00000000-0000-0000-0000-0000000000f3', (select period from cur), (select shift from cur)) as b) x));
+
+-- a cancelled booking loses its commission
+select public.create_quick_sale('00000000-0000-0000-0000-0000000000f1', 'Sam', 'SC-4', 'full_arrival', 1, null, 'Efua', '', null, null, 'cash', 'Kojo', 1, 30);
+select pg_temp.check_that('a new meet and assist earns the commission', (select supervisor_commission = 50 from public.bookings where reference = 'SC-4'));
+reset role;
+alter table public.bookings disable trigger bookings_status_guard;
+update public.bookings set status = 'assigned' where reference = 'SC-4';   -- a sale still open, so it can be cancelled
+alter table public.bookings enable trigger bookings_status_guard;
+set local role service_role;
+update public.bookings set status = 'cancelled' where reference = 'SC-4';
+select pg_temp.check_that('cancelling it takes the commission away', (select supervisor_commission = 0 and supervisor_commission_by is null from public.bookings where reference = 'SC-4'));
 
 -- who can read the list of commissions
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
