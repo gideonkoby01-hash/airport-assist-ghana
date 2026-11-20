@@ -72,7 +72,10 @@ export default function CommissionsPanel() {
       <div className="bg-card rounded-2xl border border-border p-5">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2"><BadgeDollarSign className="w-4 h-4 text-accent" aria-hidden="true" /> Supervisor commissions</h3>
         <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
-          A supervisor earns {formatGHS(rate)} for each meet and assist booking they mark. It is taken off their takings in the shift report. Porter Service Only earns no supervisor commission.
+          Supervisors earn a commission of {formatGHS(rate)} for each meet-and-assist booking they record. The commission is deducted from their total earnings and reflected in the shift report.
+        </p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+          <span className="font-medium text-foreground">Note:</span> Porters are not eligible for meet-and-assist commissions
         </p>
       </div>
 
