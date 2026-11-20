@@ -22,17 +22,18 @@ export default function Book() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/78 via-background/84 to-background/92" />
       </div>
 
-      <header className="sticky top-0 z-30">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-          <Link to="/" className="press inline-flex items-center gap-2 rounded-full bg-[#0b1d36] text-white px-3.5 py-2 text-sm font-semibold shadow-md hover:bg-[#0b1d36]/90" aria-label="Back to the home page">
-            <Home className="w-4 h-4" aria-hidden="true" /> Home
+      {/* A solid bar, so the page scrolls cleanly underneath it instead of showing through the buttons. */}
+      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur-md">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+          <Link to="/" aria-label="Airport Assist Ghana home" className="shrink-0">
+            <img src={LOGO_URL} alt="Airport Assist Ghana" width="160" height="56" className="h-11 sm:h-14 w-auto rounded-md" />
           </Link>
-          <Link to="/" aria-label="Airport Assist Ghana home" className="hidden sm:block rounded-lg bg-white/85 px-2 py-1 shadow-sm">
-            <img src={LOGO_URL} alt="Airport Assist Ghana" className="h-8 w-auto" />
-          </Link>
-          <div className="flex items-center gap-1.5">
-            <CurrencyToggle className="shadow-sm" />
-            <ThemeToggle className="bg-[#0b1d36] text-white shadow-md hover:bg-[#0b1d36]/90" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <CurrencyToggle />
+            <ThemeToggle className="border border-border bg-card text-foreground hover:bg-secondary" />
+            <Link to="/" className="press inline-flex items-center gap-2 rounded-full bg-[#0b1d36] text-white px-3 sm:px-3.5 py-2 text-sm font-semibold hover:bg-[#0b1d36]/90" aria-label="Back to the home page">
+              <Home className="w-4 h-4" aria-hidden="true" /> <span className="hidden sm:inline">Home</span>
+            </Link>
           </div>
         </div>
       </header>
