@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Tag, CheckCircle2, X } from "lucide-react";
 import { useMoney } from "@/lib/currency";
 
-export default function DiscountCodeInput({ applied, onApplied, onRemoved, packageCode, numPassengers, disabled }) {
+export default function DiscountCodeInput({ applied, onApplied, onRemoved, packageCode, numPassengers, disabled, contactEmail = "" }) {
   const { format: money } = useMoney();
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,7 @@ export default function DiscountCodeInput({ applied, onApplied, onRemoved, packa
         discount_code: value,
         package_code: packageCode,
         num_passengers: numPassengers,
+        contact_email: contactEmail,
       });
       const data = res?.data || {};
       if (!data.valid) {

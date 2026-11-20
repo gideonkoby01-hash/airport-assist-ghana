@@ -200,6 +200,15 @@ const storage = {
     return { file_uri: path };
   },
 
+  // For a passenger who has no account: asks for a single-use upload link, then sends the photo straight to private storage.
+  async uploadGuestPhoto(/** @type {{ file: File }} */ { file: original }) {
+    const file = await shrinkImage(original);
+    const { data } = await functions.invoke('createGuestPhotoUpload', { content_type: file.type });
+    const { error } = await supabase.storage.from(BUCKET).uploadToSignedUrl(data.path, data.token, file, { contentType: file.type });
+    if (error) fail(error);
+    return { file_uri: data.path };
+  },
+
   // Goes through the getFileUrl function so staff views of other people's files are logged.
   async createFileSignedUrl(/** @type {{ file_uri: string }} */ { file_uri }) {
     const { data } = await functions.invoke('getFileUrl', { path: file_uri });

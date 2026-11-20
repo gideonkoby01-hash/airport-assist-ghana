@@ -40,7 +40,7 @@ export default function Privacy() {
 
         <Section title="What we collect and why">
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Your account:</strong> name, email address and a password (stored in scrambled form; we cannot read it). To let you sign in and see your bookings.</li>
+            <li><strong>Your email address:</strong> to send you your booking confirmation, your supervisor's details and any update on your booking. You do not need an account.</li>
             <li><strong>Your booking:</strong> names and contact numbers of the passengers, nationality, flight details, number of bags, special requests, and what you paid. To deliver the service and keep our accounts.</li>
             <li><strong>A photo of your ID</strong> (optional): so our supervisor can identify the right passenger at the airport.</li>
             <li><strong>Your customer record:</strong> your name and contact details, the bookings you have made, and notes our team writes after speaking with you (for example a request or a promise to call back). So anyone on the team can help you without asking you to repeat yourself.</li>

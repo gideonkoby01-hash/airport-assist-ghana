@@ -1,4 +1,4 @@
-import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { adminClient, clientIp, optionalCaller } from '../_shared/auth.ts';
 import { loadSettings } from '../_shared/config.ts';
 import { STAFF_ROLES } from '../_shared/bookingAccess.ts';
 import { evaluateDiscount, normalizeCode, round2 } from '../_shared/discounts.ts';
@@ -10,17 +10,31 @@ import { checkFlight, isPhone } from '../_shared/validation.ts';
 // One message for every way a code can fail, so nobody can probe which codes exist or what state they are in.
 const DISCOUNT_INVALID = "That discount code isn't valid for your account or this booking. Check the code, or contact Airport Assist.";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Creates a booking server-side. Package price, booking total and discount are all recomputed here:
-// a tampered browser payload cannot change the amount.
+// a tampered browser payload cannot change the amount. A passenger does not need an account: an online booking from someone
+// who is not signed in is tied to the email address they give, and everything about it is sent to that address. Walk-in
+// bookings are staff only.
 serve('createBooking', async (req) => {
   const admin = adminClient();
-  const user = await requireCaller(req, admin);
-  if (user.role === 'pending') throw new HttpError(403, 'Your account is awaiting approval.');
+  const caller = await optionalCaller(req, admin);
+  if (caller?.role === 'pending') throw new HttpError(403, 'Your account is awaiting approval.');
 
   const body = await readBody(req) as Record<string, any>;
   const channel = body.channel === 'walk_in' ? 'walk_in' : 'online';
-  const isStaff = STAFF_ROLES.includes(user.role);
+  const isStaff = !!caller && STAFF_ROLES.includes(caller.role);
+  if (channel === 'walk_in' && !caller) throw new HttpError(401, 'Unauthorized');
   if (channel === 'walk_in' && !isStaff) throw new HttpError(403, 'Only staff can create walk-in bookings.');
+  // Who is acting, for limits and records: the signed-in person, or the network address of a guest.
+  const ip = clientIp(req);
+  const actorKey = caller ? caller.id : `ip:${ip}`;
+  const actorId = caller ? caller.id : 'guest';
+  const contactEmail = String(body.contact_email ?? (caller && channel === 'online' ? caller.email : '') ?? '').trim().toLowerCase();
+  if (channel === 'online') {
+    if (!contactEmail) throw new HttpError(400, 'Enter your email address. Your booking details are sent there.');
+    if (!EMAIL_REGEX.test(contactEmail) || contactEmail.length > 254) throw new HttpError(400, 'Enter a valid email address.');
+  }
   const settings = await loadSettings(admin);
   // The admin can pause online booking (Admin > Settings). Staff at the desk are never blocked.
   if (channel === 'online' && !isStaff && !settings.bool('online_bookings_enabled')) throw new HttpError(503, settings.str('online_bookings_message'));
@@ -31,20 +45,29 @@ serve('createBooking', async (req) => {
   const ownerColumn = channel === 'online' ? 'passenger_user_id' : 'assigned_supervisor_id';
   const existingBooking = async () => {
     if (!idempotencyKey) return null;
-    const { data } = await admin.from('bookings').select('*').eq(ownerColumn, user.id).eq('idempotency_key', idempotencyKey).maybeSingle();
+    let query = admin.from('bookings').select('*').eq('idempotency_key', idempotencyKey);
+    query = caller ? query.eq(ownerColumn, caller.id) : query.is('passenger_user_id', null).eq('contact_email', contactEmail);
+    const { data } = await query.maybeSingle();
     return data;
   };
+  // A guest is shown only what the confirmation screen needs, not the whole stored record.
+  const view = (b: Record<string, any>) => caller ? b : {
+    id: b.id, reference: b.reference, package_name: b.package_name, num_passengers: b.num_passengers, total_value: b.total_value,
+    original_total: b.original_total, discount_amount: b.discount_amount, discount_code: b.discount_code, contact_email: b.contact_email,
+  };
   const repeat = await existingBooking();
-  if (repeat) return json({ booking: repeat, duplicate: true });
+  if (repeat) return json({ booking: view(repeat), duplicate: true });
 
   // Online bookings record consent to the privacy notice (what is collected, why, and that ID photos are kept for 30 days).
   if (channel === 'online' && body.consent !== true) throw new HttpError(400, 'Please confirm that you have read the privacy notice.');
 
-  // Passengers: at most 10 new bookings an hour. Staff taking walk-ins are not limited.
+  // Passengers: a limited number of new bookings an hour (per network address, and per email address). Staff are not limited.
   if (!isStaff) {
-    const hits = await admin.rpc('hit_rate_limit', { p_key: `booking:${user.id}`, p_window_seconds: 3600 });
+    const hits = await admin.rpc('hit_rate_limit', { p_key: `booking:${actorKey}`, p_window_seconds: 3600 });
     if (hits.error) throw hits.error;
-    if (hits.data > settings.num('booking_limit_per_hour')) throw new HttpError(429, 'You have made a lot of bookings in the last hour. Please try again later, or contact the Airport Assist desk.');
+    const emailHits = await admin.rpc('hit_rate_limit', { p_key: `booking_email:${contactEmail}`, p_window_seconds: 3600 });
+    if (emailHits.error) throw emailHits.error;
+    if (hits.data > settings.num('booking_limit_per_hour') || emailHits.data > settings.num('booking_limit_per_hour')) throw new HttpError(429, 'You have made a lot of bookings in the last hour. Please try again later, or contact the Airport Assist desk.');
   }
 
   const packageCode = String(body.package_code || '').trim();
@@ -76,9 +99,9 @@ serve('createBooking', async (req) => {
   if (flightProblem) throw new HttpError(400, flightProblem);
   if (passengers.some((p) => !Number.isFinite(p.total_bags) || p.total_bags < 0 || p.total_bags > 50)) throw new HttpError(400, 'Bags per passenger must be between 0 and 50.');
 
-  // Photos live in the uploader's own folder; a booking may not point at anyone else's file.
+  // Photos live in the uploader's own folder (a guest's photos are under guest/); a booking may not point at anyone else's file.
   const photoUri = String(body.passenger_photo_uri || '').trim().slice(0, 500);
-  if (photoUri && !photoUri.startsWith(`${user.id}/`)) throw new HttpError(400, 'That photo could not be used. Please upload it again.');
+  if (photoUri && !(photoUri.startsWith('guest/') || (caller && photoUri.startsWith(`${caller.id}/`)))) throw new HttpError(400, 'That photo could not be used. Please upload it again.');
 
   const gross = round2(Number(pkg.price) * passengers.length);
 
@@ -95,22 +118,23 @@ serve('createBooking', async (req) => {
   };
 
   const countUses = async (codeId: string) => {
-    const { count } = await admin.from('discount_redemptions').select('id', { count: 'exact', head: true }).eq('discount_code_id', codeId).eq('user_id', user.id);
+    const query = admin.from('discount_redemptions').select('id', { count: 'exact', head: true }).eq('discount_code_id', codeId);
+    const { count } = await (caller ? query.eq('user_id', caller.id) : query.ilike('user_email', contactEmail));
     return count ?? 0;
   };
 
   if (body.discount_code) {
     // Guessing is throttled: after 10 failed attempts in 15 minutes the person must wait.
     const windowSeconds = settings.num('discount_attempt_window_minutes') * 60;
-    const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${user.id}`, p_window_seconds: windowSeconds });
+    const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${actorKey}`, p_window_seconds: windowSeconds });
     if ((tries.data ?? 0) >= settings.num('discount_attempt_limit')) throw new HttpError(429, 'Too many discount code attempts. Please wait a few minutes and try again.');
-    const fail = async () => { await admin.rpc('hit_rate_limit', { p_key: `discount:${user.id}`, p_window_seconds: windowSeconds }); throw new HttpError(400, DISCOUNT_INVALID); };
+    const fail = async () => { await admin.rpc('hit_rate_limit', { p_key: `discount:${actorKey}`, p_window_seconds: windowSeconds }); throw new HttpError(400, DISCOUNT_INVALID); };
 
     const { data: record } = await admin.from('discount_codes').select('*').eq('code', normalizeCode(body.discount_code)).maybeSingle();
     if (!record) return await fail();
-    const result = evaluateDiscount({ record, userEmail: user.email, grossTotal: gross, usedByUser: await countUses(record.id) });
+    const result = evaluateDiscount({ record, userEmail: caller?.email ?? contactEmail, grossTotal: gross, usedByUser: await countUses(record.id) });
     if (!result.ok) {
-      console.log(`createBooking: discount ${record.code} refused for ${user.id}: ${result.message}`);
+      console.log(`createBooking: discount ${record.code} refused for ${actorId}: ${result.message}`);
       return await fail();
     }
 
@@ -148,6 +172,7 @@ serve('createBooking', async (req) => {
     flight_date: flightDate,
     scheduled_flight_time: flightTime,
     contact,
+    contact_email: contactEmail || null,
     nationality: String(body.nationality || '').trim(),
     total_bags: Math.max(0, Math.trunc(Number(body.total_bags || 0))),
     special_requests: String(body.special_requests || '').trim(),
@@ -159,18 +184,18 @@ serve('createBooking', async (req) => {
     amount_collected: 0,
     outstanding_balance: finalTotal,
     booking_channel: channel,
-    passenger_user_id: channel === 'online' ? user.id : null,
+    passenger_user_id: channel === 'online' && caller ? caller.id : null,
     passenger_photo_uri: photoUri,
     idempotency_key: idempotencyKey,
     consent_at: channel === 'online' ? new Date().toISOString() : null,
-    updated_by_id: user.id,
+    updated_by_id: actorId,
     discount_amount: 0,
     discount_value: 0,
   };
 
   if (channel === 'walk_in') {
-    payload.assigned_supervisor_id = user.id;
-    payload.assigned_supervisor_name = user.full_name || user.email || 'Supervisor';
+    payload.assigned_supervisor_id = caller!.id;
+    payload.assigned_supervisor_name = caller!.full_name || caller!.email || 'Supervisor';
   }
 
   if (discountRecord && discountAmounts) {
@@ -197,7 +222,7 @@ serve('createBooking', async (req) => {
       // Two identical submissions raced: keep the first, give this one's discount back.
       await release();
       const first = await existingBooking();
-      if (first) return json({ booking: first, duplicate: true });
+      if (first) return json({ booking: view(first), duplicate: true });
     }
     payload.reference = makeReference();
   }
@@ -207,7 +232,7 @@ serve('createBooking', async (req) => {
     // History row. The booking is already saved and priced, so a failure here is logged, not fatal.
     const { error } = await admin.from('discount_redemptions').insert({
       discount_code_id: discountRecord.id, code: discountRecord.code, booking_id: booking.id, booking_reference: booking.reference,
-      user_id: user.id, user_email: user.email, recipient_type: discountRecord.recipient_type || null,
+      user_id: actorId, user_email: caller?.email ?? contactEmail, recipient_type: discountRecord.recipient_type || null,
       recipient_name: discountRecord.recipient_name || '', discount_type: discountRecord.discount_type,
       discount_value: Number(discountRecord.discount_value) || 0, discount_amount: discountAmounts.discount_amount,
       gross_total: discountAmounts.gross_total, net_total: discountAmounts.final_total, redeemed_at: new Date().toISOString(),
@@ -222,5 +247,5 @@ serve('createBooking', async (req) => {
     console.error('createBooking: notifications failed:', e instanceof Error ? e.message : e);
   }
 
-  return json({ booking });
+  return json({ booking: view(booking) });
 });

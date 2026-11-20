@@ -1,12 +1,20 @@
 import { adminClient, recipientsByRole, requireCaller } from '../_shared/auth.ts';
 import { bookingOwnerId, canOperateBooking } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
-import { accraTime } from '../_shared/notify.ts';
+import { accraTime, emailBookingPassenger } from '../_shared/notify.ts';
 
 const ALLOWED = ['confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'no_show'];
 const NOTIFIABLE = ['in_progress', 'completed', 'cancelled', 'no_show'];
 const LABELS: Record<string, string> = {
   confirmed: 'Confirmed', assigned: 'Assigned', in_progress: 'In Progress', completed: 'Completed', cancelled: 'Cancelled', no_show: 'No-show',
+};
+
+// What the passenger is emailed for each status: [headline, message].
+const PASSENGER_EMAIL: Record<string, [string, string]> = {
+  in_progress: ['Your service has started.', 'Your supervisor is with you and your Airport Assist service is under way.'],
+  completed: ['Thank you for travelling with us.', 'Your Airport Assist service is complete. We hope it made your journey easier.'],
+  cancelled: ['Your booking has been cancelled.', 'This booking is now cancelled. If you did not expect this, please contact the Airport Assist desk.'],
+  no_show: ['We missed you.', 'We were not able to meet you for this booking, so it has been closed. Please contact the Airport Assist desk if this is a mistake.'],
 };
 
 // Staff change a booking's service status. Management/admin may change any booking; a supervisor only
@@ -37,6 +45,23 @@ serve('updateBookingStatus', async (req) => {
       throw new HttpError(409, 'This booking still has an unpaid balance. Record the payment first, or ask management to write the balance off.');
     }
     throw updateError;
+  }
+
+  // Tell the passenger by email (they have no account to look at): when service starts, and when it is completed, cancelled or missed.
+  if (booking.booking_channel === 'online' && PASSENGER_EMAIL[newStatus]) {
+    const [headline, message] = PASSENGER_EMAIL[newStatus];
+    try {
+      await emailBookingPassenger(admin, updated, {
+        eventKey: `status:${bookingId}:${previous}:${newStatus}:${updated.updated_date}`, templateName: 'BookingStatusUpdate',
+        variables: {
+          headline, message, service: updated.package_name || updated.package_code || '—',
+          flight_line: [updated.airline, updated.flight_number].filter(Boolean).join(' ') || '—',
+          travel_line: [updated.flight_date, updated.scheduled_flight_time].filter(Boolean).join(' · ') || '—',
+        },
+      });
+    } catch (e) {
+      console.error('updateBookingStatus: passenger email failed:', e instanceof Error ? e.message : e);
+    }
   }
 
   if (!NOTIFIABLE.includes(newStatus)) {

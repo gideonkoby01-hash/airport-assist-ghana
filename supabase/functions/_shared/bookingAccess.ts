@@ -13,6 +13,12 @@ export function bookingOwnerId(booking: BookingLike | null | undefined): string 
   return (booking && (booking.passenger_user_id || booking.created_by_id)) || '';
 }
 
+// The email address everything about a booking is sent to: the one the passenger gave when booking, else the account that made it.
+export function bookingEmailAddress(booking: { contact_email?: string | null } | null | undefined, ownerEmail?: string | null): string | null {
+  const given = String(booking?.contact_email ?? '').trim();
+  return given || String(ownerEmail ?? '').trim() || null;
+}
+
 // Management and admin may operate on any booking. A supervisor only on one assigned to them.
 export function canOperateBooking(user: Pick<Profile, 'id' | 'role'> | null, booking: BookingLike | null): boolean {
   if (!user || !booking) return false;

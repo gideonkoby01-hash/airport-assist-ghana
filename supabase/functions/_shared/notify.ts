@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
-import { appUrl, recipientsByRole } from './auth.ts';
-import { bookingOwnerId } from './bookingAccess.ts';
+import { recipientsByRole } from './auth.ts';
+import { bookingEmailAddress, bookingOwnerId } from './bookingAccess.ts';
 import { sendTransactionalEmail } from './email.ts';
 
 // Ghana time, the way staff read dates in alerts.
@@ -11,6 +11,26 @@ export const accraTime = (d: Date | string = new Date()) =>
 export async function alertedUserIds(admin: SupabaseClient, match: Record<string, string>): Promise<Set<string>> {
   const { data } = await admin.from('notifications').select('user_id').match(match);
   return new Set((data ?? []).map((n: { user_id: string }) => n.user_id));
+}
+
+// Sends an email about a booking to the passenger: to the address they gave when booking, else the account that made it.
+// `first_name` is filled in from the booking. Never throws; the result says what happened.
+export async function emailBookingPassenger(
+  admin: SupabaseClient, booking: Record<string, any>,
+  opts: { eventKey: string; templateName: string; variables: Record<string, unknown> },
+) {
+  const ownerId = bookingOwnerId(booking);
+  let owner: { email?: string; full_name?: string } | null = null;
+  if (!String(booking.contact_email ?? '').trim() && ownerId) {
+    const { data } = await admin.from('profiles').select('email,full_name').eq('id', ownerId).maybeSingle();
+    owner = data;
+  }
+  const name = String(booking.passengers?.[0]?.name || owner?.full_name || booking.contact || '').trim();
+  return await sendTransactionalEmail(admin, {
+    eventKey: opts.eventKey, templateName: opts.templateName, to: bookingEmailAddress(booking, owner?.email),
+    userId: ownerId, relatedEntityId: booking.id,
+    variables: { first_name: name.split(/\s+/)[0] || 'there', reference: booking.reference || '', ...opts.variables },
+  });
 }
 
 // One alert per management/admin user for a newly created booking, plus the passenger's confirmation email.
@@ -51,21 +71,14 @@ export async function notifyNewBooking(admin: SupabaseClient, bookingId: string)
     else notified++;
   }
 
-  // Confirmation email: online bookings only, to the registered account that made the booking.
+  // Confirmation email: online bookings only, to the address the passenger gave (or the account that made the booking).
   let passenger_email = null;
-  const ownerId = bookingOwnerId(booking);
-  if (booking.booking_channel === 'online' && ownerId) {
-    const { data: owner } = await admin.from('profiles').select('id,email,full_name').eq('id', ownerId).maybeSingle();
-    const contactName = booking.passengers?.[0]?.name || booking.contact || owner?.full_name || '';
+  if (booking.booking_channel === 'online') {
     const ghs = (n: unknown) => (typeof n === 'number' ? `GHS ${n.toFixed(2)}` : '—');
-    passenger_email = await sendTransactionalEmail(admin, {
+    passenger_email = await emailBookingPassenger(admin, booking, {
       eventKey: `booking_confirmation:${bookingId}`,
       templateName: 'BookingConfirmation',
-      to: owner?.email,
-      userId: ownerId,
-      relatedEntityId: bookingId,
       variables: {
-        first_name: contactName.trim().split(/\s+/)[0] || 'there',
         order_id: booking.reference || bookingId,
         item_name: booking.package_name || booking.package_code || '—',
         flight_line: [booking.airline, booking.flight_number].filter(Boolean).join(' ') || 'To be confirmed',
@@ -73,7 +86,6 @@ export async function notifyNewBooking(admin: SupabaseClient, bookingId: string)
         direction_line: booking.flight_type === 'arrival' ? 'Arrival' : booking.flight_type === 'departure' ? 'Departure' : '—',
         travelers_line: `${booking.num_passengers || 0} passenger(s)${booking.total_bags ? ` · ${booking.total_bags} bag(s)` : ''}`,
         total: ghs(Number(booking.total_value)),
-        cta_url: `${appUrl()}/passenger?tab=bookings`,
       },
     });
   }

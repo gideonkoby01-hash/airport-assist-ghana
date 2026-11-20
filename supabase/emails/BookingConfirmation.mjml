@@ -73,11 +73,15 @@
           <mj-column border-top="1px solid #e5e7eb" padding="12px 20px 16px"><mj-text align="right" font-family="'Courier New', Courier, monospace" font-size="20px" font-weight="700">{{total}}</mj-text></mj-column>
         </mj-group>
       </mj-section>
-      <mj-section padding="0 36px 40px"><mj-column><mj-button href="{{cta_url}}" align="left">View my booking</mj-button></mj-column></mj-section>
+      <mj-section padding="0 36px 40px">
+        <mj-column>
+          <mj-text font-size="15px">You do not need an account. We will email you again when a supervisor is assigned to your booking, and if its status or payment changes. You pay at the airport. To change or cancel this booking, contact the Airport Assist desk and quote your reference.</mj-text>
+        </mj-column>
+      </mj-section>
       <mj-section background-color="#0b213c" padding="26px 36px 30px" border-radius="0 0 8px 8px">
         <mj-column>
           <mj-text mj-class="h" align="center" font-size="17px" color="#ffffff" padding="0 0 8px">Airport Assist Ghana</mj-text>
-          <mj-text align="center" font-size="12px" line-height="1.7" color="#ffffff" padding="0">This message was sent for booking #{{order_id}}. If you did not make this booking, please sign in and check your bookings.</mj-text>
+          <mj-text align="center" font-size="12px" line-height="1.7" color="#ffffff" padding="0">This message was sent for booking #{{order_id}}. If you did not make this booking, please contact Airport Assist Ghana.</mj-text>
         </mj-column>
       </mj-section>
     </mj-wrapper>

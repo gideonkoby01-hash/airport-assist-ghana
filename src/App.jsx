@@ -15,7 +15,6 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
 import Login from '@/pages/Login';
-import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
@@ -23,7 +22,6 @@ import Book from '@/pages/Book';
 import { ThemeProvider } from '@/lib/theme';
 import RoleRedirect from '@/components/RoleRedirect';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
-const PassengerDashboard = lazy(() => import('@/pages/PassengerDashboard'));
 const SupervisorDashboard = lazy(() => import('@/pages/SupervisorDashboard'));
 const ManagementDashboard = lazy(() => import('@/pages/ManagementDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
@@ -69,7 +67,9 @@ const AuthenticatedApp = () => {
     <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div></div>}>
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* Passengers do not have accounts: they book on /book and everything about the booking is emailed to them. */}
+      <Route path="/register" element={<Navigate to="/book" replace />} />
+      <Route path="/passenger" element={<Navigate to="/book" replace />} />
       <Route path="/privacy" element={<Privacy />} />
       {/* The booking page is public: signing in comes at its last step */}
       <Route path="/book" element={<Book />} />
@@ -80,7 +80,6 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         {/* Role-based dashboard redirect for signed-in users */}
         <Route path="/portal" element={<RoleRedirect />} />
-        <Route path="/passenger" element={<PassengerDashboard />} />
         <Route path="/supervisor" element={<SupervisorDashboard />} />
         <Route path="/management" element={<ManagementDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
