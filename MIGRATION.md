@@ -294,3 +294,5 @@ The sign-up email has a **Confirm my email** button and also shows a 6-digit cod
 2. In Supabase, **Authentication > Sign In / Providers > Google**: switch it on and paste the **Client ID** and **Client Secret**. Save.
 3. In **Authentication > URL Configuration**, make sure the website address is in the Redirect URLs, for example `https://airport-assist-ghana.pages.dev/**`.
 The button appears on the sign-in and sign-up pages by itself within a minute of saving.
+
+**One porter, one passenger (run once in the SQL Editor).** Run `supabase/migrations/20261120000002_one_porter_per_passenger.sql`. After it, a porter handles exactly one passenger and earns the porter commission (GHS 30) once for that job, on every service including meet and assist. A booking or desk sale with 3 passengers needs 3 different porters, and a shift report cannot be submitted while a desk sale has fewer porters than passengers. Only the supervisor gets the separate GHS 50 commission, and only on a meet and assist. Porters already recorded on older bookings are left as they were.

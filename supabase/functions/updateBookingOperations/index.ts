@@ -47,12 +47,14 @@ serve('updateBookingOperations', async (req) => {
       return json({ ok: true, booking: updated });
     }
     if (action === 'add_porter') {
-      const handled = Number(body.passengers_handled);
+      // One porter handles one passenger, so each porter added covers one passenger and earns the commission once.
+      const handled = 1;
       const problem = checkPorterShare(porters, handled, booking.num_passengers);
       if (problem) throw new HttpError(400, problem);
       // The porter must be on the register, so their daily pay is tied to a real person.
       const { data: porter } = await admin.from('porters').select('id,full_name,active').eq('id', String(body.porter_id || '')).maybeSingle();
       if (!porter || !porter.active) throw new HttpError(400, 'Choose a porter from the list. An admin can add porters under Porters.');
+      if (porters.some((p) => p.porter_id === porter.id)) throw new HttpError(400, `${porter.full_name} is already on this booking. One porter handles one passenger, so choose another porter.`);
       porters.push({
         porter_id: porter.id,
         porter_name: porter.full_name,

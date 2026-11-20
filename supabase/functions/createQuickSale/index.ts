@@ -15,7 +15,8 @@ const MESSAGES: Record<string, string> = {
   invalid_method: 'Choose how the passenger paid.',
   invalid_flight: 'Enter the flight number as letters and numbers, for example KQ 510.',
   invalid_flight_time: 'Enter the flight time as hours and minutes, for example 14:30.',
-  invalid_porter_passengers: 'A porter cannot be credited with more passengers than were sold.',
+  invalid_porters: 'Check the porters and try again.',
+  invalid_porter_passengers: 'There are more porters than passengers. One porter handles one passenger.',
 };
 
 // A walk-in sale at the desk: a minimal booking plus its payment, created together so every sale has a
@@ -43,17 +44,24 @@ serve('createQuickSale', async (req) => {
   const repeat = await first();
   if (repeat) return json({ ok: true, booking: repeat, duplicate: true });
 
-  // A porter comes from the register, so every payout is tied to a real person.
-  let porterId = '';
-  let porterName = '';
-  if (body.porter_id) {
-    const { data: porter } = await admin.from('porters').select('id,full_name,active').eq('id', String(body.porter_id)).maybeSingle();
-    if (!porter || !porter.active) throw new HttpError(400, 'That porter is not on the active list. Ask an admin to add them under Porters.');
-    porterId = porter.id;
-    porterName = porter.full_name;
+  // One porter handles one passenger: a sale of 3 passengers has 3 different porters, each earning the commission once.
+  // Porters come from the register, so every payout is tied to a real person.
+  const count = Math.trunc(Number(body.count));
+  const ids: string[] = Array.isArray(body.porter_ids) ? body.porter_ids.map((v) => String(v)) : body.porter_id ? [String(body.porter_id)] : [];
+  if (!ids.length || ids.some((v) => !v)) throw new HttpError(400, 'Every service needs a porter. Choose who is handling each passenger.');
+  if (Number.isInteger(count) && ids.length !== count) {
+    throw new HttpError(400, `This sale has ${count} passenger${count === 1 ? '' : 's'}, so choose ${count} porter${count === 1 ? '' : 's'}: one for each passenger.`);
   }
-  // Every service carries a porter, so the shift report can take the commission off the sales.
-  if (!porterId) throw new HttpError(400, 'Every service needs a porter. Choose who is handling it.');
+  if (new Set(ids).size !== ids.length) throw new HttpError(400, 'Each porter can handle only one passenger on a sale. Choose a different porter for each.');
+  const chosen: { id: string; full_name: string }[] = [];
+  for (const id of ids) {
+    const { data: porter } = await admin.from('porters').select('id,full_name,active').eq('id', id).maybeSingle();
+    if (!porter || !porter.active) throw new HttpError(400, 'A porter is not on the active list. Ask an admin to add them under Porters.');
+    chosen.push({ id: porter.id, full_name: porter.full_name });
+  }
+  const porterId = chosen[0].id;
+  const porterName = chosen[0].full_name;
+  const morePorters = chosen.slice(1).map((p) => ({ porter_id: p.id, porter_name: p.full_name }));
   const settings = await loadSettings(admin);
   const commission = settings.num('porter_commission_per_passenger');
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -62,10 +70,10 @@ serve('createQuickSale', async (req) => {
       p_package_code: String(body.package_code || ''), p_count: Math.trunc(Number(body.count)), p_direction: String(body.direction || ''),
       p_name: String(body.name || '').trim().slice(0, 120), p_phone: phone,
       p_override_amount: override, p_override_reason: String(body.override_reason || '').trim().slice(0, 200), p_method: method,
-      p_porter_name: porterName, p_porter_passengers: Math.trunc(Number(body.porter_passengers)) || null,
+      p_porter_name: porterName, p_porter_passengers: 1,
       p_commission_per_passenger: commission, p_idempotency_key: key,
       p_flight_number: String(body.flight_number || '').trim().slice(0, 12), p_airline: String(body.airline || '').trim().slice(0, 60),
-      p_flight_time: String(body.flight_time || '').trim(), p_porter_id: porterId,
+      p_flight_time: String(body.flight_time || '').trim(), p_porter_id: porterId, p_more_porters: morePorters,
     });
     if (!error) {
       // The supervisor's own commission, if they ticked it: a meet and assist earns it, Porter Service Only does not.

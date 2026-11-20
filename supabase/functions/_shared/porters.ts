@@ -1,4 +1,4 @@
-// Rules for putting porters on a booking. A porter earns a fixed commission per passenger handled, so the number of
+// Rules for putting porters on a booking. A porter handles one passenger and earns the fixed commission once for that job, so the number of
 // passengers credited is capped by what the booking actually has.
 
 type Entry = { passengers_handled?: unknown };

@@ -33,11 +33,10 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [discounted, setDiscounted] = useState(false);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
-  const [porterId, setPorterId] = useState("");
+  // One porter handles one passenger: the sale has one porter choice for each passenger.
+  const [porterIds, setPorterIds] = useState([""]);
   // The supervisor's own commission on this sale (a meet and assist earns it; Porter Service Only does not).
   const [takeCommission, setTakeCommission] = useState(false);
-  // Left blank, the porter is credited with everyone sold; the supervisor changes it when the load was shared.
-  const [porterPax, setPorterPax] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(null);
@@ -60,11 +59,13 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterId(""); setPorterPax(""); setTakeCommission(false); setFlightNumber(""); setAirline(""); setOtherAirline(false); setFlightTime(""); setError("");
+    setReason(""); setPorterIds([""]); setTakeCommission(false); setFlightNumber(""); setAirline(""); setOtherAirline(false); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
 
-  const porterPaxNum = Number(porterPax === "" ? count : porterPax) || 0;
+  const passengerCount = Math.max(1, Math.min(50, Math.trunc(Number(count)) || 1));
+  const slots = Array.from({ length: passengerCount }, (_, i) => porterIds[i] || "");
+  const setSlot = (i, value) => setPorterIds(slots.map((v, k) => (k === i ? value : v)));
 
   const onAirlineChange = (value) => {
     if (value === OTHER_AIRLINE) {
@@ -87,8 +88,9 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
     if (discounted && (!(Number(amount) > 0) || tooHigh)) return setError(`Enter a price above zero and not more than ${formatGHS(gross)}.`);
     if (discounted && reason.trim().length < 3) return setError("Give a reason for the lower price.");
     if (flightNumber.trim() && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,9}$/.test(flightNumber.trim())) return setError("Enter the flight number as letters and numbers, for example KQ 510.");
-    if (!porterId) return setError(porters.length ? "Choose the porter handling this service." : "No porters are on the list yet. Ask an admin to add them under Porters.");
-    if (!(porterPaxNum >= 1 && porterPaxNum <= Number(count))) return setError("The porter's passengers cannot be more than the passengers sold.");
+    if (!porters.length) return setError("No porters are on the list yet. Ask an admin to add them under Porters.");
+    if (slots.some((v) => !v)) return setError(passengerCount === 1 ? "Choose the porter handling this service." : `Choose a porter for each of the ${passengerCount} passengers. One porter handles one passenger.`);
+    if (new Set(slots).size !== slots.length) return setError("Each porter can handle only one passenger. Choose a different porter for each.");
     setSaving(true);
     try {
       const res = await api.functions.invoke("createQuickSale", {
@@ -104,8 +106,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         flight_number: flightNumber.trim() || undefined,
         airline: airline.trim() || undefined,
         flight_time: flightTime || undefined,
-        porter_id: porterId || undefined,
-        porter_passengers: porterPaxNum,
+        porter_ids: slots,
         commission: takeCommission && pkg.code !== "porter_only",
       });
       if (res?.data?.error) throw new Error(res.data.error);
@@ -246,24 +247,25 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         </Select>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="qs-porter">Porter</Label>
-          <Select value={porterId} onValueChange={setPorterId}>
-            <SelectTrigger id="qs-porter"><SelectValue placeholder="Choose a porter" /></SelectTrigger>
-            <SelectContent>
-              {porters.length === 0 && <SelectItem value="_none" disabled>No porters on the list yet</SelectItem>}
-              {porters.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
-            </SelectContent>
-          </Select>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          One porter handles one passenger, and each earns {formatGHS(commissionPerPassenger)}, paid daily.
+          {passengerCount > 1 && <> This sale needs {passengerCount} different porters.</>}
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {slots.map((value, i) => (
+            <div key={i} className="space-y-1.5">
+              <Label htmlFor={`qs-porter-${i}`}>{passengerCount === 1 ? "Porter" : `Porter for passenger ${i + 1}`}</Label>
+              <Select value={value} onValueChange={(v) => setSlot(i, v)}>
+                <SelectTrigger id={`qs-porter-${i}`}><SelectValue placeholder="Choose a porter" /></SelectTrigger>
+                <SelectContent>
+                  {porters.length === 0 && <SelectItem value="_none" disabled>No porters on the list yet</SelectItem>}
+                  {porters.filter((p) => p.id === value || !slots.includes(p.id)).map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
         </div>
-        {porterId && (
-          <div className="space-y-1.5">
-            <Label htmlFor="qs-porter-pax">Passengers handled</Label>
-            <Input id="qs-porter-pax" type="number" min={1} max={Number(count) || 1} value={porterPax === "" ? Number(count) || 1 : porterPax} onChange={(e) => setPorterPax(e.target.value)} />
-            <p className="text-xs text-muted-foreground">The porter earns {formatGHS(commissionPerPassenger * porterPaxNum)}, paid daily.</p>
-          </div>
-        )}
       </div>
 
       {pkg && pkg.code !== "porter_only" && (
