@@ -19,7 +19,7 @@ test('the porter package leaves the direction alone', () => {
 });
 test('the booking address round-trips', () => {
   const a = bookingAddress({ package_code: 'full_arrival', date: '2026-12-01', pax: 2 });
-  assert.equal(a, '/passenger?tab=book&package=full_arrival&date=2026-12-01&pax=2');
+  assert.equal(a, '/book?package=full_arrival&date=2026-12-01&pax=2');
   assert.equal(parseBookingPrefill(a.split('?')[1], today).passengers, 2);
-  assert.equal(bookingAddress({ package_code: '', date: '', pax: 1 }), '/passenger?tab=book');
+  assert.equal(bookingAddress({ package_code: '', date: '', pax: 1 }), '/book');
 });

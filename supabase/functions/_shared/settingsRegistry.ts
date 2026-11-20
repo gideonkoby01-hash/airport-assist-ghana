@@ -68,6 +68,8 @@ export const SETTINGS: SettingDef[] = [
   { key: 'online_bookings_enabled', group: 'bookings', label: 'Accept online bookings', type: 'boolean', default: 'true', public: true,
     help: 'Switch off to pause online booking (for example during a system change). Staff can still take walk-in bookings and quick sales.' },
   { key: 'online_bookings_message', group: 'bookings', label: 'Message shown while paused', type: 'textarea', default: 'Online booking is paused right now. Please contact the Airport Assist desk.', maxLength: 240, public: true, help: 'Shown on the booking form when online booking is switched off.' },
+  { key: 'usd_exchange_rate', group: 'bookings', label: 'Dollar exchange rate', type: 'number', default: '15', min: 1, max: 1000, unit: 'GHS per 1 USD', public: true,
+    help: 'Passengers can view prices in US dollars on the booking pages. This is the rate used to convert from cedis, so keep it close to today\'s rate. Bookings, payments and reports stay in cedis.' },
   { key: 'min_lead_hours', group: 'bookings', label: 'Minimum notice', type: 'number', default: '2', env: 'MIN_LEAD_HOURS', min: 0, max: 72, unit: 'hours', help: 'How far ahead of the flight an online booking must be made.' },
   { key: 'max_advance_days', group: 'bookings', label: 'Furthest ahead', type: 'number', default: '366', min: 30, max: 730, unit: 'days', help: 'How far ahead of the flight an online booking may be made.' },
   { key: 'booking_limit_per_hour', group: 'bookings', label: 'Bookings per passenger per hour', type: 'number', default: '10', min: 1, max: 100, help: 'Stops one account from flooding the desk with bookings.' },

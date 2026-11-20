@@ -25,7 +25,7 @@ export default function Login() {
   const returnTo = safeReturnTo();
   const postLoginDest = returnTo === "/" ? "/portal" : returnTo;
   // Someone who came from a Book button is a passenger: say so, and keep staff out of the wording.
-  const forBooking = returnTo.startsWith("/passenger");
+  const forBooking = returnTo.startsWith("/passenger") || returnTo.startsWith("/book");
 
   const handleSubmit = async (e) => {
     e.preventDefault();

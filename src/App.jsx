@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SettingsProvider } from '@/lib/SettingsContext';
+import { CurrencyProvider } from '@/lib/currency';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MfaChallenge from '@/components/MfaChallenge';
 import MfaEnrolGate from '@/components/MfaEnrolGate';
@@ -18,6 +19,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
+import Book from '@/pages/Book';
 import { ThemeProvider } from '@/lib/theme';
 import RoleRedirect from '@/components/RoleRedirect';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
@@ -69,6 +71,8 @@ const AuthenticatedApp = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/privacy" element={<Privacy />} />
+      {/* The booking page is public: signing in comes at its last step */}
+      <Route path="/book" element={<Book />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* Public company homepage — no sign-in required */}
@@ -99,6 +103,7 @@ function App() {
     <ThemeProvider>
     <SettingsProvider>
     <AuthProvider>
+    <CurrencyProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
@@ -106,6 +111,7 @@ function App() {
         </Router>
         <Toaster />
       </QueryClientProvider>
+    </CurrencyProvider>
     </AuthProvider>
     </SettingsProvider>
     </ThemeProvider>

@@ -1,12 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { BookingStatusBadge, PaymentBadge } from "@/components/StatusBadge";
-import { PACKAGE_LABELS, formatGHS } from "@/lib/packages";
+import { PACKAGE_LABELS } from "@/lib/packages";
 import { isOverdue } from "@/lib/bookingRules";
+import { useMoney } from "@/lib/currency";
 import { todayUtc } from "@/lib/bookingFormRules";
 import { Plane, Calendar, Users } from "lucide-react";
 
 export default function BookingList({ bookings, loading, emptyMessage = "No bookings yet.", hasMore = false, loadingMore = false, onLoadMore = undefined }) {
+  const { format: money } = useMoney();
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
@@ -51,10 +53,10 @@ export default function BookingList({ bookings, loading, emptyMessage = "No book
               </div>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-lg font-bold text-foreground">{formatGHS(b.total_value)}</p>
+              <p className="text-lg font-bold text-foreground">{money(b.total_value)}</p>
               {Number(b.discount_amount || 0) > 0 && (
                 <p className="text-xs text-emerald-700">
-                  {b.discount_code}: −{formatGHS(b.discount_amount)}
+                  {b.discount_code}: −{money(b.discount_amount)}
                 </p>
               )}
               <p className="text-xs text-muted-foreground capitalize">{b.booking_channel?.replace("_", " ")}</p>

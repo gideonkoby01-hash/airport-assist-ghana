@@ -1,5 +1,5 @@
 // The website's quick quote sends people to the booking form with their choices in the address:
-// /passenger?tab=book&package=full_arrival&date=2026-12-01&pax=2
+// /book?package=full_arrival&date=2026-12-01&pax=2
 // This reads them back safely: anything that is not a known package, a real future date or 1 to 10 people is ignored.
 import { PACKAGE_DEFINITIONS } from "./packages.js";
 
@@ -20,9 +20,10 @@ export function parseBookingPrefill(search, today = new Date().toISOString().sli
 
 /** The booking address for a quote: where the website's "Continue to booking" button goes. */
 export function bookingAddress({ package_code = "", date = "", pax = 1 } = {}) {
-  const q = new URLSearchParams({ tab: "book" });
+  const q = new URLSearchParams();
   if (package_code) q.set("package", package_code);
   if (date) q.set("date", date);
   if (pax && pax > 1) q.set("pax", String(pax));
-  return `/passenger?${q.toString()}`;
+  const qs = q.toString();
+  return qs ? `/book?${qs}` : "/book";
 }
