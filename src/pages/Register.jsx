@@ -37,13 +37,19 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         // The link in the confirmation email brings the person back here, signed in.
         options: { emailRedirectTo: window.location.origin + safeReturnTo() },
       });
       if (signUpError) throw signUpError;
+      // With email confirmation switched off in Supabase, the person is signed in straight away: carry on to where they were going.
+      // With it switched on, a session only comes after they confirm, so ask them to check their email.
+      if (data?.session) {
+        window.location.href = safeReturnTo();
+        return;
+      }
       setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registration failed");
