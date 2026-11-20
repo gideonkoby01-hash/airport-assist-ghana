@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMoney } from "@/lib/currency";
+import FlightPath from "@/components/booking/FlightPath";
+import BoardingPass from "@/components/booking/BoardingPass";
 import { formatGHS } from "@/lib/packages";
 import { inclusionList, readDraft, saveDraft, clearDraft } from "@/lib/bookingDraft";
 import { useSettings } from "@/lib/SettingsContext";
@@ -11,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Loader2, Users, Plane, CheckCircle2, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Loader2, Users, Plane, PlaneLanding, PlaneTakeoff, CheckCircle2 } from "lucide-react";
 import { validateBooking, todayUtc } from "@/lib/bookingFormRules";
 import { parseBookingPrefill } from "@/lib/bookingPrefill";
 import { AIRLINES, OTHER_AIRLINE, airlineCode, isListedAirline } from "@/lib/airlines";
@@ -47,7 +49,7 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 
 // `user` and `supervisor` are still passed by the callers; the server now decides who a booking belongs to.
 // eslint-disable-next-line unused-imports/no-unused-vars
-export default function BookingForm({ channel = "online", user = undefined, supervisor = undefined, onCreated = undefined, standalone = false }) {
+export default function BookingForm({ channel = "online", user = undefined, supervisor = undefined, onCreated = undefined, standalone = false, onSummary = undefined }) {
   const { user: me } = useAuth();
   const { formatFor, isUsd } = useMoney();
   // Choices made in the website's quick quote arrive in the address (package, date, number of travellers).
@@ -147,6 +149,12 @@ export default function BookingForm({ channel = "online", user = undefined, supe
   }, [packages, form.package_code]);
 
   const money = formatFor(selectedPkg);
+  // The page shows the choices on its departure board as they are made.
+  useEffect(() => {
+    if (!onSummary) return;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(form.flight_date) ? new Date(`${form.flight_date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" }) : "";
+    onSummary({ service: selectedPkg?.name || "", flight: form.flight_number.trim(), direction: form.flight_type, when: [date, form.scheduled_flight_time].filter(Boolean).join(" "), pax: passengers.length, done: Boolean(created) });
+  }, [onSummary, selectedPkg, form.flight_number, form.flight_type, form.flight_date, form.scheduled_flight_time, passengers.length, created]);
   const pricePerPassenger = Number(selectedPkg?.price || 0);
   const numPassengers = passengers.length;
   const totalValue = computeTotal(pricePerPassenger, numPassengers);
@@ -355,6 +363,40 @@ export default function BookingForm({ channel = "online", user = undefined, supe
     );
   }
 
+  if (created && channel === "online") {
+    return (
+      <div className="max-w-xl mx-auto space-y-5">
+        <div className="text-center">
+          <h2 className="serif text-3xl text-foreground">You are booked.</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            We are emailing your confirmation to <span className="font-medium text-foreground">{created.contact_email || form.contact_email}</span>.
+            You will get another email when a supervisor is assigned, and if the status or a payment changes.
+          </p>
+        </div>
+        <BoardingPass
+          confirmed
+          direction={form.flight_type}
+          service={created.package_name || selectedPkg?.name}
+          flight={[form.airline, form.flight_number].filter(Boolean).join(" ")}
+          when={[form.flight_date, form.scheduled_flight_time].filter(Boolean).join(" at ")}
+          travellers={passengers.map((p) => p.name.trim()).filter(Boolean)}
+          contact={form.contact}
+          email={created.contact_email || form.contact_email}
+          reference={created.reference}
+          total={money(created.total_value)}
+        />
+        {Number(created.discount_amount || 0) > 0 && (
+          <p className="text-xs text-emerald-700 text-center">Discount {created.discount_code} applied (−{money(created.discount_amount)} from {money(created.original_total)}).</p>
+        )}
+        {isUsd && <p className="text-xs text-muted-foreground text-center">Recorded at the airport as {formatGHS(created.total_value)}.</p>}
+        <p className="text-xs text-muted-foreground text-center">Keep your reference. If you do not receive an email, the Airport Assist desk will contact you by phone.</p>
+        <div className="flex justify-center">
+          <Button variant="outline" onClick={() => { clearDraft(); window.location.assign("/book"); }}>Book another service</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (created) {
     return (
       <div className="bg-card rounded-2xl border border-emerald-200 p-8 text-center max-w-lg mx-auto">
@@ -423,30 +465,12 @@ export default function BookingForm({ channel = "online", user = undefined, supe
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (step < STEPS.length - 1) next(); else handleSubmit(e); }} className="space-y-6" noValidate>
       <div ref={top} className="scroll-mt-24" />
-      <ol className="flex items-center" aria-label="Booking steps">
-        {STEPS.map((label, i) => (
-          <li key={label} className={`flex items-center ${i < STEPS.length - 1 ? "flex-1" : ""}`}>
-            <button
-              type="button"
-              onClick={() => (i < step ? goTo(i) : undefined)}
-              disabled={i > step}
-              aria-current={i === step ? "step" : undefined}
-              className={`flex items-center gap-2 text-sm font-medium ${i === step ? "text-foreground" : i < step ? "text-primary" : "text-muted-foreground"}`}
-            >
-              <span className={`grid place-items-center w-8 h-8 rounded-full text-xs font-bold border-2 transition-colors ${i < step ? "bg-primary border-primary text-primary-foreground" : i === step ? "border-accent bg-accent/15 text-foreground" : "border-border text-muted-foreground"}`}>
-                {i < step ? <Check className="w-4 h-4" aria-hidden="true" /> : i + 1}
-              </span>
-              <span className={i === step ? "" : "hidden sm:inline"}>{label}</span>
-            </button>
-            {i < STEPS.length - 1 && <span className={`mx-2 sm:mx-3 h-0.5 flex-1 rounded ${i < step ? "bg-primary" : "bg-border"}`} aria-hidden="true" />}
-          </li>
-        ))}
-      </ol>
+      <FlightPath steps={STEPS} current={step} onGo={goTo} />
 
       {error && <div ref={errorBox} role="alert" className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
 
       {step === 0 && (
-      <section id="bf-package_code" tabIndex={-1} className="bg-card rounded-2xl border border-border p-5 outline-none">
+      <section id="bf-package_code" tabIndex={-1} className="bg-card rounded-3xl border border-border p-5 sm:p-6 shadow-[0_22px_44px_-32px_hsl(var(--foreground)/0.5)] outline-none">
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" aria-hidden="true" /> Choose your service
         </h3>
@@ -462,7 +486,10 @@ export default function BookingForm({ channel = "online", user = undefined, supe
               if (!list.length) return null;
               return (
                 <div key={group.key}>
-                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{group.label}</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                    {group.key === "arrival" ? <PlaneLanding className="w-4 h-4 text-accent" aria-hidden="true" /> : <PlaneTakeoff className="w-4 h-4 text-accent" aria-hidden="true" />}
+                    {group.label}
+                  </h4>
                   <div className="grid sm:grid-cols-2 gap-3">
                     {list.map((p) =>
           <button
@@ -499,7 +526,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
       )}
 
       {step === 1 && (
-        <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <section className="bg-card rounded-3xl border border-border p-5 sm:p-6 shadow-[0_22px_44px_-32px_hsl(var(--foreground)/0.5)] space-y-4">
           <div>
             <h3 className="text-base font-semibold text-foreground">Your flight</h3>
             <p className="text-xs text-muted-foreground mt-0.5">We use this to meet you at the right place and time.</p>
@@ -546,7 +573,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             {selectedPkg?.includes_lounge && (
               <div className="space-y-1.5">
                 <Label htmlFor="bf-lounge">Lounge preference <span className="text-xs font-normal text-muted-foreground">(optional)</span></Label>
-                <Input id="bf-lounge" value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="e.g. Akwaaba Lounge" />
+                <Input id="bf-lounge" value={form.lounge_used} onChange={(e) => setField("lounge_used", e.target.value)} placeholder="Name of the lounge, if you have a preference" />
               </div>
             )}
           </div>
@@ -555,7 +582,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
       {step === 2 && (
         <>
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-3xl border border-border p-5 sm:p-6 shadow-[0_22px_44px_-32px_hsl(var(--foreground)/0.5)] space-y-4">
           <div>
             <h3 className="text-base font-semibold text-foreground">Who should we call?</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Your supervisor uses this number to find you at the airport.</p>
@@ -586,7 +613,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         </section>
 
       {/* Passengers */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-3xl border border-border p-5 sm:p-6 shadow-[0_22px_44px_-32px_hsl(var(--foreground)/0.5)] space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-accent" /> Passengers ({numPassengers})
@@ -642,7 +669,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
       </section>
 
       {/* Passenger identification photo */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-3">
+      <section className="bg-card rounded-3xl border border-border p-5 sm:p-6 shadow-[0_22px_44px_-32px_hsl(var(--foreground)/0.5)] space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Users className="w-4 h-4 text-accent" /> Passenger Identification Photo
         </h3>
@@ -693,38 +720,19 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
       {step === 3 && (
         <>
-          <section className="bg-card rounded-2xl border border-border overflow-hidden">
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="text-base font-semibold text-foreground">Check your booking</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Make sure everything is right, then confirm.</p>
-            </div>
-            <dl className="divide-y divide-border text-sm">
-              <div className="px-5 py-3 flex items-start justify-between gap-4">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Service</dt>
-                  <dd className="font-medium text-foreground mt-0.5">{selectedPkg?.name || "—"}</dd>
-                  <dd className="text-xs text-muted-foreground">{money(pricePerPassenger)} per passenger</dd>
-                </div>
-                <button type="button" onClick={() => goTo(0)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
-              </div>
-              <div className="px-5 py-3 flex items-start justify-between gap-4">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Flight</dt>
-                  <dd className="font-medium text-foreground mt-0.5">{form.flight_type === "departure" ? "Departure" : "Arrival"} · {form.airline ? `${form.airline} ` : ""}{form.flight_number}</dd>
-                  <dd className="text-xs text-muted-foreground">{form.flight_date} at {form.scheduled_flight_time}</dd>
-                </div>
-                <button type="button" onClick={() => goTo(1)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
-              </div>
-              <div className="px-5 py-3 flex items-start justify-between gap-4">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Travellers ({numPassengers})</dt>
-                  <dd className="font-medium text-foreground mt-0.5">{passengers.map((p) => p.name.trim()).filter(Boolean).join(", ")}</dd>
-                  <dd className="text-xs text-muted-foreground">Contact {form.contact}</dd>
-                </div>
-                <button type="button" onClick={() => goTo(2)} className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"><Pencil className="w-3 h-3" aria-hidden="true" /> Change</button>
-              </div>
-            </dl>
-          </section>
+            <p className="text-sm text-muted-foreground">Check your boarding pass. Change anything that is not right, then confirm.</p>
+          <BoardingPass
+            direction={form.flight_type}
+            service={selectedPkg?.name}
+            flight={[form.airline, form.flight_number].filter(Boolean).join(" ")}
+            when={[form.flight_date, form.scheduled_flight_time].filter(Boolean).join(" at ")}
+            travellers={passengers.map((p) => p.name.trim()).filter(Boolean)}
+            contact={form.contact}
+            email={form.contact_email}
+            perPassenger={money(pricePerPassenger)}
+            total={money(appliedDiscount ? appliedDiscount.final_total : totalValue)}
+            onChange={goTo}
+          />
 
           <DiscountCodeInput
             applied={appliedDiscount}
