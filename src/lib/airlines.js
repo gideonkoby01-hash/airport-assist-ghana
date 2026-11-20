@@ -1,9 +1,8 @@
-// The airlines passengers choose from, in the order the business gave them. The two-letter flight code, where we are sure of
-// it, starts the flight number when the airline is picked (KQ for Kenya Airways). An airline with no code just leaves the
-// flight number empty for the passenger to type.
+// The airlines passengers choose from, in the order the business gave them. Picking one starts the flight number with its
+// two-letter code (KQ for Kenya Airways).
 export const AIRLINES = [
   { name: "Africa World Airlines", code: "AW" },
-  { name: "Passion Air", code: "" },
+  { name: "Passion Air", code: "OP" },
   { name: "Air Peace", code: "P4" },
   { name: "ASKY Airlines", code: "KP" },
   { name: "Brussels Airlines", code: "SN" },
@@ -25,10 +24,10 @@ export const AIRLINES = [
   { name: "ITA Airways", code: "AZ" },
   { name: "RwandAir", code: "WB" },
   { name: "Air Tanzania (via Lagos)", code: "TC" },
-  { name: "Value Jet", code: "" },
+  { name: "Value Jet", code: "VK" },
   { name: "Ibom Air", code: "QI" },
   { name: "Uganda Airlines", code: "UR" },
-  { name: "United Nigeria Airlines", code: "" },
+  { name: "United Nigeria Airlines", code: "UN" },
   { name: "Air Burkina", code: "2J" },
 ];
 
