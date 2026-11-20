@@ -38,7 +38,7 @@ const PACKAGES = [
 const FILTERS = [["all", "All"], ["arrival", "Arrival"], ["departure", "Departure"], ["porter", "Porter"]];
 
 export default function Packages() {
-  const { format: money } = useMoney();
+  const { formatFor } = useMoney();
   const { bookingLink } = useHomeCta();
   const [filter, setFilter] = useState("all");
   const shown = PACKAGES.filter((p) => filter === "all" || p.kind === filter);
@@ -90,7 +90,7 @@ export default function Packages() {
                   <div className="mt-auto pt-5 border-t border-border flex items-end justify-between gap-3">
                     <p>
                       <span className="block text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Per passenger</span>
-                      <span className="tabular text-[1.5rem] font-extrabold" style={{ color: "hsl(var(--pink))" }}>{money(p.price)}</span>
+                      <span className="tabular text-[1.5rem] font-extrabold" style={{ color: "hsl(var(--pink))" }}>{formatFor(p.code)(p.price)}</span>
                     </p>
                     <Link to={bookingLink(bookingAddress({ package_code: p.code }))} className="press inline-flex items-center gap-1 text-sm font-semibold text-foreground hover:underline underline-offset-4">
                       Book <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />

@@ -1,5 +1,5 @@
 import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
-import { bookingOwnerId } from '../_shared/bookingAccess.ts';
+import { emailBookingPassenger } from '../_shared/notify.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 
@@ -11,7 +11,7 @@ serve('assignSupervisor', async (req) => {
   const { booking_id: bookingId, supervisor_user_id: supervisorId } = await readBody(req) as Record<string, string>;
   if (!bookingId || !supervisorId) throw new HttpError(400, 'booking_id and supervisor_user_id are required');
 
-  const { data: entry } = await admin.from('supervisor_directory').select('full_name,email').eq('user_id', supervisorId).eq('active', true).limit(1).maybeSingle();
+  const { data: entry } = await admin.from('supervisor_directory').select('full_name,email,phone').eq('user_id', supervisorId).eq('active', true).limit(1).maybeSingle();
   if (!entry) throw new HttpError(400, 'Supervisor not found or not active in the directory');
 
   const { data: booking } = await admin.from('bookings').select('*').eq('id', bookingId).maybeSingle();
@@ -61,14 +61,12 @@ serve('assignSupervisor', async (req) => {
         passengers_line: `${booking.num_passengers || 0} passenger(s)`, cta_url: `${appUrl()}/bookings/${bookingId}`,
       },
     });
-    const ownerId = bookingOwnerId(booking);
-    if (booking.booking_channel === 'online' && ownerId) {
-      const { data: owner } = await admin.from('profiles').select('id,email,full_name').eq('id', ownerId).maybeSingle();
-      await sendTransactionalEmail(admin, {
-        eventKey: `passenger_assigned:${bookingId}:${supervisorId}:${stamp}`, templateName: 'PassengerSupervisorAssigned', to: owner?.email, userId: ownerId, relatedEntityId: bookingId,
+    if (booking.booking_channel === 'online') {
+      await emailBookingPassenger(admin, booking, {
+        eventKey: `passenger_assigned:${bookingId}:${supervisorId}:${stamp}`, templateName: 'PassengerSupervisorAssigned',
         variables: {
-          first_name: (booking.passengers?.[0]?.name || owner?.full_name || '').trim().split(/\s+/)[0] || 'there', supervisor_name: entry.full_name || 'Your supervisor',
-          reference: booking.reference, flight_line: flightLine, travel_line: travelLine, cta_url: `${appUrl()}/bookings/${bookingId}`,
+          supervisor_name: entry.full_name || 'Your supervisor', supervisor_phone: entry.phone || '—',
+          flight_line: flightLine, travel_line: travelLine,
         },
       });
     }

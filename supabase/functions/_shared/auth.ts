@@ -47,6 +47,21 @@ export async function requireCaller(req: Request, admin: SupabaseClient, roles?:
   return profile as Profile;
 }
 
+// The signed-in caller, or null for someone who is not signed in (a passenger booking without an account). A token that is
+// not a real user's (the public key the website sends) counts as not signed in.
+export async function optionalCaller(req: Request, admin: SupabaseClient): Promise<Profile | null> {
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+  const { data, error } = await admin.auth.getUser(token);
+  if (error || !data.user) return null;
+  return await requireCaller(req, admin);
+}
+
+// Where the request came from, for limits on people who are not signed in.
+export function clientIp(req: Request): string {
+  return (req.headers.get('cf-connecting-ip') ?? req.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim();
+}
+
 export async function recipientsByRole(admin: SupabaseClient, roles: Profile['role'][]): Promise<Profile[]> {
   const { data, error } = await admin.from('profiles').select('id,email,full_name,role').in('role', roles);
   if (error) throw error;

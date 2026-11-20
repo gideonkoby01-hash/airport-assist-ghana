@@ -32,6 +32,7 @@ export default function PackageManager() {
   const draft = (p) => drafts[p.id] || {
     name: p.name,
     price: p.price,
+    price_usd: p.price_usd ?? "",
     inclusions: p.inclusions,
     exclusions: p.exclusions,
     includes_lounge: p.includes_lounge,
@@ -42,7 +43,7 @@ export default function PackageManager() {
     setDrafts((d) => {
       const pkg = packages.find((p) => p.id === id);
       const base = pkg
-        ? { name: pkg.name, price: pkg.price, inclusions: pkg.inclusions, exclusions: pkg.exclusions, includes_lounge: pkg.includes_lounge, active: pkg.active }
+        ? { name: pkg.name, price: pkg.price, price_usd: pkg.price_usd ?? "", inclusions: pkg.inclusions, exclusions: pkg.exclusions, includes_lounge: pkg.includes_lounge, active: pkg.active }
         : {};
       return { ...d, [id]: { ...base, ...(d[id] || {}), [k]: v } };
     });
@@ -54,6 +55,7 @@ export default function PackageManager() {
       await api.entities.ServicePackage.update(p.id, {
         name: d.name,
         price: Number(d.price),
+        price_usd: d.price_usd === "" || d.price_usd === null ? null : Number(d.price_usd),
         inclusions: d.inclusions,
         exclusions: d.exclusions,
         includes_lounge: !!d.includes_lounge,
@@ -99,6 +101,11 @@ export default function PackageManager() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Price (GHS)</Label>
                 <Input type="number" min={0} value={d.price} onChange={(e) => setDraft(p.id, "price", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Price in US dollars (optional)</Label>
+                <Input type="number" min={0} step="0.01" value={d.price_usd} onChange={(e) => setDraft(p.id, "price_usd", e.target.value)} placeholder="e.g. 50" />
+                <p className="text-xs text-muted-foreground">Shown to passengers who choose dollars. Leave empty to show this service in cedis only. Bookings and payments stay in cedis.</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Inclusions</Label>

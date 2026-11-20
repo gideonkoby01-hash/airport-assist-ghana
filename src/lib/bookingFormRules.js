@@ -10,6 +10,11 @@ export function isPhone(value) {
   return /^\+?[0-9][0-9 ()-]{5,24}$/.test(text) && digits.length >= 7 && digits.length <= 15;
 }
 
+export function isEmail(value) {
+  const text = String(value ?? '').trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) && text.length <= 254;
+}
+
 export function todayUtc(now = Date.now()) {
   return new Date(now).toISOString().slice(0, 10);
 }
@@ -20,7 +25,7 @@ function flightMs(date, time) {
   return Date.UTC(y, m - 1, d, Number(time.slice(0, 2)), Number(time.slice(3)));
 }
 
-/** @returns {Record<string, string>} one message per field key; empty when the form is fine. Keys: consent, package_code, flight_number, flight_date, scheduled_flight_time, contact, passenger_<n>_name. */
+/** @returns {Record<string, string>} one message per field key; empty when the form is fine. Keys: consent, package_code, flight_number, flight_date, scheduled_flight_time, contact, contact_email, passenger_<n>_name. */
 export function validateBooking({ form, passengers, channel, consented, now = Date.now() }) {
   /** @type {Record<string, string>} */
   const errors = {};
@@ -32,6 +37,11 @@ export function validateBooking({ form, passengers, channel, consented, now = Da
   else if (channel === 'online' && form.flight_date && !errors.flight_date) {
     const at = flightMs(form.flight_date, form.scheduled_flight_time);
     if (at !== null && at < now) errors.scheduled_flight_time = 'That flight time has already passed.';
+  }
+  if (channel === 'online') {
+    const email = String(form.contact_email ?? '').trim();
+    if (!email) errors.contact_email = 'Enter your email address. Your booking details are sent there.';
+    else if (!isEmail(email)) errors.contact_email = 'Enter a valid email address, for example name@example.com.';
   }
   if (!String(form.contact).trim()) errors.contact = 'Enter a phone or WhatsApp number we can reach you on.';
   else if (!isPhone(form.contact)) errors.contact = 'Enter a phone number with at least 7 digits. Add the country code if it is not a Ghana number.';

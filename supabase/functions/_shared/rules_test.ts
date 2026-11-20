@@ -1,6 +1,6 @@
 // Run: deno test supabase/functions/_shared/rules_test.ts
 import { assertEquals } from 'jsr:@std/assert@1';
-import { canOperateBooking, canViewBooking, bookingOwnerId } from './bookingAccess.ts';
+import { canOperateBooking, canViewBooking, bookingOwnerId, bookingEmailAddress } from './bookingAccess.ts';
 import { computeDiscount, evaluateDiscount, normalizeCode } from './discounts.ts';
 
 const future = '2999-12-31';
@@ -51,4 +51,11 @@ Deno.test('booking access: admin/management all, supervisor only assigned, passe
   assertEquals(canViewBooking({ id: 'p1', role: 'passenger' }, booking), true);
   assertEquals(canViewBooking({ id: 'p2', role: 'passenger' }, booking), false);
   assertEquals(bookingOwnerId({ created_by_id: 'legacy' }), 'legacy');
+});
+
+Deno.test('booking emails go to the address given when booking, else the account that made it', () => {
+  assertEquals(bookingEmailAddress({ contact_email: ' ama@example.com ' }, 'owner@example.com'), 'ama@example.com');
+  assertEquals(bookingEmailAddress({ contact_email: '' }, 'owner@example.com'), 'owner@example.com');
+  assertEquals(bookingEmailAddress({ contact_email: null }, null), null);
+  assertEquals(bookingEmailAddress(null, undefined), null);
 });

@@ -45,6 +45,12 @@
       </mj-section>
       <mj-section padding="0 36px 0">
         <mj-group background-color="#f7f9fc">
+          <mj-column padding="12px 20px 12px"><mj-text mj-class="label">Their phone</mj-text></mj-column>
+          <mj-column padding="12px 20px 12px"><mj-text align="right" font-size="15px" font-weight="700">{{supervisor_phone}}</mj-text></mj-column>
+        </mj-group>
+      </mj-section>
+      <mj-section padding="0 36px 0">
+        <mj-group background-color="#f7f9fc">
           <mj-column padding="12px 20px 12px"><mj-text mj-class="label">Flight</mj-text></mj-column>
           <mj-column padding="12px 20px 12px"><mj-text align="right" font-size="15px" font-weight="700">{{flight_line}}</mj-text></mj-column>
         </mj-group>
@@ -57,10 +63,10 @@
       </mj-section>
       <mj-section padding="0 36px 24px">
         <mj-column>
-          <mj-text font-size="15px">Your supervisor will meet you as arranged. You can see their contact details on your booking page.</mj-text>
+          <mj-text font-size="15px">Your supervisor will meet you as arranged. They may call you on the number you gave when you booked.</mj-text>
         </mj-column>
       </mj-section>
-      <mj-section padding="0 36px 40px"><mj-column><mj-button href="{{cta_url}}" align="left">View my booking</mj-button></mj-column></mj-section>
+      <mj-section padding="0 36px 24px"><mj-column><mj-text font-size="15px"> </mj-text></mj-column></mj-section>
       <mj-section background-color="#0b213c" padding="26px 36px 30px" border-radius="0 0 8px 8px">
         <mj-column>
           <mj-text mj-class="h" align="center" font-size="17px" color="#ffffff" padding="0 0 8px">Airport Assist Ghana</mj-text>

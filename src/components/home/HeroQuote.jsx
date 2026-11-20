@@ -11,7 +11,7 @@ import { delayStyle } from "@/components/home/Reveal";
 // A working quick quote: choose a service, a date and how many people, see the price straight away, and carry
 // those choices into the real booking form. Prices come from the same package list the booking form falls back to.
 export default function HeroQuote({ slide, index, total, controls }) {
-  const { format: money } = useMoney();
+  const { formatFor } = useMoney();
   const { bookingLink } = useHomeCta();
   const [code, setCode] = useState(PACKAGE_DEFINITIONS[0].code);
   const [date, setDate] = useState("");
@@ -76,14 +76,14 @@ export default function HeroQuote({ slide, index, total, controls }) {
         </div>
         <div className={`${box} md:col-span-2 flex flex-col justify-center`} aria-live="polite">
           <p className={cap}>Your price</p>
-          <p className="tabular font-extrabold text-[1.25rem] leading-tight" style={{ color: "hsl(var(--pink))" }}>{money(total$)}</p>
+          <p className="tabular font-extrabold text-[1.25rem] leading-tight" style={{ color: "hsl(var(--pink))" }}>{formatFor(code)(total$)}</p>
         </div>
         <Link to={href} className="press md:col-span-3 flex items-center justify-center gap-2 rounded-[16px] bg-primary text-primary-foreground font-semibold min-h-[3.4rem]">
           Continue to booking <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
         </Link>
       </div>
       <p className="px-5 sm:px-6 pb-4 -mt-1 text-sm text-muted-foreground">
-        {pax} × {money(pkg.price)} per passenger. You pay at the airport; nothing is taken online.
+        {pax} × {formatFor(code)(pkg.price)} per passenger. You pay at the airport; nothing is taken online.
       </p>
     </form>
   );

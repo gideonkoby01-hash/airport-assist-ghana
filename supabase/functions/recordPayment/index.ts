@@ -1,8 +1,11 @@
 import { adminClient, requireCaller } from '../_shared/auth.ts';
 import { canOperateBooking, round2 } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
+import { emailBookingPassenger } from '../_shared/notify.ts';
 
 const METHODS = ['cash', 'mobile_money', 'card', 'corporate_account'];
+const METHOD_LABELS: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile money', card: 'Card', corporate_account: 'Corporate account' };
+const ghs = (n: unknown) => `GHS ${Number(n).toFixed(2)}`;
 
 // Records one payment. The money moves inside the database (record_payment): one statement checks the
 // balance and updates it, so two staff members or a double tap can never overpay or lose a payment,
@@ -30,6 +33,20 @@ serve('recordPayment', async (req) => {
     if (error.message === 'overpayment') throw new HttpError(400, 'That is more than the outstanding balance. Refresh and check the balance.');
     if (error.message === 'booking_not_found') throw new HttpError(404, 'Booking not found');
     throw error;
+  }
+  // The passenger has no account to look at, so the receipt is emailed.
+  if (data?.booking_channel === 'online') {
+    try {
+      await emailBookingPassenger(admin, data, {
+        eventKey: `payment:${bookingId}:${data.amount_collected}`, templateName: 'PaymentUpdate',
+        variables: {
+          headline: 'We have received your payment.', message: 'Thank you. This is your receipt for the payment taken at the airport.',
+          amount_line: ghs(amount), method_line: METHOD_LABELS[method] || method, balance_line: ghs(data.outstanding_balance),
+        },
+      });
+    } catch (e) {
+      console.error('recordPayment: receipt email failed:', e instanceof Error ? e.message : e);
+    }
   }
   return json({ ok: true, booking: data });
 });

@@ -1,14 +1,14 @@
-import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { adminClient, clientIp, optionalCaller } from '../_shared/auth.ts';
 import { loadSettings } from '../_shared/config.ts';
 import { evaluateDiscount, normalizeCode, publicDiscountView, round2 } from '../_shared/discounts.ts';
 import { json, readBody, serve } from '../_shared/http.ts';
 
-// Passenger-facing preview. The amount is always calculated here from the stored package price.
-// Every outcome is a 200 with { valid, message } so the form can show the reason; only a missing
-// sign-in is a 401.
+// Passenger-facing preview, for someone who is not signed in as well. The amount is always calculated here from the stored
+// package price. Every outcome is a 200 with { valid, message } so the form can show the reason.
 serve('validateDiscountCode', async (req) => {
   const admin = adminClient();
-  const user = await requireCaller(req, admin);
+  const caller = await optionalCaller(req, admin);
+  const actorKey = caller ? caller.id : `ip:${clientIp(req)}`;
 
   const body = await readBody(req) as Record<string, any>;
   const code = normalizeCode(body.discount_code);
@@ -20,12 +20,12 @@ serve('validateDiscountCode', async (req) => {
   // Guessing is throttled: after 10 failed attempts in 15 minutes the person must wait.
   const settings = await loadSettings(admin);
   const windowSeconds = settings.num('discount_attempt_window_minutes') * 60;
-  const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${user.id}`, p_window_seconds: windowSeconds });
+  const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${actorKey}`, p_window_seconds: windowSeconds });
   if ((tries.data ?? 0) >= settings.num('discount_attempt_limit')) return json({ valid: false, message: 'Too many attempts. Please wait a few minutes and try again.' });
   // One message for every way a code can fail, so codes cannot be probed.
   const refuse = async (reason: string) => {
-    console.log(`validateDiscountCode: ${code} refused for ${user.id}: ${reason}`);
-    await admin.rpc('hit_rate_limit', { p_key: `discount:${user.id}`, p_window_seconds: windowSeconds });
+    console.log(`validateDiscountCode: ${code} refused for ${actorKey}: ${reason}`);
+    await admin.rpc('hit_rate_limit', { p_key: `discount:${actorKey}`, p_window_seconds: windowSeconds });
     return json({ valid: false, message: "That discount code isn't valid for your account or this booking. Check the code, or contact Airport Assist." });
   };
   if (!packageCode) return json({ valid: false, message: 'Select a service package first.' });
@@ -38,8 +38,10 @@ serve('validateDiscountCode', async (req) => {
   const { data: record } = await admin.from('discount_codes').select('*').eq('code', code).maybeSingle();
   if (!record) return await refuse('does not exist');
 
-  const { count } = await admin.from('discount_redemptions').select('id', { count: 'exact', head: true }).eq('discount_code_id', record.id).eq('user_id', user.id);
-  const result = evaluateDiscount({ record, userEmail: user.email, grossTotal: gross, usedByUser: count ?? 0 });
+  const contactEmail = String(body.contact_email ?? '').trim().toLowerCase();
+  const usage = admin.from('discount_redemptions').select('id', { count: 'exact', head: true }).eq('discount_code_id', record.id);
+  const { count } = await (caller ? usage.eq('user_id', caller.id) : contactEmail ? usage.ilike('user_email', contactEmail) : usage.eq('user_id', 'none'));
+  const result = evaluateDiscount({ record, userEmail: caller?.email ?? contactEmail, grossTotal: gross, usedByUser: count ?? 0 });
   if (!result.ok) return await refuse(result.message);
 
   return json({ valid: true, message: `Code ${record.code} applied.`, ...publicDiscountView(record, result) });

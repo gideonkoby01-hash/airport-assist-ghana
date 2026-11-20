@@ -18,6 +18,6 @@ export default function RoleRedirect() {
       ? "/supervisor"
       : role === "accounts"
       ? "/accounts"
-      : "/passenger";
+      : "/";
   return <Navigate to={dest} replace />;
 }

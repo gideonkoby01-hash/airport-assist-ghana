@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMoney } from "@/lib/currency";
 import { formatGHS } from "@/lib/packages";
-import GuestSignIn from "@/components/GuestSignIn";
 import { inclusionList, readDraft, saveDraft, clearDraft } from "@/lib/bookingDraft";
 import { useSettings } from "@/lib/SettingsContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -29,7 +28,7 @@ const STEPS = ["Service", "Flight", "Travellers", "Review"];
 const STEP_FIELDS = [
   (k) => k === "package_code",
   (k) => ["flight_number", "flight_date", "scheduled_flight_time"].includes(k),
-  (k) => k === "contact" || k.startsWith("passenger_"),
+  (k) => k === "contact" || k === "contact_email" || k.startsWith("passenger_"),
   (k) => k === "consent",
 ];
 
@@ -50,7 +49,7 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 // eslint-disable-next-line unused-imports/no-unused-vars
 export default function BookingForm({ channel = "online", user = undefined, supervisor = undefined, onCreated = undefined, standalone = false }) {
   const { user: me } = useAuth();
-  const { format: money, isUsd } = useMoney();
+  const { formatFor, isUsd } = useMoney();
   // Choices made in the website's quick quote arrive in the address (package, date, number of travellers).
   const [searchParams] = useSearchParams();
   const prefill = useMemo(() => parseBookingPrefill(searchParams.toString()), []); // read once, when the form opens
@@ -68,6 +67,8 @@ export default function BookingForm({ channel = "online", user = undefined, supe
     scheduled_flight_time: "",
     // A passenger's own number is filled in from their profile; staff booking for walk-ins start blank.
     contact: channel === "online" ? me?.phone || "" : "",
+    // Everything about an online booking is emailed here: passengers do not have accounts.
+    contact_email: channel === "online" ? me?.email || "" : "",
     nationality: "",
     total_bags: 0,
     special_requests: "",
@@ -145,6 +146,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
     return fromList || packageByCode(form.package_code);
   }, [packages, form.package_code]);
 
+  const money = formatFor(selectedPkg);
   const pricePerPassenger = Number(selectedPkg?.price || 0);
   const numPassengers = passengers.length;
   const totalValue = computeTotal(pricePerPassenger, numPassengers);
@@ -274,11 +276,6 @@ export default function BookingForm({ channel = "online", user = undefined, supe
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!me) {
-      setError("Sign in or create an account below to confirm your booking.");
-      document.getElementById("bf-signin")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
     const found = validateBooking({ form, passengers, channel, consented });
     const firstKey = Object.keys(found)[0];
     if (firstKey) {
@@ -297,7 +294,8 @@ export default function BookingForm({ channel = "online", user = undefined, supe
       if (photoFile) {
         setPhotoUploading(true);
         try {
-          const upload = await api.storage.uploadPrivateFile({ file: photoFile });
+          // Signed-in staff upload to their own folder; a passenger (no account) uses a single-use upload link.
+          const upload = me ? await api.storage.uploadPrivateFile({ file: photoFile }) : await api.storage.uploadGuestPhoto({ file: photoFile });
           passenger_photo_uri = upload.file_uri;
         } catch (err) {
           setPhotoUploading(false);
@@ -321,6 +319,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         flight_date: form.flight_date,
         scheduled_flight_time: form.scheduled_flight_time,
         contact: form.contact,
+        contact_email: channel === "online" ? form.contact_email.trim() : undefined,
         nationality: form.nationality,
         total_bags: form.total_bags,
         special_requests: form.special_requests,
@@ -372,7 +371,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           Total: <span className="font-semibold text-foreground">{money(created.total_value)}</span> ·{" "}
           {created.num_passengers} passenger{created.num_passengers !== 1 ? "s" : ""}
         </p>
-        {isUsd && <p className="text-xs text-muted-foreground mt-1">You pay in cedis at the airport: {formatGHS(created.total_value)}.</p>}
+        {isUsd && <p className="text-xs text-muted-foreground mt-1">Recorded at the airport as {formatGHS(created.total_value)}.</p>}
         {Number(created.discount_amount || 0) > 0 && (
           <p className="text-xs text-emerald-700 mt-1">
             Discount {created.discount_code} applied (−{money(created.discount_amount)} from{" "}
@@ -382,12 +381,14 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         <p className="text-sm text-muted-foreground mt-4">
           {channel === "walk_in"
             ? "It is assigned to you. Record payment and progress from the booking."
-            : "Keep your reference. You can follow this booking, and see your supervisor's details once one is assigned, from your dashboard."}
+            : `We are emailing your confirmation to ${created.contact_email || form.contact_email}. You will get another email when a supervisor is assigned, and if the status or a payment changes. Keep your reference. If you do not receive an email, the Airport Assist desk will contact you by phone.`}
         </p>
         <div className="flex gap-3 justify-center mt-6">
-          <Button variant="outline" asChild>
-            <Link to={`/bookings/${created.id}`}>View booking</Link>
-          </Button>
+          {channel === "walk_in" && (
+            <Button variant="outline" asChild>
+              <Link to={`/bookings/${created.id}`}>View booking</Link>
+            </Button>
+          )}
           <Button
             onClick={() => {
               clearDraft();
@@ -400,6 +401,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
                 flight_date: "",
                 scheduled_flight_time: "",
                 contact: "",
+                contact_email: "",
                 nationality: "",
                 total_bags: 0,
                 special_requests: "",
@@ -448,7 +450,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" aria-hidden="true" /> Choose your service
         </h3>
-        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.{isUsd && " Dollar prices are for your information; you pay in cedis at the airport."}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.{isUsd && " Dollar prices are the ones Airport Assist has set for each service. You pay at the airport."}</p>
         {loadingPkgs ?
         <div className="flex items-center text-muted-foreground text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…
@@ -476,7 +478,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">{p.name}</span>
-                  <span className="text-lg font-bold text-primary">{money(p.price)}</span>
+                  <span className="text-lg font-bold text-primary">{formatFor(p)(p.price)}</span>
                 </div>
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                   {inclusionList(p.inclusions).map((item) => (
@@ -558,6 +560,14 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             <h3 className="text-base font-semibold text-foreground">Who should we call?</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Your supervisor uses this number to find you at the airport.</p>
           </div>
+          {channel === "online" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="bf-contact_email">Email address *</Label>
+              <Input {...fp("contact_email")} type="email" inputMode="email" autoComplete="email" value={form.contact_email} onChange={(e) => setField("contact_email", e.target.value)} placeholder="you@example.com" />
+              {fieldError("contact_email")}
+              <p className="text-xs text-muted-foreground">You do not need an account. We email your confirmation, your supervisor's details and any update on your booking to this address. If you do not receive an email, the Airport Assist desk will contact you by phone.</p>
+            </div>
+          )}
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="bf-contact">Phone / WhatsApp *</Label>
@@ -722,6 +732,8 @@ export default function BookingForm({ channel = "online", user = undefined, supe
             onRemoved={() => setAppliedDiscount(null)}
             packageCode={form.package_code}
             numPassengers={numPassengers}
+            contactEmail={form.contact_email}
+            formatAmount={money}
             disabled={submitting}
           />
 
@@ -748,8 +760,6 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         </>
       )}
 
-      {step === STEPS.length - 1 && channel === "online" && !me && <GuestSignIn returnTo="/book" />}
-
       {/* Price and navigation: always in view at the bottom of the screen */}
       <div className="sticky bottom-3 z-10">
         <div className="bg-primary text-primary-foreground rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-3 shadow-[0_18px_40px_-20px_hsl(var(--foreground)/0.6)]">
@@ -775,7 +785,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
               <Button type="submit" size="lg" disabled={submitting || paused} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {photoUploading ? "Uploading photo…" : "Saving…"}</>
-                ) : channel === "walk_in" ? "Save walk-in booking" : !me ? "Sign in to confirm" : "Confirm booking"}
+                ) : channel === "walk_in" ? "Save walk-in booking" : "Confirm booking"}
               </Button>
             )}
           </div>

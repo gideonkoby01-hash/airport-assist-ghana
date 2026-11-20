@@ -3,8 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import {
-  Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, CalendarPlus, ClipboardList, FileText, LayoutDashboard, LogOut,
-  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Ticket, UserCheck,
+  Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
+  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -16,14 +16,6 @@ import { cn } from "@/lib/utils";
 // Grouped so a long list (admin has a dozen areas) reads as a few sections. `tab: null` is the dashboard's first screen.
 // `primary` items sit in the phone's bottom bar; everything else is under "More".
 const NAV = {
-  passenger: [
-    { items: [
-      { label: "Overview", to: "/passenger", tab: null, icon: LayoutDashboard, primary: true },
-      { label: "Book a service", to: "/passenger", tab: "book", icon: CalendarPlus, primary: true },
-      { label: "My bookings", to: "/passenger", tab: "bookings", icon: Ticket, primary: true },
-      { label: "Notifications", to: "/passenger", tab: "notifications", icon: Bell, primary: true },
-    ] },
-  ],
   supervisor: [
     { heading: "Today", items: [
       { label: "Assigned bookings", to: "/supervisor", tab: null, icon: ClipboardList, primary: true },
@@ -103,7 +95,7 @@ export default function AppLayout({ children }) {
   const [unread, setUnread] = useState(0);
 
   const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
-  const groups = NAV[role] || NAV.passenger;
+  const groups = NAV[role] || [];
   const flat = groups.flatMap((g) => g.items);
   const currentTab = new URLSearchParams(location.search).get("tab");
   const home = flat[0]?.to || "/";

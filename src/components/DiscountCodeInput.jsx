@@ -3,10 +3,10 @@ import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Tag, CheckCircle2, X } from "lucide-react";
-import { useMoney } from "@/lib/currency";
+import { formatGhsAmount } from "@/lib/money";
 
-export default function DiscountCodeInput({ applied, onApplied, onRemoved, packageCode, numPassengers, disabled }) {
-  const { format: money } = useMoney();
+export default function DiscountCodeInput({ applied, onApplied, onRemoved, packageCode, numPassengers, disabled, contactEmail = "", formatAmount = formatGhsAmount }) {
+  const money = formatAmount;
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,6 +27,7 @@ export default function DiscountCodeInput({ applied, onApplied, onRemoved, packa
         discount_code: value,
         package_code: packageCode,
         num_passengers: numPassengers,
+        contact_email: contactEmail,
       });
       const data = res?.data || {};
       if (!data.valid) {
