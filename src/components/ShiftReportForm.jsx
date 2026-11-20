@@ -152,11 +152,7 @@ export default function ShiftReportForm({ supervisor }) {
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
             <h3 className="text-sm font-semibold flex items-center gap-2"><Banknote className="w-4 h-4 text-accent" aria-hidden="true" /> Cash check</h3>
-            <p className="text-sm">
-              The system expects <strong>{formatGHS(expectedCash)}</strong> in cash from this shift
-              {Number(preview.supervisor_commission) > 0 && <> ({formatGHS(preview.cash_sales)} in cash sales, less your commission of {formatGHS(preview.supervisor_commission)}, which you keep)</>}.
-              Count what you hold and enter it.
-            </p>
+            <p className="text-sm">The system expects <strong>{formatGHS(expectedCash)}</strong> in cash from this shift. Count what you hold and enter it.</p>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="sr-cash">Cash counted (GHS)</Label>

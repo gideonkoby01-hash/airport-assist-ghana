@@ -100,7 +100,7 @@ export default function CommissionsPanel() {
           </div>
 
           {inRange.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">No commission was marked in this period.</p>
+            <p className="text-sm text-muted-foreground py-6 text-center">No commission was earned in this period.</p>
           ) : (
             <>
               <div className="overflow-x-auto">

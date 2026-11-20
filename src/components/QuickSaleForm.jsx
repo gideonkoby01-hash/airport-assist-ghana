@@ -35,8 +35,6 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const [reason, setReason] = useState("");
   // One porter handles one passenger: the sale has one porter choice for each passenger.
   const [porterIds, setPorterIds] = useState([""]);
-  // The supervisor's own commission on this sale (a meet and assist earns it; Porter Service Only does not).
-  const [takeCommission, setTakeCommission] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(null);
@@ -59,7 +57,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
 
   const reset = () => {
     setDone(null); setCode(""); setCount(1); setName(""); setPhone(""); setDiscounted(false); setAmount("");
-    setReason(""); setPorterIds([""]); setTakeCommission(false); setFlightNumber(""); setAirline(""); setOtherAirline(false); setFlightTime(""); setError("");
+    setReason(""); setPorterIds([""]); setFlightNumber(""); setAirline(""); setOtherAirline(false); setFlightTime(""); setError("");
     key.current = crypto.randomUUID();
   };
 
@@ -113,10 +111,9 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         flight_time: flightTime || undefined,
         porter_ids: chosenPorters,
         porters_waived: waivedCount,
-        commission: takeCommission && pkg.code !== "porter_only",
       });
       if (res?.data?.error) throw new Error(res.data.error);
-      setDone({ ...res.data.booking, commission_warning: res.data.commission_warning });
+      setDone(res.data.booking);
       if (onRecorded) onRecorded(res.data.booking);
     } catch (err) {
       setError(err.message || "The sale could not be saved. Check your connection and try again; it will not be recorded twice.");
@@ -133,10 +130,9 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         <p className="text-sm text-muted-foreground mt-1">
           {done.reference} · {done.package_name} · {formatGHS(done.total_value)} ({PAYMENT_METHOD_LABELS[done.payment_method] || done.payment_method})
         </p>
-        {Number(done.supervisor_commission) > 0 && (
-          <p className="text-xs text-emerald-700 mt-2">Your commission of {formatGHS(done.supervisor_commission)} is recorded and comes off today's takings.</p>
+        {done.package_code !== "porter_only" && (
+          <p className="text-xs text-emerald-700 mt-2">Your commission of {formatGHS(supervisorCommission)} is added automatically and comes off today's takings.</p>
         )}
-        {done.commission_warning && <p role="alert" className="text-xs text-destructive mt-2">{done.commission_warning}</p>}
         <Button className="mt-4" onClick={reset}>Record another sale</Button>
       </div>
     );
@@ -277,13 +273,9 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
       </div>
 
       {pkg && pkg.code !== "porter_only" && (
-        <label className="flex items-start gap-3 text-sm rounded-lg border border-border p-3 cursor-pointer">
-          <input type="checkbox" className="mt-1 h-4 w-4" checked={takeCommission} onChange={(e) => setTakeCommission(e.target.checked)} />
-          <span>
-            <span className="font-medium text-foreground">My commission on this sale: {formatGHS(supervisorCommission)}</span>
-            <span className="block text-xs text-muted-foreground">Tick to record it. It comes off today's takings in your shift report.</span>
-          </span>
-        </label>
+        <p className="text-xs text-muted-foreground rounded-lg border border-border p-3">
+          Every meet and assist earns you a commission of <span className="font-medium text-foreground">{formatGHS(supervisorCommission)}</span>. It is added automatically and comes off today's takings in your shift report.
+        </p>
       )}
 
       <Button type="submit" className="w-full h-12" disabled={saving || !pkg}>
