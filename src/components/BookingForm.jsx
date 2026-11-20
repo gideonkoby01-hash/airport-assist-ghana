@@ -518,7 +518,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
               <Select value={otherAirline ? OTHER_AIRLINE : isListedAirline(form.airline) ? form.airline : ""} onValueChange={onAirlineChange}>
                 <SelectTrigger id="bf-airline"><SelectValue placeholder="Choose your airline" /></SelectTrigger>
                 <SelectContent className="max-h-72">
-                  {AIRLINES.map((a) => (<SelectItem key={a.code} value={a.name}>{a.name}</SelectItem>))}
+                  {AIRLINES.map((a) => (<SelectItem key={a.name} value={a.name}>{a.name}</SelectItem>))}
                   <SelectItem value={OTHER_AIRLINE}>Another airline…</SelectItem>
                 </SelectContent>
               </Select>

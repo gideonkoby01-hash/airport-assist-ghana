@@ -201,7 +201,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
             <Select value={otherAirline ? OTHER_AIRLINE : isListedAirline(airline) ? airline : ""} onValueChange={onAirlineChange}>
               <SelectTrigger id="qs-airline"><SelectValue placeholder="Choose the airline" /></SelectTrigger>
               <SelectContent className="max-h-72">
-                {AIRLINES.map((a) => (<SelectItem key={a.code} value={a.name}>{a.name}</SelectItem>))}
+                {AIRLINES.map((a) => (<SelectItem key={a.name} value={a.name}>{a.name}</SelectItem>))}
                 <SelectItem value={OTHER_AIRLINE}>Another airline…</SelectItem>
               </SelectContent>
             </Select>
