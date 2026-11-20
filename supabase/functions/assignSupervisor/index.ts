@@ -52,26 +52,29 @@ serve('assignSupervisor', async (req) => {
   const flightLine = `${booking.airline || ''} ${booking.flight_number || ''}`.trim() || '—';
   const travelLine = flightInfo || '—';
   const stamp = updated.updated_date;
-  try {
-    await sendTransactionalEmail(admin, {
+  // Both emails go out together the moment the assignment is saved, so the passenger is told straight away and a problem
+  // sending the supervisor's email can never hold up or skip the passenger's.
+  const sends = [
+    sendTransactionalEmail(admin, {
       eventKey: `assignment:${bookingId}:${supervisorId}:${stamp}`, templateName: 'SupervisorAssigned', to: entry.email, userId: supervisorId, relatedEntityId: bookingId,
       variables: {
         first_name: (entry.full_name || '').trim().split(/\s+/)[0] || 'there', action_word: isReassignment ? 'reassigned' : 'assigned', reference: booking.reference,
         service: booking.package_name || booking.package_code, flight_line: flightLine, travel_line: travelLine,
         passengers_line: `${booking.num_passengers || 0} passenger(s)`, cta_url: `${appUrl()}/bookings/${bookingId}`,
       },
-    });
-    if (booking.booking_channel === 'online') {
-      await emailBookingPassenger(admin, booking, {
-        eventKey: `passenger_assigned:${bookingId}:${supervisorId}:${stamp}`, templateName: 'PassengerSupervisorAssigned',
-        variables: {
-          supervisor_name: entry.full_name || 'Your supervisor', supervisor_phone: entry.phone || '—',
-          flight_line: flightLine, travel_line: travelLine,
-        },
-      });
-    }
-  } catch (e) {
-    console.error('assignSupervisor: assignment emails failed:', e instanceof Error ? e.message : e);
+    }),
+  ];
+  if (booking.booking_channel === 'online') {
+    sends.push(emailBookingPassenger(admin, booking, {
+      eventKey: `passenger_assigned:${bookingId}:${supervisorId}:${stamp}`, templateName: 'PassengerSupervisorAssigned',
+      variables: {
+        supervisor_name: entry.full_name || 'Your supervisor', supervisor_phone: entry.phone || '—',
+        flight_line: flightLine, travel_line: travelLine,
+      },
+    }));
+  }
+  for (const r of await Promise.allSettled(sends)) {
+    if (r.status === 'rejected') console.error('assignSupervisor: assignment email failed:', r.reason instanceof Error ? r.reason.message : r.reason);
   }
 
   return json({ ok: true, booking: updated });

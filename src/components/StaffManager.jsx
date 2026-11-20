@@ -8,7 +8,8 @@ import { roleLabel } from "@/lib/packages";
 import ConfirmAction from "@/components/ConfirmAction";
 import StaffCreate from "@/components/StaffCreate";
 
-const ROLES = ["passenger", "supervisor", "management", "accounts", "admin"];
+// Passengers do not have accounts any more, so "Passenger" is not a role to choose.
+const ROLES = ["supervisor", "management", "accounts", "admin"];
 
 export default function StaffManager() {
   const [users, setUsers] = useState([]);
@@ -34,6 +35,11 @@ export default function StaffManager() {
   }, []);
 
   // A new temporary password for a staff member who forgot theirs. Shown once; they must replace it when they sign in.
+  // Accounts from before passengers stopped signing in: listed apart, with nothing to do but remove their personal data.
+  const isOldPassenger = (u) => !u.role || u.role === "passenger" || u.role === "user";
+  const staffUsers = users.filter((u) => !isOldPassenger(u));
+  const oldPassengers = users.filter(isOldPassenger);
+
   const resetPassword = async (u) => {
     try {
       const res = await api.functions.invoke("resetStaffPassword", { user_id: u.id });
@@ -129,12 +135,12 @@ export default function StaffManager() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {staffUsers.map((u) => (
                   <tr key={u.id} className="border-b border-border last:border-0">
                     <td className="py-2 pr-4 font-medium">{u.email}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{u.full_name || "—"}</td>
                     <td className="py-2 pr-4 w-44">
-                      <Select value={u.role || "passenger"} onValueChange={(r) => changeRole(u.id, r)}>
+                      <Select value={u.role} onValueChange={(r) => changeRole(u.id, r)}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
@@ -185,10 +191,35 @@ export default function StaffManager() {
                 ))}
               </tbody>
             </table>
-            {users.length === 0 && <p className="text-sm text-muted-foreground py-4">No users found.</p>}
+            {staffUsers.length === 0 && <p className="text-sm text-muted-foreground py-4">No staff accounts found.</p>}
           </div>
         )}
       </div>
+
+      {oldPassengers.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-foreground">Old passenger accounts ({oldPassengers.length})</h3>
+          <p className="text-xs text-muted-foreground mt-1 mb-3">
+            Passengers no longer sign in, so these accounts are not used. Erase them to remove the personal data they hold; their bookings and payment records stay.
+          </p>
+          <ul className="divide-y divide-border text-sm">
+            {oldPassengers.map((u) => (
+              <li key={u.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="font-medium break-all">{u.email}</span>
+                <ConfirmAction
+                  title={`Delete the personal data of ${u.email}?`}
+                  description="Their name, contact details, ID photos, notifications and login are removed. Payment records stay but no longer name them. This cannot be undone."
+                  confirmLabel="Delete personal data"
+                  destructive
+                  onConfirm={() => eraseData(u)}
+                >
+                  <Button size="sm" variant="ghost" className="text-destructive">Erase</Button>
+                </ConfirmAction>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
