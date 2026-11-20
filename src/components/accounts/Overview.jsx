@@ -24,10 +24,11 @@ export default function Overview({ from, to }) {
     <LoadState loading={loading} error={error} hasData={Boolean(data)}>
       {data && pl && (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             <KpiTile accent label="Net profit (cash basis)" value={formatGHS(pl.netProfit)} sub={pl.margin === null ? "No income yet" : `${Math.round(pl.margin * 100)}% of income`} />
             <KpiTile label="Payments received (before refunds)" value={formatGHS(data.collected)} sub={`${formatGHS(data.refunds)} refunded`} trend={daily.map((d) => d.collected)} />
-            <KpiTile label="Commissions" value={formatGHS(pl.commissions)} sub={`Porters ${formatGHS(data.porter_commission)}, supervisors ${formatGHS(data.supervisor_commission)}`} />
+            <KpiTile label="Porter commission" value={formatGHS(data.porter_commission)} sub="Paid to porters daily" />
+            <KpiTile label="Supervisor commission" value={formatGHS(data.supervisor_commission)} sub="On meet and assist bookings" />
             <KpiTile label="Expenses" value={formatGHS(data.expenses)} trend={daily.map((d) => d.expenses)} />
             <KpiTile label="Billed (service value)" value={formatGHS(data.billed)} sub={`${formatGHS(data.discounts)} in discounts`} />
             <KpiTile label="Owed on these bookings" value={formatGHS(data.outstanding_in_range)} sub={`${share(data.outstanding_in_range, data.billed)} of billed`} />
