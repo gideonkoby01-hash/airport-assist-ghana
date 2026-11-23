@@ -1,5 +1,6 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
+import { api } from "@/api/db";
 
 /** Loads data for an Accounts page and keeps the last result on screen (dimmed) while the next one loads. */
 export function useLoad(fn, deps) {
@@ -51,4 +52,27 @@ export function Panel({ title, note = undefined, actions = undefined, children, 
       {children}
     </section>
   );
+}
+
+/** The chart of accounts, for pickers and names. */
+export function useChart() {
+  return useLoad(() => api.books.accounts(), []);
+}
+
+/** A money figure in a table: blank for zero so the columns are easy to scan. */
+export function Amt({ value, strong = false }) {
+  const n = Number(value) || 0;
+  if (!n) return <span className="text-muted-foreground/50">—</span>;
+  return <span className={`tabular ${strong ? "font-semibold" : ""}`}>{n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+}
+
+/** A small label for the state of something: good, needs a look, or neutral. */
+export function Pill({ tone = "neutral", children }) {
+  const cls = {
+    good: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+    warn: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30",
+    bad: "bg-destructive/10 text-destructive border-destructive/30",
+    neutral: "bg-secondary text-muted-foreground border-border",
+  }[tone];
+  return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${cls}`}>{children}</span>;
 }

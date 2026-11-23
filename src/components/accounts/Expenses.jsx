@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Download, Loader2, Plus } from "lucide-react";
-import { api } from "@/api/db";
+import { api, BOOKS_ERRORS } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,9 @@ import { downloadCsv, toCsv } from "@/lib/csv";
 import { todayUtc } from "@/lib/bookingFormRules";
 import { notifyError } from "@/lib/notify";
 import { LoadState, Panel, fmtDate, methodLabel, useLoad } from "./shared";
+
+// A closed month refuses changes; say so in words.
+const say = (err, fallback) => (/period_closed/.test(err?.message || "") ? BOOKS_ERRORS.period_closed : err?.message || fallback);
 
 const blank = () => ({ expense_date: todayUtc(), category: "supplies", description: "", payee: "", method: "cash", reference: "", amount: "" });
 
@@ -43,7 +46,7 @@ export default function Expenses({ from, to }) {
       setForm({ ...blank(), expense_date: form.expense_date, category: form.category });
       reload();
     } catch (err) {
-      setFormError(err.message || "The expense could not be saved.");
+      setFormError(say(err, "The expense could not be saved."));
     } finally {
       setSaving(false);
     }
@@ -57,7 +60,7 @@ export default function Expenses({ from, to }) {
       setReason("");
       reload();
     } catch (err) {
-      notifyError(err.message || "Could not cancel that expense.");
+      notifyError(say(err, "Could not cancel that expense."));
     }
   };
 
