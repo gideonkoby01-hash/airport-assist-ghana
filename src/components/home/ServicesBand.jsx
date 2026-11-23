@@ -1,43 +1,12 @@
 import React from "react";
-import { ArrowUpRight, Check } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Reveal from "@/components/home/Reveal";
-
-// What the escort does, in the three situations people book for. The dark band breaks up the white page.
-const SERVICES = [
-  {
-    title: "Arrival",
-    link: "Explore arrival",
-    image: "/images/lounge.webp",
-    position: "50% 40%",
-    phonePosition: "50% 22%",
-    text: "Long queues, heavy bags, a family to look after? We meet you at the airbridge and stay with you to the car.",
-    points: ["Met at the airbridge with your name", "Fast-track through immigration", "Help with your luggage", "Handed over to your driver or transfer"],
-  },
-  {
-    title: "Departure",
-    link: "Explore departure",
-    image: "/images/porter-hero.webp",
-    position: "40% 30%",
-    phonePosition: "50% 22%",
-    text: "We meet you at the kerb, take the bags, and get you checked in, through security and on towards your gate.",
-    points: ["Curbside welcome", "Check-in assistance", "Fast-track security and immigration", "Lounge access in the full package"],
-  },
-  {
-    title: "Porter",
-    link: "Explore porter service",
-    image: "/images/porter-hero.webp",
-    position: "85% 95%",
-    phonePosition: "78% 80%",
-    zoom: true,
-    text: "Just need the bags handled? A porter takes your luggage across the terminal and walks you to the checkpoints.",
-    points: ["Luggage handled across the terminal", "Escort to the checkpoints", "Add it to any trip"],
-  },
-];
 
 export default function ServicesBand() {
   return (
     <section id="services" className="mt-16 sm:mt-24 bg-[hsl(var(--site-dark))] text-white">
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
         <Reveal className="max-w-3xl">
           <span className="block h-[3px] w-10 rounded-full mb-5" style={{ background: "var(--grad-brand)" }} aria-hidden="true" />
           <p className="eyebrow text-accent">Who we are</p>
@@ -52,38 +21,11 @@ export default function ServicesBand() {
             included, we help make every journey more convenient.
           </p>
         </Reveal>
-
-        <ul className="mt-12 grid md:grid-cols-3 gap-6">
-          {SERVICES.map((s, i) => (
-            <Reveal as="li" key={s.title} delay={i * 110} className="list-none">
-              <article className="lift group relative h-full md:min-h-[27rem] flex flex-col overflow-hidden rounded-[20px] border border-white/15 bg-[hsl(var(--site-dark-soft))]">
-                {/* On a phone the photo is shown clearly at the top of the card. */}
-                <div className="relative h-48 md:hidden shrink-0">
-                  <img src={s.image} alt="" loading="lazy" width="1024" height="1024" style={{ objectPosition: s.phonePosition }} aria-hidden="true" className="w-full h-full object-cover" />
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[hsl(var(--site-dark-soft))] to-transparent" aria-hidden="true" />
-                </div>
-                <img src={s.image} alt="" loading="lazy" width="1024" height="1024" style={{ objectPosition: s.position }} aria-hidden="true"
-                  className={`hidden md:block absolute inset-0 w-full h-full object-cover opacity-30 blur-[3px] transition-transform duration-[1000ms] ease-out ${s.zoom ? "scale-[1.7] origin-[85%_95%]" : "scale-110"} group-hover:scale-[1.18]`} />
-                <div className="hidden md:block absolute inset-0 bg-gradient-to-b from-[hsl(var(--site-dark)/0.45)] to-[hsl(var(--site-dark)/0.92)]" aria-hidden="true" />
-                <div className="relative p-6 sm:p-7 flex-1 flex flex-col">
-                  <h3 className="sora text-[1.8rem] font-semibold text-white">{s.title}</h3>
-                  <p className="mt-3 text-white/80 leading-snug">{s.text}</p>
-                  <ul className="mt-5 mb-6 space-y-2.5 text-[0.93rem] text-white/90">
-                    {s.points.map((p) => (
-                      <li key={p} className="flex items-start gap-2.5"><Check className="w-4 h-4 mt-1 shrink-0 text-accent" aria-hidden="true" /><span>{p}</span></li>
-                    ))}
-                  </ul>
-                  <a href="#prices" className="mt-auto pt-5 border-t border-white/15 flex items-center justify-between text-white font-medium">
-                    {s.link}
-                    <span className="grid place-items-center w-9 h-9 rounded-full text-[hsl(var(--site-dark))] transition-transform duration-300 group-hover:rotate-12" style={{ background: "var(--grad-gold)" }}>
-                      <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-                    </span>
-                  </a>
-                </div>
-              </article>
-            </Reveal>
-          ))}
-        </ul>
+        <Reveal delay={120}>
+          <img src="/images/escort-family.webp" alt="An Airport Assist Ghana agent in a navy suit walks a smiling family through the departures hall at Accra airport"
+            width="1024" height="1024" loading="lazy" className="w-full max-w-md lg:max-w-none mx-auto aspect-square lg:aspect-[4/3] object-cover object-[50%_35%] rounded-[20px] border border-white/15 shadow-xl" />
+        </Reveal>
+        </div>
 
         <Reveal className="mt-12 text-center">
           <a href="#how-it-works" className="press inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-[hsl(var(--site-dark))]" style={{ background: "var(--grad-gold)" }}>
