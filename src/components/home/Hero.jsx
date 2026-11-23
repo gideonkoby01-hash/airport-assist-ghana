@@ -16,6 +16,16 @@ const SLIDES = [
     cta: "View arrival service",
   },
   {
+    image: "/images/slide-reclaim.webp",
+    phone: "/images/slide-reclaim-m.webp",
+    width: 1376,
+    height: 768,
+    alt: "An Airport Assist porter loading a family's bags onto a trolley at the priority reclaim belt while an agent greets them",
+    position: "50% 30%",
+    title: "Priority reclaim · Luggage assistance · Met on arrival",
+    cta: "View arrival service",
+  },
+  {
     image: "/images/hero-escort.webp",
     phone: "/images/hero-escort-m.webp",
     width: 2400,
@@ -23,6 +33,16 @@ const SLIDES = [
     alt: "An Airport Assist agent pointing a traveller towards the gates, and a family being met at the car",
     position: "50% 22%",
     title: "Directions · Curbside meet · Car hand-over",
+    cta: "View departure service",
+  },
+  {
+    image: "/images/slide-escort-path.webp",
+    phone: "/images/slide-escort-path-m.webp",
+    width: 1376,
+    height: 768,
+    alt: "An Airport Assist agent leading a family along the VIP escort path past a long queue at the gate",
+    position: "50% 55%",
+    title: "VIP escort path · Fast-track screening · Priority service",
     cta: "View departure service",
   },
   {
