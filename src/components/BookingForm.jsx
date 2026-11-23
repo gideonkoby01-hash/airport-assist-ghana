@@ -513,6 +513,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
                   <span className="font-semibold text-foreground">{p.name}</span>
                   <span className="text-lg font-bold text-primary">{formatFor(p)(p.price)}</span>
                 </div>
+                {p.description && <p className="mt-1 text-xs text-foreground/80">{p.description}</p>}
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                   {inclusionList(p.inclusions).map((item) => (
                     <li key={item} className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 mt-px shrink-0 text-accent" aria-hidden="true" /><span>{item}</span></li>

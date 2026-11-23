@@ -13,6 +13,8 @@ import {
 } from "@/lib/packages";
 import { PaymentBadge } from "@/components/StatusBadge";
 import { useSettings } from "@/lib/SettingsContext";
+import { useServiceList } from "@/lib/currency";
+import { isPorterService } from "@/lib/services";
 import { acceptsPayments, canAssignPorter, isClosed, nextStatuses, ALL_STATUSES } from "@/lib/bookingRules";
 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
@@ -42,7 +44,9 @@ export default function BookingActions({ booking, user, onUpdated }) {
   // A meet and assist does not always need a porter: staff can mark passengers who need none.
   const waived = Number(booking.porters_waived) || 0;
   const passengersLeft = Math.max(0, (booking.num_passengers || 1) - covered - waived);
-  const canGoWithoutPorter = booking.package_code !== "porter_only";
+  const { allPackages } = useServiceList();
+  const porterService = isPorterService(booking.package_code, allPackages); // a porter for every passenger, no supervisor commission
+  const canGoWithoutPorter = !porterService;
   const setWaived = async (count) => {
     setSavingPorter(true);
     try {
@@ -57,7 +61,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
   // The supervisor's own commission on a meet and assist is added automatically when the payment is recorded, and comes off the day's takings in the shift report.
   const supervisorCommission = Number(settings.supervisor_commission_per_signup);
   const mayTickCommission =
-    booking.package_code !== "porter_only" && !["cancelled", "no_show"].includes(booking.status) && Boolean(booking.assigned_supervisor_id) &&
+    !porterService && !["cancelled", "no_show"].includes(booking.status) && Boolean(booking.assigned_supervisor_id) &&
     (role === "supervisor" ? booking.assigned_supervisor_id === user?.id : ["management", "admin"].includes(role));
   const commissionTicked = Number(booking.supervisor_commission || 0) > 0;
   const [savingPorter, setSavingPorter] = useState(false);

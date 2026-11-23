@@ -311,6 +311,13 @@ The button appears on the sign-in and sign-up pages by itself within a minute of
 
 **Double-entry books for the accountant (run once in the SQL Editor).** Run `supabase/migrations/20261123000001_accounting_books.sql` (safe to run again). The Accounts section then opens on a home screen with the balances and a to-do list, and gains:
 
+**Admin can add services (run once in the SQL Editor).** Run `supabase/migrations/20261124000001_admin_adds_services.sql` (safe to run again). It must be run **before** anyone adds a new service, because until then the database only accepts the four original service codes. After it, an admin opens **Admin > Service packages > Add a service** and fills in the name, whether it is a **meet and assist** or a **porter service**, arrival, departure or (porter services only) both, the price in cedis (and dollars if wanted), a one-line summary and what is included. The service appears on the booking page, the supervisor's Quick sale, the home page cards and the dashboard charts as soon as it is saved and switched on.
+
+- **Meet and assist** works like Full Arrival, Full Departure and Departure Priority: a porter is optional and the supervisor earns the meet and assist commission automatically.
+- **Porter service** works like Porter Service Only: a porter for every passenger and no supervisor commission.
+- A service's **code** (made from its name) can never be changed, because bookings point at it. To retire a service, switch it off; existing bookings keep working.
+- The home page keeps the photos and wording of the four original services, now with the price from this list; a new service gets a plain branded header instead of a photo.
+
 - **Books:** the journal, a general ledger per account, the trial balance and the chart of accounts. Every payment, refund, expense, porter and supervisor commission, payout and transfer already recorded becomes a balanced entry by itself; nothing has to be re-entered. Manual entries (opening balances, the owner's money in or out, corrections) must balance before they post.
 - **Statements:** the balance sheet next to the profit and loss.
 - **Money:** Banking (cash banked, card and mobile money settlements, corporate customers paying, and a reconcile check against each statement), and shift report review (accept, or query with a note).

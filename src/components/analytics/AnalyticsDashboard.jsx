@@ -15,7 +15,7 @@ import ColumnChart from "@/components/charts/ColumnChart";
 import RankedBars from "@/components/charts/RankedBars";
 import SegmentedBar from "@/components/charts/SegmentedBar";
 import Heatmap from "@/components/charts/Heatmap";
-import { CHANNEL_COLOURS, DIRECTION_COLOURS, METHOD_COLOURS, PACKAGE_COLOURS, SERIES, STATUS_COLOURS, NEUTRAL } from "@/components/charts/theme";
+import { CHANNEL_COLOURS, DIRECTION_COLOURS, METHOD_COLOURS, packageColour, SERIES, STATUS_COLOURS, NEUTRAL } from "@/components/charts/theme";
 
 const STATUS_LABELS = { confirmed: "Confirmed", assigned: "Assigned", in_progress: "In progress", completed: "Completed", cancelled: "Cancelled", no_show: "No-show" };
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -174,7 +174,7 @@ export default function AnalyticsDashboard() {
             <div className="grid lg:grid-cols-3 gap-4">
               <ChartCard title="Revenue by service" subtitle="Billed value, largest first."
                 columns={[{ key: "name", label: "Service" }, { key: "bookings", label: "Bookings", align: "right" }, { key: "passengers", label: "Passengers", align: "right" }, { key: "billed", label: "Billed", align: "right", render: (r) => formatGHS(r.billed) }]} rows={data.by_package}>
-                <RankedBars items={(data.by_package || []).map((p) => ({ label: p.name, value: n(p.billed), display: formatGHS(p.billed), sub: `${p.bookings} booking${p.bookings === 1 ? "" : "s"}, ${p.passengers} passengers`, colour: PACKAGE_COLOURS[p.code] }))} />
+                <RankedBars items={(data.by_package || []).map((p, i) => ({ label: p.name, value: n(p.billed), display: formatGHS(p.billed), sub: `${p.bookings} booking${p.bookings === 1 ? "" : "s"}, ${p.passengers} passengers`, colour: packageColour(p.code, i) }))} />
               </ChartCard>
               <ChartCard title="How people pay" subtitle="Money received, net of refunds."
                 columns={[{ key: "method", label: "Method", render: (r) => PAYMENT_METHOD_LABELS[r.method] || r.method }, { key: "count", label: "Payments", align: "right" }, { key: "net", label: "Net", align: "right", render: (r) => formatGHS(r.net) }]} rows={data.by_method}>

@@ -38,3 +38,9 @@ test('a draft older than a day, or a broken one, is ignored', () => {
   sessionStorage.setItem('aag-booking-draft-v1', '{not json');
   assert.equal(readDraft(), null);
 });
+
+test('inclusions can be one per line or separated by semicolons, so lower-case items stay separate', () => {
+  assert.deepEqual(inclusionList('Fast lane\nescort to the gate\n'), ['Fast lane', 'escort to the gate']);
+  assert.deepEqual(inclusionList('Fast lane; escort to the gate'), ['Fast lane', 'escort to the gate']);
+  assert.deepEqual(inclusionList('Meet and greet, Check-in help'), ['Meet and greet', 'Check-in help']);
+});

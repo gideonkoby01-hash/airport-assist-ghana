@@ -2,6 +2,7 @@ import { adminClient, requireCaller } from '../_shared/auth.ts';
 import { loadSettings } from '../_shared/config.ts';
 import { round2 } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
+import { isPorterService } from '../_shared/porters.ts';
 import { makeReference } from '../_shared/reference.ts';
 import { isPhone } from '../_shared/validation.ts';
 
@@ -51,7 +52,7 @@ serve('createQuickSale', async (req) => {
   // A meet and assist does not always need a porter: some or all passengers can be marked as needing none.
   const waived = body.porters_waived === undefined || body.porters_waived === null || body.porters_waived === '' ? 0 : Math.trunc(Number(body.porters_waived));
   if (!Number.isInteger(waived) || waived < 0) throw new HttpError(400, MESSAGES.invalid_porters_waived);
-  if (waived > 0 && String(body.package_code || '') === 'porter_only') throw new HttpError(400, MESSAGES.invalid_porters_waived);
+  if (waived > 0 && await isPorterService(admin, body.package_code)) throw new HttpError(400, MESSAGES.invalid_porters_waived);
   const ids: string[] = Array.isArray(body.porter_ids) ? body.porter_ids.map((v) => String(v)) : body.porter_id ? [String(body.porter_id)] : [];
   if (ids.some((v) => !v)) throw new HttpError(400, 'Choose a porter for each passenger, or mark the passenger as needing no porter.');
   if (Number.isInteger(count) && ids.length + waived !== count) {

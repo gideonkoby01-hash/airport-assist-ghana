@@ -35,10 +35,10 @@ export function clearDraft() {
   }
 }
 
-/** "Meet and greet at the air-bridge, Fast-track escort through security and immigration." into one line per service. */
+/** "Meet and greet at the air-bridge, Fast-track escort through security and immigration." into one line per service. Items can also be on separate lines or separated by semicolons. */
 export function inclusionList(text) {
   return String(text || "")
-    .split(/,\s*(?=[A-Z])/)
+    .split(/\n+|;\s*|,\s*(?=[A-Z])/)
     .map((t) => t.trim().replace(/\.$/, ""))
     .filter(Boolean);
 }
