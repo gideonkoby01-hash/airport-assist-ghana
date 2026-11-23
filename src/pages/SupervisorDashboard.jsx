@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import RosterManager from "@/components/roster/RosterManager";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
@@ -33,7 +34,7 @@ function SupervisorInner() {
   const [searchParams] = useSearchParams();
   // An old link to a tab that no longer exists (the walk-in booking page) opens the assigned bookings instead of a blank page.
   const requestedTab = searchParams.get("tab");
-  const tab = ["assigned", "quick", "notifications", "report", "profile"].includes(requestedTab) ? requestedTab : "assigned";
+  const tab = ["assigned", "quick", "notifications", "report", "roster", "profile"].includes(requestedTab) ? requestedTab : "assigned";
   const [, setUnreadCount] = useState(0);
 
 
@@ -152,6 +153,7 @@ function SupervisorInner() {
 
       {tab === "notifications" && <SupervisorNotifications userId={user.id} onUnreadChange={setUnreadCount} />}
       {tab === "report" && <ShiftReportForm supervisor={user} />}
+      {tab === "roster" && <RosterManager highlightPerson={user.id} />}
 
       {tab === "profile" && (
         <div>

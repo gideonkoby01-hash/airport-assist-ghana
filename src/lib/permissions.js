@@ -10,6 +10,7 @@ export const PERMISSIONS = [
   { key: "commissions.view", group: "Money and reports", label: "See the Commissions list", help: "Which supervisor earned what, by day." },
   { key: "shift_reports.view", group: "Money and reports", label: "Read supervisors' shift reports", help: "The end-of-shift reports with their sales and cash counts." },
   { key: "leaderboard.view", group: "Team", label: "See the leaderboard", help: "Supervisors and porters ranked for the dates chosen." },
+  { key: "rosters.manage", group: "Team", label: "Make and change shift rosters", help: "Generate the monthly supervisor and porter shifts, move people between shifts and reshuffle them." },
   { key: "ratings.view", group: "Team", label: "Read customer ratings and reviews", help: "What customers said about the service." },
   { key: "supervisors.assign", group: "Operations", label: "Assign supervisors to bookings", help: "Choose who looks after each website booking." },
   { key: "payments.adjust", group: "Operations", label: "Refund, write off and adjust payments", help: "Hand money back or forgive a balance on a booking. Always with a reason." },

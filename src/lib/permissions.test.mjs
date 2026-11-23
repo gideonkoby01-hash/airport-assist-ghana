@@ -8,7 +8,7 @@ test("every task has a label, a group, and a task it needs that exists", () => {
     assert.ok(p.label && p.group && p.help, p.key);
     if (p.requires) assert.ok(PERMISSION_KEYS.includes(p.requires), p.key);
   }
-  assert.equal(PERMISSION_KEYS.length, 11, "the same 11 tasks the database knows");
+  assert.equal(PERMISSION_KEYS.length, 12, "the same 12 tasks the database knows");
 });
 
 test("an admin can do everything, others only what their role has", () => {

@@ -17,6 +17,7 @@ import Leaderboard from "@/components/Leaderboard";
 import CommissionsPanel from "@/components/CommissionsPanel";
 import LazyFallback from "@/components/analytics/LazyFallback";
 import NoAccess from "@/components/NoAccess";
+import RosterManager from "@/components/roster/RosterManager";
 import { useCan } from "@/hooks/use-can";
 
 // The charts and the accounts pages are loaded only when a screen that uses them is opened.
@@ -229,6 +230,7 @@ function ManagementInner() {
         </Suspense>
       ) : <NoAccess what="the Accounts section" />)}
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
+      {tab === "roster" && <RosterManager canManage={can("rosters.manage")} />}
       {tab === "leaderboard" && (can("leaderboard.view") ? <Leaderboard /> : <NoAccess what="the leaderboard" />)}
       {tab === "reports" && (can("shift_reports.view") ? <ShiftReportViewer /> : <NoAccess what="shift reports" />)}
       {tab === "ratings" && (can("ratings.view") ? <RatingsReviews /> : <NoAccess what="ratings and reviews" />)}

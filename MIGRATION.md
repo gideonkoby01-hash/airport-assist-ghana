@@ -284,6 +284,16 @@ Some updates include a new file in `supabase/migrations/`. The site itself updat
 
 New or changed Edge Functions (`supabase/functions/...`) must also be deployed before the feature works. `createStaffAccount` is new.
 
+## Shift rosters (supervisors and porters)
+
+Management menu > **Shift roster** (also under Admin, and read-only for supervisors). It makes the monthly roster in the same layout the team uses on paper: four shifts, each day Morning (M), Night (N) or Off (O), with the head supervisor (H. SUP) mark moving on every five days for supervisors. Run `supabase/migrations/20261127000001_shift_rosters.sql` first.
+
+- **Who can make and change rosters:** the task "Make and change shift rosters" (`rosters.manage`). The General manager and the Operations manager have it; an admin can give it to any other role under Settings > Roles and tasks. Management without the task, and supervisors, can only read.
+- **The first roster** asks which shift works the morning on the 1st (and, for supervisors, the first day of the H. SUP mark). Every later month carries on from the last: the same pattern, the same people in the same shifts, new supervisors and porters added to the smallest shift, people who have left dropped.
+- **Reshuffling:** move anyone to another shift with the list beside their name, mark them with the star (shown as ** on the sheet), take them off, press **Reshuffle** to spread everyone evenly at random (marked people end up in different shifts), or **Change who starts** to start the pattern with another shift. Changes to a month apply to the whole month. Past months are fixed.
+- **Who is on it:** supervisors are the active supervisor accounts; porters are the active people on the porter register (Admin > Porters).
+- **Print:** "Print or save as PDF" opens the sheet in its own tab; "Download for Excel" gives a spreadsheet file.
+
 ## Known limits and follow-ups
 
 See `docs/PLATFORM_AUDIT.md` section "Status after the fixes" for the finding-by-finding list. In short:
