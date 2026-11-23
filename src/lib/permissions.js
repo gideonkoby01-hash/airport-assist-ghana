@@ -1,4 +1,4 @@
-// Roles and tasks. The admin creates roles and chooses which tasks each may perform (Admin > Roles and tasks). The database
+// Roles and tasks. The admin creates roles and chooses which tasks each may perform (Admin > Settings > Roles and tasks). The database
 // checks every task; this file is what the screens use to offer only what a person may do. Pure functions, tested in
 // permissions.test.mjs.
 
@@ -21,7 +21,7 @@ export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key);
 export const PERMISSION_GROUPS = [...new Set(PERMISSIONS.map((p) => p.group))];
 
 /** What the admin cannot change: Settings, Staff accounts, Service packages, Lounges, Discounts, Email and the porter register. */
-export const ADMIN_ONLY_AREAS = ["Settings", "Staff accounts", "Service packages", "Lounges", "Discounts", "Email", "Porters", "Roles and tasks"];
+export const ADMIN_ONLY_AREAS = ["Settings", "Staff accounts", "Service packages", "Lounges", "Discounts", "Email", "Porters"];
 
 const ACCOUNTS = ["accounts.view", "accounts.record", "analytics.view"];
 

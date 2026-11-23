@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { visibleNav } from "@/lib/permissions";
 import {
   Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
-  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, ShieldCheck, Star, Trophy, UserCheck,
+  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Trophy, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -63,7 +63,6 @@ const NAV = {
     { heading: "People", items: [
       { label: "Customers", to: "/admin", tab: "customers", icon: Contact },
       { label: "Staff accounts", to: "/admin", tab: "staff", icon: Users, primary: true },
-      { label: "Roles and tasks", to: "/admin", tab: "roles", icon: ShieldCheck },
       { label: "Supervisors", to: "/admin", tab: "supervisors", icon: UserCheck },
       { label: "Leaderboard", to: "/admin", tab: "leaderboard", icon: Trophy },
       { label: "Porters", to: "/admin", tab: "porters", icon: Luggage },

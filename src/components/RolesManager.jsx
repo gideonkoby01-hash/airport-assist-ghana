@@ -119,7 +119,7 @@ export default function RolesManager() {
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-semibold text-foreground">Roles and tasks</h2>
-        <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">Create a role, choose the tasks it may perform, and give it to people under Staff accounts. They see only what their tasks allow, and the system refuses anything else.</p>
+        <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">Create a role, choose the tasks it may perform, and give it to people here or under Staff accounts. They see only what their tasks allow, and the system refuses anything else.</p>
       </div>
 
       <div className="grid lg:grid-cols-[17rem_minmax(0,1fr)] gap-5 items-start">

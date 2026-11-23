@@ -4,11 +4,10 @@ import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
-import AdminSettings from "@/components/AdminSettings";
+import SettingsPage from "@/components/SettingsPage";
 import EmailIssues from "@/components/EmailIssues";
 import ExportPanel from "@/components/ExportPanel";
 import StaffManager from "@/components/StaffManager";
-import RolesManager from "@/components/RolesManager";
 import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
@@ -161,7 +160,6 @@ function AdminInner() {
 
       {tab === "customers" && <CustomersPanel tab="customers" isAdmin />}
       {tab === "staff" && <StaffManager />}
-      {tab === "roles" && <RolesManager />}
       {tab === "porter-pay" && <PorterPay />}
       {tab === "commissions" && <CommissionsPanel />}
       {tab === "accounts" && (
@@ -170,7 +168,8 @@ function AdminInner() {
         </Suspense>
       )}
       {tab === "email" && <EmailIssues />}
-      {tab === "settings" && <AdminSettings />}
+      {/* "roles" is the older address of Roles and tasks, which now sits inside Settings. */}
+      {(tab === "settings" || tab === "roles") && <SettingsPage initial={tab === "roles" ? "roles" : "general"} />}
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}
