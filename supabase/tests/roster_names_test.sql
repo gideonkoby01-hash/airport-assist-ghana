@@ -119,4 +119,29 @@ select pg_temp.raises('or restart its pattern', format($q$select public.roster_s
 select pg_temp.raises('or delete it', format($q$select public.roster_delete(%L)$q$, (select v from keep where k = 'old')), 'month_past');
 reset role;
 
+-- ---- the order names were put in is kept; a porter's first name does not match another porter ------------------------------
+set local role service_role;
+insert into public.porters (full_name, phone_number, active) values ('Amu Davis', '', true), ('Zed Last', '', true), ('Abe First', '', true);
+reset role;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
+insert into keep select 'por', public.roster_generate('porter', current_date, 1, null);
+select public.roster_add_person((select v::uuid from keep where k = 'por'), 'Amu', 2, false);
+select pg_temp.check_that('a person added later goes to the end of the order',
+  (select position = (select max(position) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por')) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por') and person_id = 'name:amu'));
+select public.roster_remove_member((select v::uuid from keep where k = 'por'), (select person_id from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por') and person_name = 'Amu Davis'));
+insert into keep select 'porcount', public.roster_add_missing((select v::uuid from keep where k = 'por'))::text;
+select pg_temp.check_that('a porter called Amu Davis is added, not swapped for the porter called Amu',
+  (select exists (select 1 from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por') and person_name = 'Amu Davis' and person_id not like 'name:%'))
+  and (select exists (select 1 from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por') and person_id = 'name:amu')));
+select public.roster_set_member((select v::uuid from keep where k = 'por'), 'name:amu', 4, null);
+select public.roster_remove_member((select v::uuid from keep where k = 'por'), (select person_id from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por') and person_name = 'Zed Last'));
+insert into keep select 'porcount2', public.roster_add_missing((select v::uuid from keep where k = 'por'))::text;
+select pg_temp.check_that('someone taken off and added again goes to the end',
+  (select position = (select max(position) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por')) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por') and person_name = 'Zed Last'));
+insert into keep select 'pornext', public.roster_generate('porter', (date_trunc('month', current_date) + interval '1 month')::date, null, null);
+select pg_temp.check_that('the next month keeps the order',
+  (select string_agg(person_name, ',' order by position) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por'))
+  = (select string_agg(person_name, ',' order by position) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'pornext')));
+reset role;
+
 rollback;

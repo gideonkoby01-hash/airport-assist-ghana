@@ -86,12 +86,13 @@ export function monthDays(month) {
   });
 }
 
-/** The people of a shift as the header lists them: the ordinary members by name, then the marked ones with ** in front. */
+/** The people of a shift as the header lists them: in the order they were put on the roster, with the marked ones last and ** in front. */
 export function groupNames(members, group) {
   const mine = (members || []).filter((m) => Number(m.group_no) === group);
-  const byName = (a, b) => String(a.person_name).localeCompare(String(b.person_name), "en", { sensitivity: "base" });
-  const plain = mine.filter((m) => !m.lead).sort(byName);
-  const lead = mine.filter((m) => m.lead).sort(byName);
+  const pos = (m) => (m.position === null || m.position === undefined ? Number.MAX_SAFE_INTEGER : Number(m.position));
+  const byOrder = (a, b) => pos(a) - pos(b) || String(a.person_name).localeCompare(String(b.person_name), "en", { sensitivity: "base" });
+  const plain = mine.filter((m) => !m.lead).sort(byOrder);
+  const lead = mine.filter((m) => m.lead).sort(byOrder);
   return [...plain.map((m) => ({ ...m, label: m.person_name })), ...lead.map((m) => ({ ...m, label: `**${m.person_name}` }))];
 }
 
@@ -143,18 +144,18 @@ export const isBalanced = (members) => {
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
-/** The sheet's own styling. `shade` is the colour of the shaded days and the month bar (green for supervisors, blue for porters). */
+/** The sheet's own styling, the same on screen and on paper. The shading is forced on for printing, because browsers leave out background colours by default. */
 export function sheetCss() {
-  return `.roster{font-family:Calibri,Arial,Helvetica,sans-serif;color:#000;font-size:13px;max-width:760px}
-.roster h2{text-align:center;font-size:14px;margin:0 0 4px;letter-spacing:.02em}
-.roster table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
-.roster th,.roster td{border:1px solid #333;padding:3px 6px;vertical-align:top}
-.roster th{text-align:left;font-weight:700;font-size:13px}
-.roster th small{display:block;font-weight:400;font-size:12px;line-height:1.35;margin-top:2px}
-.roster .m{text-align:left;font-size:13px}.roster td.c{text-align:center}
-.roster td.n{text-align:right;width:54px;padding-right:12px;white-space:nowrap}.roster td.w{width:112px;white-space:nowrap}
-.roster tr.s td{background:var(--shade)}.roster .shift{width:20%}
-.roster .h{font-weight:700;display:block;line-height:1.15}.roster sup{font-size:9px}
+  return `.roster{font-family:Calibri,Carlito,Arial,Helvetica,sans-serif;color:#000;font-size:14px;max-width:820px;margin:0 auto}
+.roster,.roster *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.roster h2{text-align:center;font-size:16px;margin:0 0 6px;font-weight:700}
+.roster table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;border:1.5px solid #222}
+.roster th,.roster td{border:1px solid #222;padding:3px 7px;vertical-align:middle;line-height:1.25}
+.roster thead th{text-align:left;font-weight:700;vertical-align:top}
+.roster th small{display:block;font-weight:400;font-size:13px;line-height:1.35;margin-top:3px}
+.roster td.c{text-align:center}.roster td.n{text-align:center}.roster td.w{text-align:left}
+.roster tr.s td{background:var(--shade)}
+.roster td.hs{font-weight:700}.roster .h{display:block;font-weight:700}.roster sup{font-size:10px;line-height:0}
 .roster tr.next td{background:var(--shade);font-weight:700}
 .roster .legend{margin-top:8px;font-size:12px;color:#444}`;
 }
@@ -162,21 +163,40 @@ export function sheetCss() {
 /** The sheet as an HTML fragment (the table and its title), the same markup on screen and on paper. */
 export function sheetHtml(sheet) {
   const shade = sheet.kind === "porter" ? "#00b0f0" : "#92d050";
-  const head = sheet.groups.map((g) => `<th class="shift">SHIFT ${["ONE", "TWO", "THREE", "FOUR"][g.no - 1]}<small>${esc(g.people.map((p) => p.label).join(", ")) || "&nbsp;"}</small></th>`).join("");
+  const head = sheet.groups.map((g) => `<th>SHIFT ${["ONE", "TWO", "THREE", "FOUR"][g.no - 1]}<small>${esc(g.people.map((p) => p.label).join(", ")) || "&nbsp;"}</small></th>`).join("");
   const body = sheet.rows.map((r) => {
-    const cells = r.cells.map((c) => `<td class="c">${esc(c.code)}${c.head ? '<span class="h">H. SUP</span>' : ""}</td>`).join("");
+    const cells = r.cells.map((c) => `<td class="c${c.head ? " hs" : ""}">${esc(c.code)}${c.head ? '<span class="h">H. SUP</span>' : ""}</td>`).join("");
     return `<tr${r.shaded ? ' class="s"' : ""}><td class="n">${ordinal(r.day).replace(/(st|nd|rd|th)$/, "<sup>$1</sup>")}</td><td class="w">${esc(r.weekdayName)}</td>${cells}</tr>`;
   }).join("");
   return `<div class="roster" style="--shade:${shade}"><h2>${esc(sheet.title)}</h2>
-<table><thead><tr><th colspan="2">${esc(sheet.monthName)}:&nbsp;&nbsp;12H SHIFT REPRESENTATION</th>${head}</tr></thead><tbody>${body}
+<table><colgroup><col style="width:12%"><col style="width:19%"><col style="width:17.25%"><col style="width:17.25%"><col style="width:17.25%"><col style="width:17.25%"></colgroup>
+<thead><tr><th>${esc(sheet.monthName)}:</th><th>12H SHIFT REPRESENTATION</th>${head}</tr></thead><tbody>${body}
 <tr class="next"><td colspan="6">${esc(sheet.nextMonthName)}:</td></tr></tbody></table>
 <p class="legend">M = morning shift · N = night shift · O = off${sheet.kind === "supervisor" ? " · H. SUP = head supervisor · ** = marked in the shift" : ""}</p></div>`;
 }
 
-/** A whole page for printing or saving as PDF (portrait, one page). */
+/** How tall each day's row is on paper, so the month fills one A4 page (shorter for a month with many two-line H. SUP rows). */
+export function printRowMm(sheet) {
+  const headRows = sheet.rows.filter((r) => r.cells.some((c) => c.head)).length;
+  const rows = sheet.rows.length + 1;
+  // the header grows with the longest list of names (about 22 letters a line, 4.4 mm a line)
+  const longest = Math.max(0, ...sheet.groups.map((g) => g.people.map((p) => p.label).join(", ").length));
+  const headerMm = 9 + 4.4 * Math.ceil(longest / 22);
+  return Math.round(Math.min(8.5, Math.max(4.4, (252 - headerMm - 4.5 * headRows) / rows)) * 10) / 10;
+}
+
+/**
+ * A whole page for printing or saving as PDF: A4 portrait on one page, the colours kept, and no margin for the browser to print its own
+ * date, page title and address in (the spacing comes from the page's own padding instead).
+ */
 export function sheetPage(sheet) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(sheet.title)} ${esc(sheet.monthName)} roster</title>
-<style>${sheetCss()}@page{size:A4 portrait;margin:10mm}body{margin:16px}@media print{.no-print{display:none!important}body{margin:0}.roster{max-width:none}.roster th,.roster td{padding:1px 5px;font-size:11px}}</style></head>
+<style>${sheetCss()}
+@page{size:A4 portrait;margin:0}
+html,body{margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{padding:12mm}
+@media print{.no-print{display:none!important}.roster{max-width:none;font-size:10.5pt}.roster th small{font-size:10pt}.roster .legend{display:none}.roster tbody tr{height:${printRowMm(sheet)}mm}.roster th,.roster td{padding:1px 6px}.roster thead th{padding:3px 6px;font-size:10pt}.roster thead th small{font-size:10pt}}
+</style></head>
 <body>${sheetHtml(sheet)}</body></html>`;
 }
 

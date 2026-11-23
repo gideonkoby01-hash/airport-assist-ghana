@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addMonths, buildSheet, daysInMonth, groupNames, headMarkOn, isBalanced, morningGroupOn, monthDays, ordinal, personShifts, phasesForFirstMorning, shiftOn,
-  sheetCsvRows, sheetHtml, sheetPage,
+  printRowMm, sheetCsvRows, sheetCss, sheetHtml, sheetPage,
 } from './roster.js';
 
 // November 2026 as the team has it on paper: for each shift, its 30 days.
@@ -147,4 +147,28 @@ test('the CSV has a line for every day', () => {
   const rows = sheetCsvRows(buildSheet(supervisors().roster, []));
   assert.equal(rows.length, 30);
   assert.deepEqual(rows[3], { date: '2026-11-04', day: 'Wednesday', shift_1: 'N', shift_2: 'M (H. SUP)', shift_3: 'O', shift_4: 'O' });
+});
+
+test('names keep the order they were put in, with the marked ones last', () => {
+  const list = [
+    { person_name: 'Zed', group_no: 1, lead: false, position: 1 },
+    { person_name: 'Abe', group_no: 1, lead: false, position: 2 },
+    { person_name: 'Mid', group_no: 1, lead: true, position: 3 },
+    { person_name: 'New', group_no: 1, lead: false, position: 1052 },
+    { person_name: 'Unordered', group_no: 1, lead: false },
+  ];
+  assert.deepEqual(groupNames(list, 1).map((p) => p.label), ['Zed', 'Abe', 'New', 'Unordered', '**Mid']);
+});
+
+test('printing keeps the colours and the sheet fits one A4 page', () => {
+  assert.ok(sheetCss().includes('print-color-adjust:exact'), 'shading is forced on for printing');
+  const sheet = buildSheet({ ...porters, month: '2026-12-01' }, [{ person_name: 'A long name '.repeat(5), group_no: 1, lead: false }]);
+  const page = sheetPage(sheet);
+  assert.ok(page.includes('@page{size:A4 portrait;margin:0}'), 'no page margin, so the browser prints no date, title or address');
+  assert.ok(page.includes('print-color-adjust:exact'));
+  assert.ok(!page.includes('class="legend"') || page.includes('.roster .legend{display:none}'), 'no legend on paper, like the paper roster');
+  const rowMm = printRowMm(sheet);
+  assert.ok(rowMm >= 4.4 && rowMm <= 8.5, `row height ${rowMm}`);
+  const sup = buildSheet({ ...supervisors().roster, month: '2026-12-01' }, []);
+  assert.ok(printRowMm(sup) < printRowMm(buildSheet({ ...porters, month: '2026-12-01' }, [])), 'a month with two-line H. SUP rows has shorter ordinary rows');
 });
