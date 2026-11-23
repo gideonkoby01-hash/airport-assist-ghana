@@ -4,7 +4,7 @@ import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import {
   Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
-  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, UserCheck,
+  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Trophy, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -38,6 +38,7 @@ const NAV = {
     ] },
     { heading: "Team and quality", items: [
       { label: "Supervisors", to: "/management", tab: "supervisors", icon: UserCheck },
+      { label: "Leaderboard", to: "/management", tab: "leaderboard", icon: Trophy },
       { label: "Porter pay", to: "/management", tab: "porter-pay", icon: Banknote },
       { label: "Commissions", to: "/management", tab: "commissions", icon: BadgeDollarSign },
       { label: "Ratings & reviews", to: "/management", tab: "ratings", icon: Star },
@@ -62,6 +63,7 @@ const NAV = {
       { label: "Customers", to: "/admin", tab: "customers", icon: Contact },
       { label: "Staff accounts", to: "/admin", tab: "staff", icon: Users, primary: true },
       { label: "Supervisors", to: "/admin", tab: "supervisors", icon: UserCheck },
+      { label: "Leaderboard", to: "/admin", tab: "leaderboard", icon: Trophy },
       { label: "Porters", to: "/admin", tab: "porters", icon: Luggage },
       { label: "Porter pay", to: "/admin", tab: "porter-pay", icon: Banknote },
       { label: "Commissions", to: "/admin", tab: "commissions", icon: BadgeDollarSign },

@@ -13,6 +13,7 @@ import StatCard from "@/components/StatCard";
 import BookingFinancials from "@/components/BookingFinancials";
 import OperationsGlance from "@/components/OperationsGlance";
 import PorterPay from "@/components/PorterPay";
+import Leaderboard from "@/components/Leaderboard";
 import CommissionsPanel from "@/components/CommissionsPanel";
 import LazyFallback from "@/components/analytics/LazyFallback";
 
@@ -221,6 +222,7 @@ function ManagementInner() {
         </Suspense>
       )}
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
+      {tab === "leaderboard" && <Leaderboard />}
       {tab === "reports" && <ShiftReportViewer />}
       {tab === "ratings" && <RatingsReviews />}
       {tab === "notifications" && (
