@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Download, Loader2, Plus, Search, Trash2, X } from "lucide-react";
 import { api } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,6 +91,7 @@ function NewEntry({ accounts, onDone, onCancel }) {
 
 // Every entry in the books for the period: the automatic ones from the day's records and the manual ones.
 export default function Journal({ from, to }) {
+  const canRecord = useCan()("accounts.record");
   const chart = useChart();
   const { data, loading, error, reload } = useLoad(() => api.books.journal(from, to), [from, to]);
   const [source, setSource] = useState("all");
@@ -127,7 +129,7 @@ export default function Journal({ from, to }) {
         note="Payments, refunds, expenses, commission, payouts and transfers become entries on their own. Only manual entries can be cancelled here; the others are corrected where they were recorded."
         actions={
           <div className="flex flex-wrap gap-2">
-            {!adding && <Button size="sm" onClick={() => setAdding(true)} disabled={!chart.data}><Plus className="w-4 h-4 mr-1.5" aria-hidden="true" /> New entry</Button>}
+            {canRecord && !adding && <Button size="sm" onClick={() => setAdding(true)} disabled={!chart.data}><Plus className="w-4 h-4 mr-1.5" aria-hidden="true" /> New entry</Button>}
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!entries.length}><Download className="w-4 h-4 mr-1.5" aria-hidden="true" /> Export</Button>
           </div>
         }
@@ -161,7 +163,7 @@ export default function Journal({ from, to }) {
                             <td rowSpan={e.lines.length} className="py-2 pr-3 min-w-[12rem]">
                               <span className="block font-medium">{SOURCE_LABELS[e.source] || e.source}{e.reference ? <span className="font-mono text-xs text-muted-foreground"> · {e.reference}</span> : null}</span>
                               <span className="block text-xs text-muted-foreground">{e.memo}</span>
-                              {e.source === "journal" && (voiding === e.source_id ? (
+                              {canRecord && e.source === "journal" && (voiding === e.source_id ? (
                                 <span className="mt-2 flex flex-wrap gap-1.5">
                                   <Input aria-label="Reason for cancelling" className="h-8 w-44" placeholder="Why cancel it?" value={reason} onChange={(ev) => setReason(ev.target.value)} autoFocus />
                                   <Button size="sm" variant="destructive" onClick={confirmVoid}>Cancel entry</Button>

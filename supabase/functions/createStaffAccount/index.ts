@@ -3,9 +3,8 @@ import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { generateTempPassword } from '../_shared/tempPassword.ts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ROLES = ['supervisor', 'management', 'accounts'];
 
-// Admin creates a Supervisor, Management or Accounts account directly, with no email involved. The temporary password
+// Admin creates a Supervisor account, or an account with one of the roles from the Roles screen, directly, with no email involved. The temporary password
 // is returned once for the admin to hand over; the new person must replace it at first sign-in.
 // The role is decided here by the admin, never by the new person. Admin accounts cannot be created this way.
 serve('createStaffAccount', async (req) => {
@@ -18,7 +17,22 @@ serve('createStaffAccount', async (req) => {
   const role = String(body.role ?? '');
   if (!EMAIL_REGEX.test(email)) throw new HttpError(400, 'Enter a valid email address.');
   if (!fullName) throw new HttpError(400, 'Enter the person\'s full name.');
-  if (!ROLES.includes(role)) throw new HttpError(400, 'Choose Supervisor, Management or Accounts.');
+  // "supervisor", or the key of a role from the Roles screen (the older "management" and "accounts" mean General manager and Accounts manager).
+  // Until the roles update has been applied there is no list of roles, and the two older choices work as they always did.
+  let staffRoleKey: string | null = role === 'supervisor' ? null : role === 'management' ? 'general_manager' : role === 'accounts' ? 'accounts_manager' : role;
+  let loginRole = 'supervisor';
+  if (role !== 'supervisor') {
+    const { data: staffRole, error: rolesError } = await admin.from('staff_roles').select('key').eq('key', staffRoleKey).maybeSingle();
+    if (rolesError) {
+      if (role !== 'management' && role !== 'accounts') throw new HttpError(400, 'Choose Supervisor, Management or Accounts.');
+      loginRole = role;
+      staffRoleKey = null;
+    } else if (!staffRole) {
+      throw new HttpError(400, 'Choose Supervisor or one of the roles from the Roles screen.');
+    } else {
+      loginRole = staffRole.key === 'accounts_manager' ? 'accounts' : 'management';
+    }
+  }
 
   const { data: existing } = await admin.from('profiles').select('id').ilike('email', email).maybeSingle();
   if (existing) {
@@ -26,7 +40,7 @@ serve('createStaffAccount', async (req) => {
   }
 
   // Stored first: the signup trigger gives the new profile this role the moment the account exists.
-  const { error: assignError } = await admin.from('staff_role_assignments').upsert({ email, role }, { onConflict: 'email' });
+  const { error: assignError } = await admin.from('staff_role_assignments').upsert({ email, role: loginRole }, { onConflict: 'email' });
   if (assignError) throw assignError;
 
   const password = generateTempPassword();
@@ -43,7 +57,7 @@ serve('createStaffAccount', async (req) => {
 
   const { error: flagError } = await admin
     .from('profiles')
-    .update({ must_change_password: true, full_name: fullName, updated_by_id: caller.id })
+    .update({ must_change_password: true, full_name: fullName, updated_by_id: caller.id, ...(staffRoleKey ? { staff_role: staffRoleKey } : {}) })
     .eq('id', created.user.id);
   if (flagError) {
     // Do not leave an account that never has to change its temporary password.
@@ -51,5 +65,5 @@ serve('createStaffAccount', async (req) => {
     throw flagError;
   }
 
-  return json({ ok: true, email, full_name: fullName, role, temporary_password: password });
+  return json({ ok: true, email, full_name: fullName, role: staffRoleKey ?? loginRole, temporary_password: password });
 });

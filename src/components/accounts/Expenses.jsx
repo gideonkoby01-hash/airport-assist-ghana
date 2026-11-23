@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Download, Loader2, Plus } from "lucide-react";
 import { api, BOOKS_ERRORS } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ const say = (err, fallback) => (/period_closed/.test(err?.message || "") ? BOOKS
 const blank = () => ({ expense_date: todayUtc(), category: "supplies", description: "", payee: "", method: "cash", reference: "", amount: "" });
 
 export default function Expenses({ from, to }) {
+  const canRecord = useCan()("accounts.record");
   const { data, loading, error, reload } = useLoad(async () => (await api.entities.Expense.filter({ expense_date: { $gte: from, $lte: to } }, { sort: "-expense_date", limit: 2000 })).items || [], [from, to]);
   const [form, setForm] = useState(blank);
   const [saving, setSaving] = useState(false);
@@ -71,7 +73,7 @@ export default function Expenses({ from, to }) {
 
   return (
     <div className="space-y-5">
-      <Panel title="Record an expense" note="Rent, salaries, fuel and the other costs of running the business. An expense is never deleted; if one is wrong, cancel it with a reason and enter it again.">
+      {canRecord && (<Panel title="Record an expense" note="Rent, salaries, fuel and the other costs of running the business. An expense is never deleted; if one is wrong, cancel it with a reason and enter it again.">
         <form onSubmit={save} noValidate className="grid sm:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
           <div className="space-y-1.5 xl:col-span-2"><Label htmlFor="ex-date" className="text-xs">Date</Label><Input id="ex-date" type="date" value={form.expense_date} max={todayUtc()} onChange={(e) => set("expense_date", e.target.value)} /></div>
           <div className="space-y-1.5 xl:col-span-3">
@@ -95,7 +97,7 @@ export default function Expenses({ from, to }) {
           <div className="xl:col-span-3"><Button type="submit" className="w-full whitespace-nowrap" disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />} Add expense</Button></div>
         </form>
         {formError && <p role="alert" className="text-sm text-destructive mt-3">{formError}</p>}
-      </Panel>
+      </Panel>)}
 
       <Panel
         title="Expenses"
@@ -133,7 +135,7 @@ export default function Expenses({ from, to }) {
                             <Button size="sm" variant="destructive" onClick={confirmVoid}>Cancel expense</Button>
                             <Button size="sm" variant="ghost" onClick={() => { setVoiding(null); setReason(""); }}>Keep</Button>
                           </div>
-                        ) : (<Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setVoiding(e); setReason(""); }}>Cancel</Button>)}
+                        ) : (canRecord && <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { setVoiding(e); setReason(""); }}>Cancel</Button>)}
                       </td>
                     </tr>
                   ))}

@@ -7,6 +7,7 @@ import {
 import { todayUtc } from "@/lib/bookingFormRules";
 import { rangeForPreset } from "@/lib/finance";
 import PeriodPicker from "@/components/charts/PeriodPicker";
+import { useCan } from "@/hooks/use-can";
 import Home from "./Home";
 import Journal from "./Journal";
 import GeneralLedger from "./GeneralLedger";
@@ -55,6 +56,7 @@ const SECTIONS = GROUPS.flatMap((g) => g.items);
 
 // Finance and accounting: the accountant's home, the double-entry books, statements, banking and month-end close.
 export default function AccountsPage() {
+  const canRecord = useCan()("accounts.record");
   const [params, setParams] = useSearchParams();
   const today = todayUtc();
   const [period, setPeriod] = useState({ preset: "mtd", ...rangeForPreset("mtd", today) });
@@ -80,6 +82,12 @@ export default function AccountsPage() {
         <h2 className="text-lg font-semibold text-foreground">Accounts</h2>
         <p className="text-xs text-muted-foreground mt-0.5">Double-entry books kept automatically from every payment, expense, payout and transfer. Amounts in Ghana cedis.</p>
       </div>
+
+      {!canRecord && (
+        <p role="status" className="rounded-xl border border-border bg-secondary/60 px-3.5 py-2.5 text-sm text-muted-foreground">
+          You can look at the accounts but not change them. Ask an admin if you need to record something.
+        </p>
+      )}
 
       {/* Phone: one picker. Wider screens: the sections down the side. */}
       <div className="lg:hidden">

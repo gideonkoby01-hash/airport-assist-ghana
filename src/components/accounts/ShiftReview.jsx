@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { CheckCircle2, Download, HelpCircle } from "lucide-react";
 import { api } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatGHS } from "@/lib/packages";
@@ -20,6 +21,7 @@ function Variance({ value }) {
 // Each supervisor's end-of-shift report: what they sold, the cash they should have and the cash they counted.
 // The accountant accepts it, or queries it with a note the supervisor's manager can follow up.
 export default function ShiftReview({ from, to }) {
+  const canRecord = useCan()("accounts.record");
   const { data, loading, error, reload } = useLoad(() => api.books.shiftReports(from, to), [from, to]);
   const [filter, setFilter] = useState("todo");
   const [querying, setQuerying] = useState(null);
@@ -97,7 +99,7 @@ export default function ShiftReview({ from, to }) {
                   </dl>
                   {r.remarks && <p className="text-sm mt-3"><span className="text-xs text-muted-foreground block">Supervisor's remarks</span>{r.remarks}</p>}
                   {r.review_status && <p className="text-xs text-muted-foreground mt-3">{r.review_status === "accepted" ? "Accepted" : "Queried"} by {r.reviewed_by_name || "—"}{r.reviewed_at ? `, ${new Date(r.reviewed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}{r.review_note ? `: “${r.review_note}”` : ""}</p>}
-                  {r.review_status !== "accepted" && (
+                  {canRecord && r.review_status !== "accepted" && (
                     querying === r.id ? (
                       <form className="flex flex-wrap gap-2 mt-3" onSubmit={(e) => { e.preventDefault(); review(r.id, "queried", note.trim()); }}>
                         <Input aria-label="What needs explaining" className="flex-1 min-w-[14rem]" placeholder="What needs explaining?" value={note} onChange={(e) => setNote(e.target.value)} autoFocus />

@@ -386,6 +386,54 @@ const books = {
   reopenPeriod: (/** @type {string} */ month, /** @type {string} */ reason) => booksRpc('reopen_period', { p_month: month, p_reason: reason }),
 };
 
+// The supervisor and porter leaderboard (management and admin). Until the roles update is applied it falls back to the dashboard analytics.
+const team = {
+  async leaderboard(/** @type {string} */ from, /** @type {string} */ to) {
+    const { data, error } = await supabase.rpc('team_leaderboard', { p_from: from, p_to: to });
+    if (!error) return data || {};
+    if (/could not find the function|does not exist|PGRST202/i.test(error.message || error.code || '')) {
+      const { data: legacy, error: legacyError } = await supabase.rpc('analytics_dashboard', { p_from: from, p_to: to });
+      if (legacyError) fail(legacyError);
+      return { supervisors: legacy?.supervisors || [], porters: legacy?.porters || [] };
+    }
+    fail(error);
+    return {};
+  },
+};
+
+// Roles and the tasks each may perform (admin only). Every change goes through database functions that check the caller.
+const roles = {
+  /** @returns {Promise<Array<{ key: string, name: string, description: string | null, system: boolean, permissions: string[] }>>} */
+  async list() {
+    const [r, p] = await Promise.all([
+      supabase.from('staff_roles').select('*').order('system', { ascending: false }).order('name'),
+      supabase.from('role_permissions').select('role_key,permission'),
+    ]);
+    if (r.error) fail(r.error);
+    if (p.error) fail(p.error);
+    const by = new Map();
+    for (const row of p.data || []) by.set(row.role_key, [...(by.get(row.role_key) || []), row.permission]);
+    return (r.data || []).map((x) => ({ ...x, permissions: (by.get(x.key) || []).sort() }));
+  },
+  async create(/** @type {string} */ name, /** @type {string} */ description, /** @type {string[]} */ permissions) {
+    const { data, error } = await supabase.rpc('create_staff_role', { p_name: name, p_description: description || null, p_permissions: permissions });
+    if (error) fail(error);
+    return /** @type {string} */ (data);
+  },
+  async update(/** @type {string} */ key, /** @type {string} */ name, /** @type {string} */ description, /** @type {string[]} */ permissions) {
+    const { error } = await supabase.rpc('update_staff_role', { p_key: key, p_name: name, p_description: description || null, p_permissions: permissions });
+    if (error) fail(error);
+  },
+  async remove(/** @type {string} */ key) {
+    const { error } = await supabase.rpc('delete_staff_role', { p_key: key });
+    if (error) fail(error);
+  },
+  async assign(/** @type {string} */ userId, /** @type {string} */ key) {
+    const { error } = await supabase.rpc('assign_staff_role', { p_user: userId, p_role_key: key });
+    if (error) fail(error);
+  },
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books, team, roles };

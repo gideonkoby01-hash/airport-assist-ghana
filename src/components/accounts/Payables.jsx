@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Loader2 } from "lucide-react";
 import { api } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ const n = (x) => Number(x) || 0;
 const PAY_METHODS = [["cash", "Cash (including kept from takings)"], ["mobile_money", "Mobile money"], ["bank_transfer", "Bank transfer"]];
 
 function PayRow({ s, onPaid }) {
+  const canRecord = useCan()("accounts.record");
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ amount: String(n(s.owed)), method: "cash", date: todayUtc(), note: "" });
   const [busy, setBusy] = useState(false);
@@ -45,7 +47,7 @@ function PayRow({ s, onPaid }) {
         </div>
         <div className="flex items-center gap-3">
           <span className={`tabular font-semibold ${n(s.owed) > 0 ? "" : "text-muted-foreground"}`}>{n(s.owed) > 0 ? `${formatGHS(s.owed)} owed` : "Paid up"}</span>
-          {n(s.owed) > 0 && !open && <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Record payment</Button>}
+          {canRecord && n(s.owed) > 0 && !open && <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Record payment</Button>}
         </div>
       </div>
       {open && (

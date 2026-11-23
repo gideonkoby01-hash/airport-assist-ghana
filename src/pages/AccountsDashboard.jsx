@@ -4,6 +4,8 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
 import LazyFallback from "@/components/analytics/LazyFallback";
+import NoAccess from "@/components/NoAccess";
+import { useCan } from "@/hooks/use-can";
 
 // The charts and the accounts pages are loaded only when this screen is opened.
 const AnalyticsDashboard = lazy(() => import("@/components/analytics/AnalyticsDashboard"));
@@ -14,12 +16,15 @@ const AccountsPage = lazy(() => import("@/components/accounts/AccountsPage"));
 export default function AccountsDashboard() {
   useDocumentTitle("Accounts");
   const [params] = useSearchParams();
+  const can = useCan();
   const tab = params.get("tab") === "accounts" ? "accounts" : "summary";
   return (
     <RoleGuard allowedRoles={["accounts"]}>
       <AppLayout>
         <Suspense fallback={<LazyFallback />}>
-          {tab === "accounts" ? <AccountsPage /> : <AnalyticsDashboard />}
+          {tab === "accounts"
+            ? (can("accounts.view") ? <AccountsPage /> : <NoAccess what="the Accounts section" />)
+            : (can("analytics.view") ? <AnalyticsDashboard /> : <NoAccess what="the dashboard analytics" />)}
         </Suspense>
       </AppLayout>
     </RoleGuard>

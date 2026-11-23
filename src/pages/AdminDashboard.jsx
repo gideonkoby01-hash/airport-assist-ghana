@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { api } from "@/api/db";
 import AppLayout from "@/components/AppLayout";
 import RoleGuard from "@/components/RoleGuard";
-import AdminSettings from "@/components/AdminSettings";
+import SettingsPage from "@/components/SettingsPage";
 import EmailIssues from "@/components/EmailIssues";
 import ExportPanel from "@/components/ExportPanel";
 import StaffManager from "@/components/StaffManager";
@@ -168,7 +168,8 @@ function AdminInner() {
         </Suspense>
       )}
       {tab === "email" && <EmailIssues />}
-      {tab === "settings" && <AdminSettings />}
+      {/* "roles" is the older address of Roles and tasks, which now sits inside Settings. */}
+      {(tab === "settings" || tab === "roles") && <SettingsPage initial={tab === "roles" ? "roles" : "general"} />}
       {tab === "packages" && <PackageManager />}
       {tab === "lounges" && <LoungeManager />}
       {tab === "porters" && <PorterManager />}

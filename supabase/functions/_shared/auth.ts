@@ -80,3 +80,18 @@ export function requestAppUrl(req: Request): string {
   const origin = req.headers.get('origin') ?? '';
   return /^https:\/\/[^/\s]+$/.test(origin) ? origin : appUrl();
 }
+
+// Can this person do this task? Admin can do everything; anyone else needs a role that has it (set by the admin on the Roles screen).
+// A small stand-in with `.rpc()` can be passed in tests.
+// deno-lint-ignore no-explicit-any
+export async function userCan(admin: { rpc: (name: string, args: Record<string, unknown>) => any }, user: { id: string; role: string }, key: string): Promise<boolean> {
+  if (user.role === 'admin') return true;
+  const { data } = await admin.rpc('user_can', { p_user: user.id, p_key: key });
+  return data === true;
+}
+
+// Stops the request with 403 unless the caller's role has the task. Call it after requireCaller.
+// deno-lint-ignore no-explicit-any
+export async function requirePermission(admin: { rpc: (name: string, args: Record<string, unknown>) => any }, user: { id: string; role: string }, key: string, message = 'Your role is not allowed to do this. Ask an admin.'): Promise<void> {
+  if (!(await userCan(admin, user, key))) throw new HttpError(403, message);
+}

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { api } from '@/api/db';
+import { legacyPermissions } from '@/lib/permissions';
 
 const AuthContext = createContext(undefined);
 
@@ -8,7 +9,17 @@ const AuthContext = createContext(undefined);
 // `profiles` row (role, full name). Roles are only ever read from profiles, which clients cannot edit.
 async function loadUser(authUser) {
   const profile = await api.entities.User.get(authUser.id);
-  return { ...profile, id: authUser.id, email: authUser.email };
+  const person = { ...profile, id: authUser.id, email: authUser.email };
+  return { ...person, ...(await loadAccess(person)) };
+}
+
+// The tasks the person's role allows, so the screens offer only those (the database still checks every action).
+// Until the roles update has been applied there is no such list, so people keep what they could do before.
+async function loadAccess(person) {
+  if (!['admin', 'management', 'accounts'].includes(person.role)) return { permissions: [] };
+  const { data, error } = await supabase.rpc('my_access');
+  if (error || !data) return { permissions: legacyPermissions(person.role) };
+  return { permissions: data.permissions || [], staff_role: data.staff_role ?? person.staff_role ?? null, staff_role_name: data.staff_role_name || null };
 }
 
 // True when the account has a verified authenticator app but this session has not passed the code check yet.

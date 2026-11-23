@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2, Plus } from "lucide-react";
 import { api } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,6 +83,7 @@ function TransferForm({ accounts, onDone }) {
 
 // Money accounts: their balances, moving money between them, and checking each against its statement.
 export default function Banking({ from, to }) {
+  const canRecord = useCan()("accounts.record");
   const chart = useChart();
   const tb = useLoad(() => api.books.trialBalance(from, to), [from, to]);
   const transfers = useLoad(() => api.books.transfers(from, to), [from, to]);
@@ -105,9 +107,9 @@ export default function Banking({ from, to }) {
 
   return (
     <div className="space-y-5">
-      <Panel title="Move money" note="Record cash taken to the bank, card and mobile money settlements, and corporate customers paying. Card takings sit in “to be settled” until the settlement is recorded.">
+      {canRecord && (<Panel title="Move money" note="Record cash taken to the bank, card and mobile money settlements, and corporate customers paying. Card takings sit in “to be settled” until the settlement is recorded.">
         {chart.data ? <TransferForm accounts={chart.data} onDone={reloadAll} /> : <LoadState loading={chart.loading} error={chart.error} hasData={false}>{null}</LoadState>}
-      </Panel>
+      </Panel>)}
 
       <Panel title={`Reconcile at ${fmtDate(to)}`} note="Type the balance on the bank statement, the mobile money wallet or the cash count. Any difference is something missing from the books, or from the statement.">
         <LoadState loading={tb.loading} error={tb.error} hasData={Boolean(tb.data)}>
@@ -148,7 +150,7 @@ export default function Banking({ from, to }) {
                     </div>
                     <span className={`tabular font-semibold whitespace-nowrap ${t.voided ? "line-through" : ""}`}>{formatGHS(t.amount)}</span>
                   </div>
-                  {!t.voided && (voiding === t.id ? (
+                  {canRecord && !t.voided && (voiding === t.id ? (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       <Input aria-label="Reason for cancelling" className="h-8 w-full sm:w-56" placeholder="Why cancel it?" value={reason} onChange={(e) => setReason(e.target.value)} autoFocus />
                       <Button size="sm" variant="destructive" onClick={confirmVoid}>Cancel transfer</Button>

@@ -96,7 +96,7 @@ export default function Leaderboard() {
   const [period, setPeriod] = useState({ preset: "mtd", ...rangeForPreset("mtd", today) });
   const [who, setWho] = useState("supervisors");
   const [metricKey, setMetricKey] = useState({ supervisors: "completed", porters: "passengers" });
-  const { data, loading, error } = useLoad(() => api.finance.dashboard(period.from, period.to), [period.from, period.to]);
+  const { data, loading, error } = useLoad(() => api.team.leaderboard(period.from, period.to), [period.from, period.to]);
 
   const metrics = who === "supervisors" ? SUPERVISOR_METRICS : PORTER_METRICS;
   const metric = metrics.find((m) => m.key === metricKey[who]) || metrics[0];

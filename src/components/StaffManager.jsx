@@ -7,6 +7,8 @@ import { Check, Copy, Loader2, ShieldCheck } from "lucide-react";
 import { roleLabel } from "@/lib/packages";
 import ConfirmAction from "@/components/ConfirmAction";
 import StaffCreate from "@/components/StaffCreate";
+import { useStaffRoles } from "@/hooks/use-staff-roles";
+import { staffRoleKeyOf } from "@/lib/permissions";
 
 // Passengers do not have accounts any more, so "Passenger" is not a role to choose.
 const ROLES = ["supervisor", "management", "accounts", "admin"];
@@ -17,6 +19,7 @@ export default function StaffManager() {
   const [err, setErr] = useState("");
   const [reset, setReset] = useState(null);
   const [copied, setCopied] = useState(false);
+  const { roles, ready: rolesReady } = useStaffRoles();
 
   const load = async () => {
     setLoading(true);
@@ -61,10 +64,18 @@ export default function StaffManager() {
     }
   };
 
+  // The value shown for a person: their role (General manager, Customer Care Lead...), or Supervisor or Admin.
+  const roleValue = (u) => (rolesReady ? staffRoleKeyOf(u) || u.role : u.role);
+  // Supervisor and Admin are account types; every other choice is a role from the Roles screen, which also sets the account type.
   const changeRole = async (id, newRole) => {
     try {
-      await api.entities.User.update(id, { role: newRole });
-      setUsers((us) => us.map((u) => (u.id === id ? { ...u, role: newRole } : u)));
+      if (rolesReady && !["supervisor", "admin"].includes(newRole)) {
+        await api.roles.assign(id, newRole);
+        await load();
+        return;
+      }
+      await api.entities.User.update(id, rolesReady ? { role: newRole, staff_role: null } : { role: newRole });
+      setUsers((us) => us.map((u) => (u.id === id ? { ...u, role: newRole, ...(rolesReady ? { staff_role: null } : {}) } : u)));
     } catch (e) {
       notifyError(/last_admin/.test(e.message || "")
         ? "That is the only active admin. Make someone else an admin first."
@@ -140,12 +151,18 @@ export default function StaffManager() {
                     <td className="py-2 pr-4 font-medium">{u.email}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{u.full_name || "—"}</td>
                     <td className="py-2 pr-4 w-44">
-                      <Select value={u.role} onValueChange={(r) => changeRole(u.id, r)}>
+                      <Select value={roleValue(u)} onValueChange={(r) => changeRole(u.id, r)}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ROLES.map((r) => (
+                          {rolesReady ? (
+                            <>
+                              <SelectItem value="supervisor">Supervisor</SelectItem>
+                              {roles.map((r) => (<SelectItem key={r.key} value={r.key}>{r.name}</SelectItem>))}
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </>
+                          ) : ROLES.map((r) => (
                             <SelectItem key={r} value={r}>
                               {roleLabel(r)}
                             </SelectItem>

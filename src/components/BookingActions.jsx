@@ -15,6 +15,7 @@ import { PaymentBadge } from "@/components/StatusBadge";
 import { useSettings } from "@/lib/SettingsContext";
 import { useServiceList } from "@/lib/currency";
 import { isPorterService } from "@/lib/services";
+import { can } from "@/lib/permissions";
 import { acceptsPayments, canAssignPorter, isClosed, nextStatuses, ALL_STATUSES } from "@/lib/bookingRules";
 
 const METHODS = ["cash", "mobile_money", "card", "corporate_account"];
@@ -24,8 +25,9 @@ export default function BookingActions({ booking, user, onUpdated }) {
   const commissionPerPassenger = Number(settings.porter_commission_per_passenger);
   const role = user?.role || "passenger";
   const canOperate = ["supervisor", "management", "admin"].includes(role);
-  const canAssignSupervisor = ["management", "admin"].includes(role);
-  const canAdjust = ["management", "admin"].includes(role);
+  // Assigning a supervisor and refunding or writing off are tasks an admin gives to a role (Admin > Settings > Roles and tasks).
+  const canAssignSupervisor = ["management", "admin"].includes(role) && can(user, "supervisors.assign");
+  const canAdjust = ["management", "admin"].includes(role) && can(user, "payments.adjust");
   const isAdmin = role === "admin";
   const closed = isClosed(booking.status);
 

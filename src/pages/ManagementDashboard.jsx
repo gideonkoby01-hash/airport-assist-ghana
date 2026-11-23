@@ -16,6 +16,8 @@ import PorterPay from "@/components/PorterPay";
 import Leaderboard from "@/components/Leaderboard";
 import CommissionsPanel from "@/components/CommissionsPanel";
 import LazyFallback from "@/components/analytics/LazyFallback";
+import NoAccess from "@/components/NoAccess";
+import { useCan } from "@/hooks/use-can";
 
 // The charts and the accounts pages are loaded only when a screen that uses them is opened.
 const AnalyticsDashboard = lazy(() => import("@/components/analytics/AnalyticsDashboard"));
@@ -40,6 +42,7 @@ export default function ManagementDashboard() {
 
 function ManagementInner() {
   const { user } = useAuth();
+  const can = useCan();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "ops";
   // The All bookings screen: a view (all, waiting for a supervisor, today, open, closed) and a search.
@@ -149,10 +152,10 @@ function ManagementInner() {
       {tab === "ops" && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />
-            <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />
-            <StatCard label="Outstanding" value={formatGHS(totalOutstanding)} icon={AlertCircle} />
-            <StatCard label="Unassigned" value={unassigned} icon={Users} />
+            {can("analytics.view") && <StatCard label="Total Revenue" value={formatGHS(totalRevenue)} icon={BarChart3} accent />}
+            {can("analytics.view") && <StatCard label="Collected" value={formatGHS(collected)} icon={Wallet} />}
+            {can("analytics.view") && <StatCard label="Outstanding" value={formatGHS(totalOutstanding)} icon={AlertCircle} />}
+            <StatCard label="Unassigned" value={unassigned} icon={Users} accent={!can("analytics.view")} />
           </div>
 
           {unreadCount > 0 && (
@@ -172,10 +175,14 @@ function ManagementInner() {
             </button>
           )}
           <OperationsGlance />
-          <Suspense fallback={<LazyFallback />}>
-            <AnalyticsDashboard />
-          </Suspense>
-          <BookingFinancials />
+          {can("analytics.view") && (
+            <>
+              <Suspense fallback={<LazyFallback />}>
+                <AnalyticsDashboard />
+              </Suspense>
+              <BookingFinancials />
+            </>
+          )}
         </div>
       )}
 
@@ -213,18 +220,18 @@ function ManagementInner() {
         </div>
       )}
 
-      {tab === "customers" && <CustomersPanel tab="customers" />}
-      {tab === "porter-pay" && <PorterPay />}
-      {tab === "commissions" && <CommissionsPanel />}
-      {tab === "accounts" && (
+      {tab === "customers" && (can("customers.manage") ? <CustomersPanel tab="customers" /> : <NoAccess what="Customers" />)}
+      {tab === "porter-pay" && (can("porter_pay.manage") ? <PorterPay /> : <NoAccess what="Porter pay" />)}
+      {tab === "commissions" && (can("commissions.view") ? <CommissionsPanel /> : <NoAccess what="the Commissions list" />)}
+      {tab === "accounts" && (can("accounts.view") ? (
         <Suspense fallback={<LazyFallback />}>
           <AccountsPage />
         </Suspense>
-      )}
+      ) : <NoAccess what="the Accounts section" />)}
       {tab === "supervisors" && <SupervisorDirectory readOnly />}
-      {tab === "leaderboard" && <Leaderboard />}
-      {tab === "reports" && <ShiftReportViewer />}
-      {tab === "ratings" && <RatingsReviews />}
+      {tab === "leaderboard" && (can("leaderboard.view") ? <Leaderboard /> : <NoAccess what="the leaderboard" />)}
+      {tab === "reports" && (can("shift_reports.view") ? <ShiftReportViewer /> : <NoAccess what="shift reports" />)}
+      {tab === "ratings" && (can("ratings.view") ? <RatingsReviews /> : <NoAccess what="ratings and reviews" />)}
       {tab === "notifications" && (
         <ManagementNotifications userId={user.id} onUnreadChange={setUnreadCount} />
       )}
