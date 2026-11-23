@@ -8,6 +8,7 @@ import AdminSettings from "@/components/AdminSettings";
 import EmailIssues from "@/components/EmailIssues";
 import ExportPanel from "@/components/ExportPanel";
 import StaffManager from "@/components/StaffManager";
+import RolesManager from "@/components/RolesManager";
 import PackageManager from "@/components/PackageManager";
 import LoungeManager from "@/components/LoungeManager";
 import PorterManager from "@/components/PorterManager";
@@ -160,6 +161,7 @@ function AdminInner() {
 
       {tab === "customers" && <CustomersPanel tab="customers" isAdmin />}
       {tab === "staff" && <StaffManager />}
+      {tab === "roles" && <RolesManager />}
       {tab === "porter-pay" && <PorterPay />}
       {tab === "commissions" && <CommissionsPanel />}
       {tab === "accounts" && (

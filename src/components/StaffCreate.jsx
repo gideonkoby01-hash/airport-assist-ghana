@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Copy, KeyRound, Loader2 } from "lucide-react";
+import { useStaffRoles } from "@/hooks/use-staff-roles";
 
 // Admin creates a Supervisor or Management account directly. No email is sent: the temporary password is shown
 // once and handed over in person or by phone. The new person must choose their own password at first sign-in.
@@ -13,6 +14,7 @@ export default function StaffCreate({ onCreated }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("supervisor");
+  const { roles, ready } = useStaffRoles();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -60,7 +62,7 @@ export default function StaffCreate({ onCreated }) {
       {result && (
         <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4" role="status">
           <p className="text-sm font-medium text-emerald-900">
-            Account created for {result.full_name} ({roleLabel(result.role)}).
+            Account created for {result.full_name} ({roles.find((r) => r.key === result.role)?.name || roleLabel(result.role)}).
           </p>
           <dl className="mt-3 grid sm:grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-emerald-900/70">Sign in with</dt>
@@ -97,8 +99,14 @@ export default function StaffCreate({ onCreated }) {
             <SelectTrigger id="sc-role"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="supervisor">Supervisor</SelectItem>
-              <SelectItem value="management">Management</SelectItem>
-              <SelectItem value="accounts">Accounts</SelectItem>
+              {ready
+                ? roles.map((r) => <SelectItem key={r.key} value={r.key}>{r.name}</SelectItem>)
+                : (
+                  <>
+                    <SelectItem value="management">Management</SelectItem>
+                    <SelectItem value="accounts">Accounts</SelectItem>
+                  </>
+                )}
             </SelectContent>
           </Select>
         </div>

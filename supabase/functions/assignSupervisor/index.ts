@@ -1,4 +1,4 @@
-import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
+import { adminClient, appUrl, requireCaller, requirePermission } from '../_shared/auth.ts';
 import { emailBookingPassenger } from '../_shared/notify.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
@@ -7,6 +7,7 @@ import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 serve('assignSupervisor', async (req) => {
   const admin = adminClient();
   const caller = await requireCaller(req, admin, ['management', 'admin']);
+  await requirePermission(admin, caller, 'supervisors.assign', 'Your role is not allowed to assign supervisors. Ask an admin.');
 
   const { booking_id: bookingId, supervisor_user_id: supervisorId } = await readBody(req) as Record<string, string>;
   if (!bookingId || !supervisorId) throw new HttpError(400, 'booking_id and supervisor_user_id are required');

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Loader2, Lock, Pencil, Plus } from "lucide-react";
 import { api } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,7 @@ import { LoadState, Panel, Pill, useChart } from "./shared";
 const KIND_HINT = { asset: "1000s", liability: "2000s", equity: "3000s", income: "4000s", expense: "5000s and 6000s" };
 
 function Row({ a, onSaved }) {
+  const canRecord = useCan()("accounts.record");
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(a.name);
   const [busy, setBusy] = useState(false);
@@ -42,8 +44,8 @@ function Row({ a, onSaved }) {
         )}
       </td>
       <td className="py-2 text-right whitespace-nowrap">
-        {!editing && <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(true)} aria-label={`Rename ${a.name}`}><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></Button>}
-        {!a.system && !editing && <Button size="sm" variant="ghost" className="h-8" disabled={busy} onClick={() => save(!a.active)}>{a.active ? "Switch off" : "Switch on"}</Button>}
+        {canRecord && !editing && <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(true)} aria-label={`Rename ${a.name}`}><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></Button>}
+        {canRecord && !a.system && !editing && <Button size="sm" variant="ghost" className="h-8" disabled={busy} onClick={() => save(!a.active)}>{a.active ? "Switch off" : "Switch on"}</Button>}
       </td>
     </tr>
   );
@@ -52,6 +54,7 @@ function Row({ a, onSaved }) {
 // The accounts the books are kept in. The locked ones are used by the automatic entries; more can be added for
 // manual entries, for example a second bank account or a loan.
 export default function ChartOfAccounts() {
+  const canRecord = useCan()("accounts.record");
   const { data, loading, error, reload } = useChart();
   const [form, setForm] = useState({ code: "", name: "", kind: "asset" });
   const [saving, setSaving] = useState(false);
@@ -76,7 +79,7 @@ export default function ChartOfAccounts() {
 
   return (
     <div className="space-y-5">
-      <Panel title="Add an account" note="For example a second bank account, a loan, or a cost that needs its own line. New accounts are used in manual journal entries and transfers.">
+      {canRecord && (<Panel title="Add an account" note="For example a second bank account, a loan, or a cost that needs its own line. New accounts are used in manual journal entries and transfers.">
         <form onSubmit={add} noValidate className="grid sm:grid-cols-12 gap-3 items-end">
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="coa-code" className="text-xs">Number</Label><Input id="coa-code" inputMode="numeric" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.replace(/\D/g, "").slice(0, 6) })} placeholder="1040" /></div>
           <div className="space-y-1.5 sm:col-span-5"><Label htmlFor="coa-name" className="text-xs">Name</Label><Input id="coa-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. GCB current account" autoComplete="off" /></div>
@@ -90,7 +93,7 @@ export default function ChartOfAccounts() {
           <div className="sm:col-span-2"><Button type="submit" className="w-full" disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />} Add</Button></div>
         </form>
         {formError && <p role="alert" className="text-sm text-destructive mt-3">{formError}</p>}
-      </Panel>
+      </Panel>)}
 
       <Panel title="Chart of accounts" note="Accounts with a lock are used by the automatic entries: they can be renamed but not switched off.">
         <LoadState loading={loading} error={error} hasData={Boolean(data)}>

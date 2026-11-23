@@ -1,4 +1,4 @@
-import { adminClient, requireCaller } from '../_shared/auth.ts';
+import { adminClient, requireCaller, requirePermission } from '../_shared/auth.ts';
 import { round2 } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { emailBookingPassenger } from '../_shared/notify.ts';
@@ -17,6 +17,7 @@ const MESSAGES: Record<string, [number, string]> = {
 serve('recordAdjustment', async (req) => {
   const admin = adminClient();
   const user = await requireCaller(req, admin, ['management', 'admin']);
+  await requirePermission(admin, user, 'payments.adjust', 'Your role is not allowed to refund or write off. Ask an admin.');
 
   const body = await readBody(req) as Record<string, unknown>;
   const bookingId = String(body.booking_id || '').trim();

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
+import { visibleNav } from "@/lib/permissions";
 import {
   Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
-  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Trophy, UserCheck,
+  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, ShieldCheck, Star, Trophy, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -33,25 +34,25 @@ const NAV = {
     { heading: "Operations", items: [
       { label: "Summary", to: "/management", tab: null, icon: LayoutDashboard, primary: true },
       { label: "All bookings", to: "/management", tab: "bookings", icon: ClipboardList, primary: true },
-      { label: "Customers", to: "/management", tab: "customers", icon: Contact },
+      { perm: "customers.manage", label: "Customers", to: "/management", tab: "customers", icon: Contact },
       { label: "Notifications", to: "/management", tab: "notifications", icon: Bell, primary: true },
     ] },
     { heading: "Team and quality", items: [
       { label: "Supervisors", to: "/management", tab: "supervisors", icon: UserCheck },
-      { label: "Leaderboard", to: "/management", tab: "leaderboard", icon: Trophy },
-      { label: "Porter pay", to: "/management", tab: "porter-pay", icon: Banknote },
-      { label: "Commissions", to: "/management", tab: "commissions", icon: BadgeDollarSign },
-      { label: "Ratings & reviews", to: "/management", tab: "ratings", icon: Star },
+      { perm: "leaderboard.view", label: "Leaderboard", to: "/management", tab: "leaderboard", icon: Trophy },
+      { perm: "porter_pay.manage", label: "Porter pay", to: "/management", tab: "porter-pay", icon: Banknote },
+      { perm: "commissions.view", label: "Commissions", to: "/management", tab: "commissions", icon: BadgeDollarSign },
+      { perm: "ratings.view", label: "Ratings & reviews", to: "/management", tab: "ratings", icon: Star },
     ] },
     { heading: "Finance", items: [
-      { label: "Accounts", to: "/management", tab: "accounts", icon: Calculator, primary: true },
-      { label: "Shift reports", to: "/management", tab: "reports", icon: FileText, primary: true },
+      { perm: "accounts.view", label: "Accounts", to: "/management", tab: "accounts", icon: Calculator, primary: true },
+      { perm: "shift_reports.view", label: "Shift reports", to: "/management", tab: "reports", icon: FileText, primary: true },
     ] },
   ],
   accounts: [
     { heading: "Finance", items: [
-      { label: "Summary", to: "/accounts", tab: null, icon: LayoutDashboard, primary: true },
-      { label: "Accounts", to: "/accounts", tab: "accounts", icon: Calculator, primary: true },
+      { perm: "analytics.view", label: "Summary", to: "/accounts", tab: null, icon: LayoutDashboard, primary: true },
+      { perm: "accounts.view", label: "Accounts", to: "/accounts", tab: "accounts", icon: Calculator, primary: true },
     ] },
   ],
   admin: [
@@ -62,6 +63,7 @@ const NAV = {
     { heading: "People", items: [
       { label: "Customers", to: "/admin", tab: "customers", icon: Contact },
       { label: "Staff accounts", to: "/admin", tab: "staff", icon: Users, primary: true },
+      { label: "Roles and tasks", to: "/admin", tab: "roles", icon: ShieldCheck },
       { label: "Supervisors", to: "/admin", tab: "supervisors", icon: UserCheck },
       { label: "Leaderboard", to: "/admin", tab: "leaderboard", icon: Trophy },
       { label: "Porters", to: "/admin", tab: "porters", icon: Luggage },
@@ -97,7 +99,7 @@ export default function AppLayout({ children }) {
   const [unread, setUnread] = useState(0);
 
   const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
-  const groups = NAV[role] || [];
+  const groups = visibleNav(NAV[role] || [], user);
   const flat = groups.flatMap((g) => g.items);
   const currentTab = new URLSearchParams(location.search).get("tab");
   const home = flat[0]?.to || "/";
@@ -105,7 +107,7 @@ export default function AppLayout({ children }) {
   const isActive = (item) =>
     item.tab === null ? location.pathname === item.to && !currentTab : location.pathname === item.to && currentTab === item.tab;
   const active = flat.find(isActive);
-  const pageTitle = active?.label || OTHER_TITLES[location.pathname] || (location.pathname.startsWith("/bookings/") ? "Booking" : CONSOLE_NAME[role]);
+  const pageTitle = active?.label || OTHER_TITLES[location.pathname] || (location.pathname.startsWith("/bookings/") ? "Booking" : (role !== "admin" && user?.staff_role_name) || CONSOLE_NAME[role]);
   const bellTarget = `${home}?tab=notifications`;
 
   // The bell's count: when the screen changes and once a minute.
@@ -220,7 +222,7 @@ export default function AppLayout({ children }) {
               <Menu className="w-6 h-6" />
             </button>
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground leading-none hidden sm:block">{CONSOLE_NAME[role]}</p>
+              <p className="text-xs text-muted-foreground leading-none hidden sm:block">{(role !== "admin" && user?.staff_role_name) || CONSOLE_NAME[role]}</p>
               <h1 className="text-lg font-semibold tracking-tight text-foreground truncate sm:mt-1">{pageTitle}</h1>
             </div>
             <Link

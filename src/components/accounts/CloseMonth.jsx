@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Loader2, Lock, LockOpen } from "lucide-react";
 import { api } from "@/api/db";
+import { useCan } from "@/hooks/use-can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatGHS } from "@/lib/packages";
@@ -65,6 +66,7 @@ async function buildPack(month) {
 
 // Closing a month: check it, export the pack, then lock it so nothing dated in it can be added, changed or cancelled.
 export default function CloseMonth({ onGo }) {
+  const canRecord = useCan()("accounts.record");
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const { data, loading, error, reload } = useLoad(() => api.books.periods(), []);
@@ -121,7 +123,7 @@ export default function CloseMonth({ onGo }) {
               <Button variant="outline" onClick={() => run("pack", () => buildPack(month))} disabled={busy === "pack"}>
                 {busy === "pack" ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Download className="w-4 h-4 mr-1.5" aria-hidden="true" />} Download month pack
               </Button>
-              {!period.closed && month.slice(0, 7) < thisMonth && (
+              {canRecord && !period.closed && month.slice(0, 7) < thisMonth && (
                 <>
                   <Input aria-label="Note for the record (optional)" className="w-full sm:w-64" placeholder="Note for the record (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
                   <Button onClick={close} disabled={busy === "close"}>{busy === "close" ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Lock className="w-4 h-4 mr-1.5" aria-hidden="true" />} Close {fmtMonth(month)}</Button>
