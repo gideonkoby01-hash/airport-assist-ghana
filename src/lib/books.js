@@ -23,7 +23,7 @@ export const SOURCE_LABELS = {
 export const TRANSFER_PRESETS = [
   { key: "bank_cash", label: "Cash banked", from: "1000", to: "1030" },
   { key: "momo_bank", label: "Mobile money moved to the bank", from: "1010", to: "1030" },
-  { key: "card_settled", label: "Card takings settled into the bank", from: "1020", to: "1030" },
+  { key: "card_settled", label: "Card and online takings settled into the bank", from: "1020", to: "1030" },
   { key: "corporate_paid", label: "Corporate customer paid into the bank", from: "1100", to: "1030" },
   { key: "bank_cash_out", label: "Cash drawn from the bank", from: "1030", to: "1000" },
   { key: "custom", label: "Other transfer", from: "", to: "" },

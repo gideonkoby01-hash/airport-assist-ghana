@@ -1,6 +1,8 @@
 import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
 import { buildOverview, clearSecret, resetSetting, saveSecret, saveSettings } from '../_shared/adminSettings.ts';
+import { getSecret } from '../_shared/config.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
+import { checkKey, keyMode, PaystackError } from '../_shared/paystack.ts';
 import { loadSmtpConfig } from '../_shared/emailConfig.ts';
 import { describeSmtpError, verifySmtp } from '../_shared/smtp.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
@@ -53,6 +55,24 @@ serve('adminSettings', async (req) => {
         return json({ ok: true, message: `Connected to ${smtp.host}:${smtp.port}${smtp.username ? ' and signed in' : ''}. Send yourself a test email to finish checking.` });
       } catch (e) {
         return json({ ok: false, message: describeSmtpError(e, smtp) });
+      }
+    }
+
+    case 'test_paystack': {
+      // Asks Paystack a harmless question with the saved key: it answers only if the key is genuine.
+      const hits = await admin.rpc('hit_rate_limit', { p_key: `test-paystack:${user.id}`, p_window_seconds: 3600 });
+      if ((hits.data ?? 0) > 10) throw new HttpError(429, 'That is enough key checks for now. Try again in an hour.');
+      const secret = await getSecret(admin, 'PAYSTACK_SECRET_KEY', { fresh: true });
+      if (!secret) return json({ ok: false, message: 'Save the Paystack secret key first.' });
+      try {
+        await checkKey(secret);
+        const mode = keyMode(secret);
+        return json({ ok: true, mode, message: mode === 'live'
+          ? 'Paystack accepted the key. It is a LIVE key: payments will move real money.'
+          : 'Paystack accepted the key. It is a TEST key: payments are practice only and move no real money.' });
+      } catch (e) {
+        if (e instanceof PaystackError) return json({ ok: false, message: e.message });
+        throw e;
       }
     }
 

@@ -41,7 +41,7 @@ export default function Privacy() {
         <Section title="What we collect and why">
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Your email address:</strong> to send you your booking confirmation, your supervisor's details and any update on your booking. You do not need an account.</li>
-            <li><strong>Your booking:</strong> names and contact numbers of the passengers, nationality, flight details, number of bags, special requests, and what you paid. To deliver the service and keep our accounts.</li>
+            <li><strong>Your booking:</strong> names and contact numbers of the passengers, nationality, flight details, number of bags, special requests, and what you paid and how. To deliver the service and keep our accounts.</li>
             <li><strong>A photo of your ID</strong> (optional): so our supervisor can identify the right passenger at the airport.</li>
             <li><strong>Your customer record:</strong> your name and contact details, the bookings you have made, and notes our team writes after speaking with you (for example a request or a promise to call back). So anyone on the team can help you without asking you to repeat yourself.</li>
             <li><strong>Staff:</strong> name, work email and role, so we can control who can see what.</li>
@@ -67,6 +67,12 @@ export default function Privacy() {
             We use these services to run the platform, and they handle data on our behalf: Supabase (database, sign-in and file storage),
             Resend (sending emails such as your booking confirmation) and Cloudflare (hosting the website).
           </p>
+          {settings.paystack_enabled === "true" && (
+            <p>
+              If you choose to pay online, your payment is taken by Paystack, a payment service that handles your card or mobile money details itself.
+              We never see or store them. We receive only confirmation of the payment: the amount, the method used (card or mobile money) and the fee Paystack charged us.
+            </p>
+          )}
         </Section>
 
         <Section title="Your rights">

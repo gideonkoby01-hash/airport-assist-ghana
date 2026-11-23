@@ -8,7 +8,7 @@ export type SettingType = 'text' | 'textarea' | 'email' | 'number' | 'boolean' |
 
 export interface SettingDef {
   key: string;
-  group: 'business' | 'bookings' | 'operations' | 'privacy' | 'email';
+  group: 'business' | 'bookings' | 'operations' | 'privacy' | 'email' | 'payments';
   label: string;
   help: string;
   type: SettingType;
@@ -26,7 +26,7 @@ export interface SettingDef {
 
 export interface SecretDef {
   name: string;
-  group: 'email';
+  group: 'email' | 'payments';
   label: string;
   help: string;
   prefix?: string; // what a genuine key starts with (omit for passwords, which have no fixed shape)
@@ -41,6 +41,7 @@ export const GROUPS: Record<SettingDef['group'], { title: string; blurb: string 
   business: { title: 'Business details', blurb: 'Shown on the public website: the footer, the contact section and the privacy notice.' },
   bookings: { title: 'Bookings', blurb: 'Rules applied when a passenger books online. Walk-in sales at the desk are not held to these.' },
   operations: { title: 'Operations', blurb: 'Shifts, escalation and porter commission.' },
+  payments: { title: 'Online payments', blurb: 'Let passengers pay for a booking by card or mobile money through Paystack. Paying at the airport stays available either way.' },
   privacy: { title: 'Privacy and retention', blurb: 'How long personal files are kept. Tell passengers the same figures in the privacy notice.' },
 };
 
@@ -82,6 +83,8 @@ export const SETTINGS: SettingDef[] = [
 
   { key: 'supervisor_commission_per_signup', group: 'operations', label: 'Supervisor commission', type: 'number', default: '50', min: 0, max: 10000, unit: 'GHS per meet and assist', public: true, help: 'Every meet and assist booking earns the supervisor this, added automatically when its payment is recorded. Porter Service Only earns none. Applies to bookings paid from now on; past commissions are not changed.' },
 
+  { key: 'paystack_enabled', group: 'payments', label: 'Let passengers pay online', type: 'boolean', default: 'false', public: true,
+    help: 'Shows "Pay now with card or mobile money" after a booking and in the confirmation email. Switch it on only after the Paystack key below is saved and tested.' },
   { key: 'photo_retention_days', group: 'privacy', label: 'Keep passenger ID photos for', type: 'number', default: '30', env: 'PHOTO_RETENTION_DAYS', min: 1, max: 365, unit: 'days after the flight', help: 'After this the photo is deleted automatically. Update the privacy notice if you change it.' },
   { key: 'orphan_upload_days', group: 'privacy', label: 'Delete unused uploads after', type: 'number', default: '7', min: 1, max: 60, unit: 'days', help: 'Photos uploaded but never attached to a booking.' },
 ];
@@ -93,6 +96,8 @@ export const SECRETS: SecretDef[] = [
     help: 'Lets the system trust delivery reports (delivered, bounced, spam) coming from Resend.' },
   { name: 'SMTP_PASSWORD', group: 'email', label: 'SMTP password', minLength: 1, allowSpaces: true, where: 'your mail provider (for Gmail and Microsoft 365 create an "app password"; your normal password will not work)', showWhen: { key: 'email_provider', value: 'smtp' },
     help: 'Used to sign in to the SMTP server. Stored encrypted.' },
+  { name: 'PAYSTACK_SECRET_KEY', group: 'payments', label: 'Paystack secret key', prefix: 'sk_', where: 'Paystack dashboard > Settings > API Keys & Webhooks > Secret Key (start with the Test key, sk_test_...)',
+    help: 'Lets the system start payments and check that they were paid. It also proves that payment reports really come from Paystack. Stored encrypted.' },
 ];
 
 export const SETTING_BY_KEY = new Map(SETTINGS.map((s) => [s.key, s]));

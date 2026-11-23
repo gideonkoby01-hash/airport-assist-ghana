@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import Reveal, { inertWhen } from "@/components/home/Reveal";
+import { useSettings } from "@/lib/SettingsContext";
+import { payWording } from "@/lib/payments";
 
 const FAQS = [
   { q: "Are services available around the clock?", a: "Yes. Airport Assist Ghana operates 24 hours a day, 7 days a week, so we can meet flights arriving or departing at any time." },
@@ -8,11 +10,13 @@ const FAQS = [
   { q: "Is lounge access included in every package?", a: "No. Full Arrival and Full Departure include lounge access; Departure Priority Only and Porter Service Only do not." },
   { q: "Do you offer luggage delivery?", a: "Not yet. We are working on adding luggage delivery to our services. In the meantime we handle baggage inside the terminal as part of eligible packages." },
   { q: "How do I book a service?", a: "Choose Book assistance, pick your package, and give us your flight and passenger details. Our team then prepares your assistance." },
-  { q: "How do I pay?", a: "You pay in person at the airport when you meet our team. No payment is taken online when you book." },
+  { q: "How do I pay?", a: "" },
 ];
 
 export default function Faq() {
   const [open, setOpen] = useState(0);
+  const { settings } = useSettings();
+  const faqs = FAQS.map((f) => (f.a ? f : { ...f, a: payWording(settings).faq }));
   return (
     <section id="faq" className="bg-background">
       <div className="mx-auto max-w-3xl px-5 sm:px-8 py-16 lg:py-24">
@@ -22,7 +26,7 @@ export default function Faq() {
           <span className="block mx-auto mt-4 h-[3px] w-14 rounded-full" style={{ background: "var(--grad-brand)" }} aria-hidden="true" />
         </Reveal>
         <ul className="mt-10 space-y-3">
-          {FAQS.map((f, i) => {
+          {faqs.map((f, i) => {
             const on = open === i;
             return (
               <Reveal as="li" key={f.q} delay={i * 60} className="list-none">
