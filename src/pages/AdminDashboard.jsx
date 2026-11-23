@@ -22,6 +22,7 @@ import StatCard from "@/components/StatCard";
 import CustomersPanel from "@/components/crm/CustomersPanel";
 import PorterPay from "@/components/PorterPay";
 import Leaderboard from "@/components/Leaderboard";
+import RosterManager from "@/components/roster/RosterManager";
 import CommissionsPanel from "@/components/CommissionsPanel";
 import LazyFallback from "@/components/analytics/LazyFallback";
 
@@ -175,6 +176,7 @@ function AdminInner() {
       {tab === "porters" && <PorterManager />}
       {tab === "supervisors" && <SupervisorDirectory />}
       {tab === "leaderboard" && <Leaderboard />}
+      {tab === "roster" && <RosterManager canManage />}
       {tab === "discounts" && <DiscountManager />}
       {tab === "reports" && <ShiftReportViewer />}
       {tab === "ratings" && <RatingsReviews />}

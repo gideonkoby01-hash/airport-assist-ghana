@@ -4,7 +4,7 @@ import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import { visibleNav } from "@/lib/permissions";
 import {
-  Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
+  Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, CalendarDays, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
   Luggage, Mail, Menu, MoreHorizontal, RefreshCw, Package, Percent, Settings, Star, Trophy, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
@@ -27,6 +27,7 @@ const NAV = {
     { heading: "At the desk", items: [
       { label: "Sales", to: "/supervisor", tab: "quick", icon: Zap, primary: true },
       { label: "Shift report", to: "/supervisor", tab: "report", icon: FileText },
+      { label: "Shift roster", to: "/supervisor", tab: "roster", icon: CalendarDays },
     ] },
     { heading: "You", items: [
       { label: "Public profile", to: "/supervisor", tab: "profile", icon: UserCircle },
@@ -41,6 +42,7 @@ const NAV = {
     ] },
     { heading: "Team and quality", items: [
       { label: "Supervisors", to: "/management", tab: "supervisors", icon: UserCheck },
+      { label: "Shift roster", to: "/management", tab: "roster", icon: CalendarDays },
       { perm: "leaderboard.view", label: "Leaderboard", to: "/management", tab: "leaderboard", icon: Trophy },
       { perm: "porter_pay.manage", label: "Porter pay", to: "/management", tab: "porter-pay", icon: Banknote },
       { perm: "commissions.view", label: "Commissions", to: "/management", tab: "commissions", icon: BadgeDollarSign },
@@ -66,6 +68,7 @@ const NAV = {
       { label: "Customers", to: "/admin", tab: "customers", icon: Contact },
       { label: "Staff accounts", to: "/admin", tab: "staff", icon: Users, primary: true },
       { label: "Supervisors", to: "/admin", tab: "supervisors", icon: UserCheck },
+      { label: "Shift roster", to: "/admin", tab: "roster", icon: CalendarDays },
       { label: "Leaderboard", to: "/admin", tab: "leaderboard", icon: Trophy },
       { label: "Porters", to: "/admin", tab: "porters", icon: Luggage },
       { label: "Porter pay", to: "/admin", tab: "porter-pay", icon: Banknote },

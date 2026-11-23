@@ -435,6 +435,54 @@ const payments = {
   },
 };
 
+// Monthly shift rosters for supervisors and porters. Reading is open to supervisors and management; every change goes through a database
+// function that checks the caller's task.
+export const ROSTER_ERRORS = {
+  forbidden: 'Your role is not allowed to change rosters. Ask an admin.',
+  start_required: 'Choose which shift works the morning on the 1st.',
+  already_exists: 'There is already a roster for that month.',
+  month_past: 'Past months cannot be changed.',
+  later_exists: 'A later month was made from this one. Delete the later month first.',
+  invalid_group: 'Choose one of the four shifts.',
+  invalid_date: 'Choose a day in this month.',
+  invalid_kind: 'Choose supervisors or porters.',
+  not_found: 'That person or roster was not found. Refresh the page and try again.',
+};
+async function rosterRpc(name, args) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) {
+    const code = Object.keys(ROSTER_ERRORS).find((k) => new RegExp(`\\b${k}\\b`).test(error.message || ''));
+    throw new ApiError(code ? ROSTER_ERRORS[code] : error.message, undefined, error);
+  }
+  return data;
+}
+const rosters = {
+  /** Every month made so far for supervisors or porters: [{ id, month }], newest first. */
+  async months(/** @type {'supervisor' | 'porter'} */ kind) {
+    const { data, error } = await supabase.from('shift_rosters').select('id,month').eq('kind', kind).order('month', { ascending: false });
+    if (error) fail(error);
+    return data || [];
+  },
+  /** One month with its people, or null when none was made. */
+  async get(/** @type {'supervisor' | 'porter'} */ kind, /** @type {string} */ month) {
+    const { data, error } = await supabase.from('shift_rosters').select('*, shift_roster_members(*)').eq('kind', kind).eq('month', month).maybeSingle();
+    if (error) fail(error);
+    if (!data) return null;
+    const { shift_roster_members: members, ...roster } = data;
+    return { roster, members: members || [] };
+  },
+  generate: (/** @type {string} */ kind, /** @type {string} */ month, /** @type {number | null} */ firstMorning = null, /** @type {string | null} */ headAnchor = null) =>
+    rosterRpc('roster_generate', { p_kind: kind, p_month: month, p_first_morning: firstMorning, p_head_anchor: headAnchor }),
+  setMember: (/** @type {string} */ roster, /** @type {string} */ person, /** @type {number} */ group, /** @type {boolean | null} */ lead = null) =>
+    rosterRpc('roster_set_member', { p_roster: roster, p_person: person, p_group: group, p_lead: lead }),
+  removeMember: (/** @type {string} */ roster, /** @type {string} */ person) => rosterRpc('roster_remove_member', { p_roster: roster, p_person: person }),
+  addMissing: (/** @type {string} */ roster) => rosterRpc('roster_add_missing', { p_roster: roster }),
+  shuffle: (/** @type {string} */ roster) => rosterRpc('roster_shuffle', { p_roster: roster, p_seed: null }),
+  setCycle: (/** @type {string} */ roster, /** @type {number} */ firstMorning, /** @type {string | null} */ headAnchor = null) =>
+    rosterRpc('roster_set_cycle', { p_roster: roster, p_first_morning: firstMorning, p_head_anchor: headAnchor }),
+  remove: (/** @type {string} */ roster) => rosterRpc('roster_delete', { p_roster: roster }),
+};
+
 // Roles and the tasks each may perform (admin only). Every change goes through database functions that check the caller.
 const roles = {
   /** @returns {Promise<Array<{ key: string, name: string, description: string | null, system: boolean, permissions: string[] }>>} */
@@ -470,4 +518,4 @@ const roles = {
 
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books, team, roles, payments };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books, team, roles, payments, rosters };
