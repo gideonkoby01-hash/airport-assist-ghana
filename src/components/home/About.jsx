@@ -21,30 +21,17 @@ export default function About() {
           </h2>
         </Reveal>
 
-        {/* An editorial card in the serif voice: the mission, with the story beside it. */}
+        {/* An editorial card in the serif voice: the mission, set across the full width of the card. */}
         <Reveal className="mt-12 mx-auto max-w-5xl overflow-hidden rounded-[24px] border border-border bg-card shadow-[0_26px_60px_-36px_hsl(var(--foreground)/0.5)]">
           <div className="flex items-center justify-between gap-3 px-6 sm:px-8 py-4 border-b border-border bg-secondary/60">
-            <span className="eyebrow text-muted-foreground">Our story</span>
+            <span className="eyebrow text-muted-foreground">Our mission</span>
             <span className="eyebrow text-muted-foreground">Accra International Airport</span>
           </div>
-          <div className="grid md:grid-cols-12">
-            <div className="md:col-span-7 p-6 sm:p-9">
-              <h3 className="serif text-[clamp(1.6rem,3vw,2.3rem)] leading-tight text-foreground">Personalised help at every stage of the journey.</h3>
-              <div className="mt-5 space-y-4 text-muted-foreground leading-[1.75] serif-body">
-                <p className="serif-first">
-                  Airport Assist Ghana provides personalised airport concierge and passenger assistance at Accra International Airport in Accra, Ghana.
-                  We help passengers through the key stages of their arrival and departure, so they get through the airport with more confidence and less worry.
-                </p>
-                <p>That means meeting you on arrival, helping with bags, priority check-in, eligible fast-track escort, and premium lounge access where your package includes it.</p>
-              </div>
-            </div>
-            <div className="md:col-span-5 p-6 sm:p-9 md:border-l border-t md:border-t-0 border-border flex flex-col justify-center">
-              <svg viewBox="0 0 24 24" className="w-9 h-9 text-accent" fill="currentColor" aria-hidden="true"><path d="M7.2 6C4.9 6 3 7.9 3 10.2V18h7v-7.8H6.4c0-1.1.9-2 2-2V6H7.2zm9 0C13.9 6 12 7.9 12 10.2V18h7v-7.8h-3.6c0-1.1.9-2 2-2V6h-1.2z" /></svg>
-              <blockquote className="serif mt-3 text-[1.35rem] leading-snug text-foreground font-semibold">
-                To take the stress out of airport navigation with courteous, personalised and efficient help, so you travel in comfort and with confidence.
-              </blockquote>
-              <p className="mt-5 pt-4 border-t border-border eyebrow text-muted-foreground">Our mission</p>
-            </div>
+          <div className="p-6 sm:p-10 lg:p-14 text-center">
+            <svg viewBox="0 0 24 24" className="w-10 h-10 mx-auto text-accent" fill="currentColor" aria-hidden="true"><path d="M7.2 6C4.9 6 3 7.9 3 10.2V18h7v-7.8H6.4c0-1.1.9-2 2-2V6H7.2zm9 0C13.9 6 12 7.9 12 10.2V18h7v-7.8h-3.6c0-1.1.9-2 2-2V6h-1.2z" /></svg>
+            <blockquote className="serif mt-4 mx-auto max-w-3xl text-[clamp(1.5rem,3vw,2.3rem)] leading-snug text-foreground font-semibold">
+              To take the stress out of airport navigation with courteous, personalised and efficient help, so you travel in comfort and with confidence.
+            </blockquote>
           </div>
         </Reveal>
 

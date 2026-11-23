@@ -23,9 +23,6 @@ export default function HowItWorks() {
               Four steps from booking to <span className="serif-i grad-text">boarding.</span>
             </h2>
           </div>
-          <p className="lg:col-span-5 text-[1.02rem] leading-relaxed text-muted-foreground">
-            Booking takes a few minutes. You create an account, choose a service and give us your flight details. We take it from there.
-          </p>
         </Reveal>
 
         <Reveal as="ol" className="mt-14 relative grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
