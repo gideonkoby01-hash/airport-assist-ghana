@@ -40,13 +40,16 @@ export default function ServicesBand() {
       <div className="mx-auto max-w-6xl px-5 sm:px-8 py-16 lg:py-24">
         <Reveal className="max-w-3xl">
           <span className="block h-[3px] w-10 rounded-full mb-5" style={{ background: "var(--grad-brand)" }} aria-hidden="true" />
-          <p className="eyebrow text-accent">Three services · One dedicated agent</p>
+          <p className="eyebrow text-accent">Who we are</p>
           <h2 className="display sora mt-4 text-[clamp(2.1rem,4.6vw,3.6rem)] text-white">
-            One personal escort. <span className="text-accent">Every airport moment covered.</span>
+            A smoother way through <span className="text-accent">Accra International Airport</span>
           </h2>
           <p className="mt-5 text-[1.08rem] leading-relaxed text-white/80">
-            Whether you are landing, flying out or just need a hand with the bags, a member of our team personally meets you and walks you through check-in, priority lanes,
-            immigration, luggage and boarding. No apps. No guesswork. No hunting for signs. You are simply walked through.
+            Airport Assist Ghana provides personalised airport concierge and passenger assistance services at Accra International Airport in Accra, Ghana. Our mission is to make
+            airport journeys smoother, more comfortable and less stressful through professional guidance, practical support and attentive service. Available 24 hours a day,
+            seven days a week, our team assists passengers throughout key stages of their arrival and departure, helping them navigate airport procedures with greater confidence
+            and peace of mind. From personalised meet and greet and baggage assistance to priority check-in, eligible fast-track escort services and premium lounge access where
+            included, we help make every journey more convenient.
           </p>
         </Reveal>
 
