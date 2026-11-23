@@ -268,7 +268,10 @@ const porterPay = {
   async pay(/** @type {string} */ porterKey, /** @type {string} */ date) {
     const { error } = await supabase.rpc('pay_porter', { p_porter_key: porterKey, p_date: date });
     if (error) {
-      throw new ApiError(/nothing_due/.test(error.message || '') ? 'There is nothing left to pay this porter for that day.' : error.message, undefined, error);
+      const msg = error.message || '';
+      throw new ApiError(/nothing_due/.test(msg) ? 'There is nothing left to pay this porter for that day.'
+        : /period_closed/.test(msg) ? 'The accountant has closed that month, so a payout for that day cannot be recorded. Ask an admin to reopen the month.'
+          : msg, undefined, error);
     }
   },
 };
@@ -311,6 +314,78 @@ const finance = {
   },
 };
 
+// What the accounting functions refuse, in words the accountant can act on.
+export const BOOKS_ERRORS = {
+  period_closed: 'That month is closed. An admin has to reopen it before anything dated in it can change.',
+  month_not_over: 'A month can be closed only once it is over.',
+  not_balanced: 'The entry does not balance: the debits and the credits must add up to the same amount.',
+  invalid_lines: 'Each line needs an account and either a debit or a credit, not both.',
+  account_not_found: 'One of the accounts is not in the chart of accounts, or it is switched off.',
+  invalid_accounts: 'Choose two different money accounts.',
+  invalid_amount: 'Enter an amount above zero.',
+  invalid_date: 'Choose a date that is not in the future.',
+  void_reason_required: 'Give a reason so the record shows why it was cancelled.',
+  reason_required: 'Give a reason so the record shows why.',
+  note_required: 'Say what needs explaining, so the supervisor knows what to answer.',
+  more_than_owed: 'That is more than this supervisor is owed.',
+  code_taken: 'That account number is already used.',
+  invalid_code: 'An account number is 3 to 6 digits.',
+  invalid_name: 'Give the account a name.',
+  system_account: 'This account is used by the automatic entries, so it cannot be switched off. It can be renamed.',
+  not_found: 'That record was not found. Refresh the page and try again.',
+  forbidden: 'Your role cannot do this.',
+};
+
+function booksFail(error) {
+  const code = Object.keys(BOOKS_ERRORS).find((k) => new RegExp(`\\b${k}\\b`).test(error.message || ''));
+  throw new ApiError(code ? BOOKS_ERRORS[code] : error.message, undefined, error);
+}
+
+async function booksRpc(name, args = {}) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) booksFail(error);
+  return data;
+}
+
+// The double-entry books, banking, shift report review and month-end close (finance roles only).
+const books = {
+  home: async () => (await booksRpc('accounts_home')) || {},
+  journal: async (/** @type {string} */ from, /** @type {string} */ to) => (await booksRpc('gl_journal', { p_from: from, p_to: to })) || [],
+  trialBalance: async (/** @type {string} */ from, /** @type {string} */ to) => (await booksRpc('gl_trial_balance', { p_from: from, p_to: to })) || [],
+  accountLedger: async (/** @type {string} */ code, /** @type {string} */ from, /** @type {string} */ to) => (await booksRpc('gl_account_ledger', { p_code: code, p_from: from, p_to: to })) || [],
+  balanceSheet: async (/** @type {string} */ asOf) => (await booksRpc('gl_balance_sheet', { p_as_of: asOf })) || {},
+  async accounts() {
+    const { data, error } = await supabase.from('gl_accounts').select('*').order('code');
+    if (error) booksFail(error);
+    return data || [];
+  },
+  addAccount: (/** @type {string} */ code, /** @type {string} */ name, /** @type {string} */ kind) => booksRpc('gl_add_account', { p_code: code, p_name: name, p_kind: kind }),
+  updateAccount: (/** @type {string} */ code, /** @type {string} */ name, /** @type {boolean} */ active) => booksRpc('gl_update_account', { p_code: code, p_name: name, p_active: active }),
+  postJournal: (/** @type {string} */ date, /** @type {string} */ memo, /** @type {string | null} */ reference, /** @type {any[]} */ lines) =>
+    booksRpc('gl_post_journal', { p_date: date, p_memo: memo, p_reference: reference, p_lines: lines }),
+  voidJournal: (/** @type {string} */ id, /** @type {string} */ reason) => booksRpc('gl_void_journal', { p_id: id, p_reason: reason }),
+  async transfers(/** @type {string} */ from, /** @type {string} */ to) {
+    const { data, error } = await supabase.from('cash_transfers').select('*').gte('transfer_date', from).lte('transfer_date', to)
+      .order('transfer_date', { ascending: false }).order('created_date', { ascending: false }).limit(2000);
+    if (error) booksFail(error);
+    return data || [];
+  },
+  recordTransfer: (/** @type {any} */ t) => booksRpc('record_cash_transfer', { p_date: t.date, p_from: t.from, p_to: t.to, p_amount: t.amount, p_reference: t.reference || null, p_note: t.note || null }),
+  voidTransfer: (/** @type {string} */ id, /** @type {string} */ reason) => booksRpc('void_cash_transfer', { p_id: id, p_reason: reason }),
+  supervisorsOwed: async () => (await booksRpc('supervisor_commission_owed')) || [],
+  async supervisorPayouts(/** @type {string} */ from, /** @type {string} */ to) {
+    const { data, error } = await supabase.from('supervisor_commission_payouts').select('*').gte('pay_date', from).lte('pay_date', to).order('pay_date', { ascending: false }).limit(2000);
+    if (error) booksFail(error);
+    return data || [];
+  },
+  paySupervisor: (/** @type {any} */ p) => booksRpc('pay_supervisor_commission', { p_supervisor_id: p.supervisorId, p_amount: p.amount, p_method: p.method, p_date: p.date, p_note: p.note || null }),
+  shiftReports: async (/** @type {string} */ from, /** @type {string} */ to) => (await booksRpc('shift_reports_for_review', { p_from: from, p_to: to })) || [],
+  reviewShift: (/** @type {string} */ id, /** @type {string} */ status, /** @type {string | null} */ note) => booksRpc('review_shift_report', { p_id: id, p_status: status, p_note: note }),
+  periods: async () => (await booksRpc('gl_periods')) || [],
+  closePeriod: (/** @type {string} */ month, /** @type {string | null} */ note) => booksRpc('close_period', { p_month: month, p_note: note }),
+  reopenPeriod: (/** @type {string} */ month, /** @type {string} */ reason) => booksRpc('reopen_period', { p_month: month, p_reason: reason }),
+};
+
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books };
