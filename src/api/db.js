@@ -401,6 +401,40 @@ const team = {
   },
 };
 
+// Online payment through Paystack. Passengers have no account: the booking's id and reference let them in, and the server decides the amount.
+const payments = {
+  /** What is owed on a booking, and whether it can be paid online. @returns {Promise<{ payable: boolean, reason?: string, amount?: number, reference?: string, package_name?: string }>} */
+  async quote(/** @type {string} */ bookingId, /** @type {string} */ reference) {
+    const { data } = await functions.invoke('paystackInitialize', { action: 'quote', booking_id: bookingId, reference });
+    return data;
+  },
+  /** Starts a payment. @returns {Promise<{ authorization_url: string, reference: string }>} */
+  async start(/** @type {string} */ bookingId, /** @type {string} */ reference) {
+    const { data } = await functions.invoke('paystackInitialize', { booking_id: bookingId, reference });
+    return data;
+  },
+  /** How a payment went, asked of Paystack itself. @returns {Promise<{ status: 'paid' | 'review' | 'failed' | 'pending', booking_id?: string, booking_reference?: string, amount?: number }>} */
+  async verify(/** @type {string} */ reference) {
+    const { data } = await functions.invoke('paystackVerify', { reference });
+    return data;
+  },
+  /** Online payments that were taken but could not be put on the booking (finance staff only). */
+  async needingReview() {
+    const { data, error } = await supabase.from('payment_attempts').select('*').eq('status', 'needs_review').order('created_date', { ascending: false });
+    if (error) fail(error);
+    return data || [];
+  },
+  /** Marks an online payment that needed a look as dealt with, with a note (finance staff). */
+  async resolve(/** @type {string} */ reference, /** @type {string} */ note) {
+    await booksRpc('resolve_payment_attempt', { p_reference: reference, p_note: note });
+  },
+  /** Test the saved Paystack key (admin only). @returns {Promise<{ ok: boolean, mode?: string, message: string }>} */
+  async testKey() {
+    const { data } = await functions.invoke('adminSettings', { action: 'test_paystack' });
+    return data;
+  },
+};
+
 // Roles and the tasks each may perform (admin only). Every change goes through database functions that check the caller.
 const roles = {
   /** @returns {Promise<Array<{ key: string, name: string, description: string | null, system: boolean, permissions: string[] }>>} */
@@ -436,4 +470,4 @@ const roles = {
 
 // Loosely typed on purpose: rows are plain objects whose shape is defined by the database.
 /** @type {any} */
-export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books, team, roles };
+export const api = { entities, functions, storage, settings, profile, crm, porterPay, commissions, finance, books, team, roles, payments };

@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Tag, CheckCircle2, X } from "lucide-react";
 import { formatGhsAmount } from "@/lib/money";
+import { useSettings } from "@/lib/SettingsContext";
+import { payWording } from "@/lib/payments";
 
 export default function DiscountCodeInput({ applied, onApplied, onRemoved, packageCode, numPassengers, disabled, contactEmail = "", formatAmount = formatGhsAmount }) {
   const money = formatAmount;
+  const { settings } = useSettings();
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -95,7 +98,7 @@ export default function DiscountCodeInput({ applied, onApplied, onRemoved, packa
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <p className="text-xs text-muted-foreground">
-        Optional. One code per booking, not case-sensitive. Payment is still made in person at the airport.
+        Optional. One code per booking, not case-sensitive. {payWording(settings).online ? "The discount applies however you pay." : "Payment is still made in person at the airport."}
       </p>
     </section>
   );

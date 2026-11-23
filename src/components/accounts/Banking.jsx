@@ -107,7 +107,7 @@ export default function Banking({ from, to }) {
 
   return (
     <div className="space-y-5">
-      {canRecord && (<Panel title="Move money" note="Record cash taken to the bank, card and mobile money settlements, and corporate customers paying. Card takings sit in “to be settled” until the settlement is recorded.">
+      {canRecord && (<Panel title="Move money" note="Record cash taken to the bank, card and mobile money settlements, and corporate customers paying. Card and online (Paystack) takings sit in “to be settled” until the settlement is recorded; record what reaches the bank, which is the takings less Paystack's fees.">
         {chart.data ? <TransferForm accounts={chart.data} onDone={reloadAll} /> : <LoadState loading={chart.loading} error={chart.error} hasData={false}>{null}</LoadState>}
       </Panel>)}
 

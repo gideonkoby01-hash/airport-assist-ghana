@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, KeyRound, Loader2, Mail, Settings2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Copy, CreditCard, KeyRound, Loader2, Mail, Settings2, ShieldAlert } from "lucide-react";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,6 +140,9 @@ export default function AdminSettings() {
   const [testResult, setTestResult] = useState(null);
   const [checkingSmtp, setCheckingSmtp] = useState(false);
   const [presetNote, setPresetNote] = useState("");
+  const [checkingKey, setCheckingKey] = useState(false);
+  const [keyResult, setKeyResult] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const adopt = useCallback((o) => {
     setOverview(o);
@@ -226,6 +229,28 @@ export default function AdminSettings() {
     }
   };
 
+  const checkPaystackKey = async () => {
+    setCheckingKey(true);
+    setKeyResult(null);
+    try {
+      setKeyResult(await api.payments.testKey());
+    } catch (e) {
+      setKeyResult({ ok: false, message: e.message || "The key check failed." });
+    } finally {
+      setCheckingKey(false);
+    }
+  };
+
+  const copyWebhook = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   const sendTest = async () => {
     setTesting(true);
     setTestResult(null);
@@ -245,7 +270,8 @@ export default function AdminSettings() {
   }
 
   const { groups, secrets, system, other_keys: otherKeys } = overview;
-  const order = ["email", "business", "bookings", "operations", "privacy"];
+  const order = ["email", "business", "bookings", "payments", "operations", "privacy"];
+  const paystackKeySet = secrets.some((x) => x.name === "PAYSTACK_SECRET_KEY" && x.configured);
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -269,7 +295,7 @@ export default function AdminSettings() {
         const smtpOn = group === "email" && drafts.email_provider === "smtp";
         const changed = changedIn(group);
         return (
-          <Card key={group} icon={group === "email" ? Mail : Settings2} title={groups[group].title} blurb={groups[group].blurb}>
+          <Card key={group} icon={group === "email" ? Mail : group === "payments" ? CreditCard : Settings2} title={groups[group].title} blurb={groups[group].blurb}>
             <div className="space-y-5">
               {leadFields.map((def) => (
                 <SettingField
@@ -335,6 +361,40 @@ export default function AdminSettings() {
                   </Button>
                 )}
               </div>
+              {group === "payments" && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" onClick={checkPaystackKey} disabled={checkingKey || !paystackKeySet}
+                      title={!paystackKeySet ? "Save the Paystack secret key first" : undefined}>
+                      {checkingKey ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <KeyRound className="w-4 h-4 mr-2" aria-hidden="true" />} Test the key
+                    </Button>
+                    {keyResult && <span className={`text-sm ${keyResult.ok ? "text-emerald-700" : "text-destructive"}`} role="status">{keyResult.message}</span>}
+                  </div>
+                  {drafts.paystack_enabled === "true" && !paystackKeySet && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2" role="note">
+                      Online payment is switched on, but no Paystack secret key is saved. Passengers will not see the "Pay now" button until one is.
+                    </p>
+                  )}
+                  <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground space-y-2">
+                    <p className="font-medium text-foreground">Set up Paystack (once)</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>Paystack dashboard &gt; Settings &gt; API Keys &amp; Webhooks. Copy the <span className="font-medium text-foreground">Test</span> secret key (starts sk_test_) and save it above. Use "Test the key".</li>
+                      <li>On the same Paystack page, set the <span className="font-medium text-foreground">Test Webhook URL</span> to the address below. Do the same for the Live webhook when you go live.</li>
+                      <li>Switch on "Let passengers pay online", save, and make a test booking. Pay with a Paystack test card. Check it appears in Accounts &gt; Payments.</li>
+                      <li>To go live, replace the key with the Live secret key (sk_live_) and set the Live Webhook URL. Test payments move no real money.</li>
+                    </ol>
+                    {system.paystack_webhook_url ? (
+                      <div className="flex items-center gap-2 pt-1">
+                        <code className="flex-1 min-w-0 break-all rounded bg-secondary px-2 py-1.5 text-foreground">{system.paystack_webhook_url}</code>
+                        <Button type="button" size="sm" variant="outline" onClick={() => copyWebhook(system.paystack_webhook_url)} aria-label="Copy the webhook address">
+                          {copied ? <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
+                        </Button>
+                      </div>
+                    ) : <p>The webhook address could not be worked out here. It is your Supabase project address followed by /functions/v1/paystackWebhook.</p>}
+                    <p>Paystack pays out to your bank after a day or two. When it does, record it in Accounts &gt; Banking as "Card takings settled into the bank".</p>
+                  </div>
+                </div>
+              )}
               {group === "email" && testResult && (
                 <p className={`text-sm ${testResult.ok ? "text-emerald-700" : "text-destructive"}`} role="status">{testResult.message}</p>
               )}

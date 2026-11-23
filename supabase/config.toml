@@ -44,6 +44,10 @@ verify_jwt = false
 [functions.resendWebhook]
 verify_jwt = false
 
+# Paystack calls this when a payment succeeds; the signature made with the secret key is the proof.
+[functions.paystackWebhook]
+verify_jwt = false
+
 # Uptime monitors call this.
 [functions.health]
 verify_jwt = false

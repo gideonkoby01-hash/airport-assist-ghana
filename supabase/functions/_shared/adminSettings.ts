@@ -20,7 +20,7 @@ export interface Overview {
   groups: typeof GROUPS;
   settings: Array<(typeof SETTINGS)[number] & { value: string; source: string }>;
   secrets: Array<SecretDef & { configured: boolean; source: 'saved' | 'environment' | 'none'; last4: string; updated_date: string | null }>;
-  system: { encryption_ready: boolean; encryption_problem: string | null; app_url: string; allowed_origins: string; staff_mfa_required: boolean; cron_secret_set: boolean };
+  system: { encryption_ready: boolean; encryption_problem: string | null; app_url: string; allowed_origins: string; staff_mfa_required: boolean; cron_secret_set: boolean; paystack_webhook_url: string };
   other_keys: typeof OTHER_KEYS;
 }
 
@@ -52,6 +52,7 @@ export async function buildOverview(admin: SupabaseClient, env: (n: string) => s
       allowed_origins: env('ALLOWED_ORIGINS') ?? '',
       staff_mfa_required: mfa !== false,
       cron_secret_set: Boolean(env('CRON_SECRET')),
+      paystack_webhook_url: env('SUPABASE_URL') ? `${env('SUPABASE_URL')!.replace(/\/+$/, '')}/functions/v1/paystackWebhook` : '',
     },
     other_keys: OTHER_KEYS,
   };

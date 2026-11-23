@@ -3,6 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useMoney } from "@/lib/currency";
 import FlightPath from "@/components/booking/FlightPath";
 import BoardingPass from "@/components/booking/BoardingPass";
+import PayNow from "@/components/booking/PayNow";
+import { payWording } from "@/lib/payments";
 import { formatGHS } from "@/lib/packages";
 import { inclusionList, readDraft, saveDraft, clearDraft } from "@/lib/bookingDraft";
 import { useSettings } from "@/lib/SettingsContext";
@@ -390,6 +392,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           reference={created.reference}
           total={money(created.total_value)}
         />
+        <PayNow bookingId={created.id} reference={created.reference} quiet />
         {Number(created.discount_amount || 0) > 0 && (
           <p className="text-xs text-emerald-700 text-center">Discount {created.discount_code} applied (−{money(created.discount_amount)} from {money(created.original_total)}).</p>
         )}
@@ -480,7 +483,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Plane className="w-4 h-4 text-accent" aria-hidden="true" /> Choose your service
         </h3>
-        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. You pay at the airport; nothing is taken online.{isUsd && " Dollar prices are the ones Airport Assist has set for each service. You pay at the airport."}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-4">Prices are per passenger. {payWording(settings).short}{isUsd && " Dollar prices are the ones Airport Assist has set for each service. Payments are taken in cedis."}</p>
         {loadingPkgs ?
         <div className="flex items-center text-muted-foreground text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading packages…

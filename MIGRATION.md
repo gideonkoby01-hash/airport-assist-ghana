@@ -82,13 +82,34 @@ So the Admin > Email screen can show emails that bounced:
 2. Copy the endpoint's **signing secret** (starts `whsec_`) and store it: `supabase secrets set RESEND_WEBHOOK_SECRET=whsec_xxxxxxxx`, then `supabase functions deploy resendWebhook`.
 3. Check: send a test booking email; a few seconds later its row in `email_deliveries` changes from `sent` to `delivered`. (The signature check follows Resend's documented scheme but has only been tested against its own implementation, so confirm this once.)
 
+### 2c. Paystack: online card and mobile money payment (optional)
+
+Passengers can pay a booking by card or mobile money. It is **optional for them**: a booking is confirmed as before, and they can pay at the airport instead. When it is on, the confirmation screen shows "Pay now with card or mobile money", and the confirmation email carries a **Pay now** button. Paystack takes the money; this system never sees card or mobile money details.
+
+1. Run the database change `supabase/migrations/20261126000001_paystack.sql` (it is in the usual folder, and is pasted to you when asked). Deploy the functions (step 3 does it): `paystackInitialize`, `paystackVerify` and `paystackWebhook`.
+2. Create a Paystack account (paystack.com) for the business. Paystack asks for business and bank details before it lets you go live; you can use the **Test** mode before that.
+3. In **Admin > Settings > General > Online payments**: paste the Paystack **secret key** (Paystack dashboard > Settings > API Keys & Webhooks; start with the **Test** secret key, `sk_test_...`) and press **Save key**, then **Test the key**. It says whether the key is a test or a live key.
+4. On the same Paystack page set the **Test Webhook URL** to the address shown on the Settings screen (`https://<project-ref>.supabase.co/functions/v1/paystackWebhook`). The signature on each message, made with your secret key, is the proof it came from Paystack; the function refuses anything else.
+5. Switch on **Let passengers pay online**, save, and make a test booking on `/book`. Choose **Pay now**, and pay with a Paystack test card or the test mobile money number from Paystack's documentation. You should land on a "Payment received" page, get a receipt email, and see the payment in **Accounts > Payments** as recorded by "Paystack (online)", with the booking marked paid.
+6. To go live: replace the key with the **Live** secret key (`sk_live_...`) and set the **Live Webhook URL** to the same address. Make one small real payment yourself first.
+
+How it behaves:
+
+- The amount is always what is still owed on the booking in the database; the passenger cannot change it. Charged in Ghana cedis. A US dollar price shown on the website is a display price only.
+- A payment is recorded **once** however many times Paystack reports it. The webhook records it; the page the passenger returns to also asks Paystack, so a delayed webhook does not leave a paid booking looking unpaid.
+- A payment that cannot be put on its booking (the booking was paid at the airport meanwhile, was cancelled, or the amount differs) is **not** added. Management and admin get an alert, and it appears in a yellow box at the top of **Accounts > Payments**. The money is with Paystack: refund it in the Paystack dashboard if it should not stand, then press **Mark as dealt with** and say what was done. Refunds are not made from this system; record a refund of a payment that does stand in the usual way.
+- In the books, online payments sit in account 1020 "Card and online takings to be settled", whatever the passenger paid with. Paystack's fee (from its report of each payment) is an expense, 6095 "Payment gateway fees", taken off the same account. When Paystack pays out to the bank, record the amount that arrives in **Accounts > Banking > Move money > Card and online takings settled into the bank**. Account 1020 should then come to nil; a leftover means a settlement not yet recorded.
+- The supervisor commission still applies. If the passenger pays before a supervisor is assigned, the commission is added when one is assigned.
+- Fees are paid by the business (the passenger is charged exactly the booking total). To pass fees on to passengers instead, ask for a change; it affects prices.
+- It was built against Paystack's documented behaviour and tested with a stand-in for Paystack (the signature check is verified against a published HMAC-SHA512 test vector). Run the test-mode payment in step 5 before relying on it; that is the one thing no automated test can cover.
+
 ## 3. Deploy the Edge Functions
 
 ```bash
 supabase functions deploy
 ```
 
-This deploys every folder in `supabase/functions` (booking, payment, discount, shift report, staff, notification, email and scheduler functions). Check: Supabase > Edge Functions lists 32 functions. `supabase/config.toml` turns off sign-in checking for the five that are called by a scheduler, by Resend or by an uptime monitor (`purgeIdPhotos`, `retryFailedEmails`, `escalateUnassigned`, `resendWebhook`, `health`); each of those protects itself with a secret or reveals nothing.
+This deploys every folder in `supabase/functions` (booking, payment, discount, shift report, staff, notification, email and scheduler functions). Check: Supabase > Edge Functions lists every function folder (40 at the time of writing, including the three Paystack ones). `supabase/config.toml` turns off sign-in checking for the six that are called by a scheduler, by Resend, by Paystack or by an uptime monitor (`purgeIdPhotos`, `retryFailedEmails`, `escalateUnassigned`, `resendWebhook`, `paystackWebhook`, `health`); each of those protects itself with a secret or reveals nothing.
 
 ### 3b. ID photo retention (30 days)
 
@@ -271,7 +292,7 @@ See `docs/PLATFORM_AUDIT.md` section "Status after the fixes" for the finding-by
 - **SMS verification codes are not available**, only authenticator apps. Adding SMS needs a phone provider (Twilio or similar) configured in Supabase.
 - Four stock photos on the home page still load from Unsplash, and a fallback image from Wix; replace them if you want no third-party image hosts.
 - Supabase's free plan pauses projects after a week of inactivity and has no automatic backups. For a live business, use the Pro plan and enable daily backups.
-- **Not built, because they need an account, a provider or a decision from you:** SMS or WhatsApp alerts, online card or mobile-money payment, a cancellation and refund policy for the website to apply automatically, passenger self-service changes to a booking, VAT/levy fields and tax-invoice numbering, and a monthly period close.
+- **Not built, because they need an account, a provider or a decision from you:** SMS or WhatsApp alerts, refunds made from this system back to a card (a refund is made in the Paystack dashboard), a cancellation and refund policy for the website to apply automatically, passenger self-service changes to a booking, VAT/levy fields and tax-invoice numbering, and a monthly period close.
 - The per-customer discount limit can still be exceeded by two simultaneous bookings from the same customer.
 - Flight date and time are validated but still stored as text; foreign keys between tables are not enforced (the integrity check watches for broken links instead).
 

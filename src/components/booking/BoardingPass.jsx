@@ -1,5 +1,7 @@
 import React from "react";
 import { Pencil, Plane } from "lucide-react";
+import { useSettings } from "@/lib/SettingsContext";
+import { payWording } from "@/lib/payments";
 
 /** "2026-11-25" as "Wed 25 Nov 2026". Ghana is on GMT, so the date is read as UTC. */
 function longDate(date) {
@@ -48,6 +50,8 @@ export default function BoardingPass({
   confirmed = false, direction, service, airline = "", flightNumber, date, time, travellers, contact, email,
   perPassenger = "", total, reference = "", onChange = undefined,
 }) {
+  const { settings } = useSettings();
+  const totalLabel = payWording(settings).online ? "Total" : "Total, paid at the airport";
   const arriving = direction !== "departure";
   const airport = (
     <div className={arriving ? "text-right" : ""}>
@@ -115,7 +119,7 @@ export default function BoardingPass({
             </div>
           )}
           <div className="ml-auto text-right">
-            <p className="text-xs text-muted-foreground">Total, paid at the airport</p>
+            <p className="text-xs text-muted-foreground">{totalLabel}</p>
             <p className="text-3xl font-bold tabular text-foreground">{total}</p>
           </div>
         </div>

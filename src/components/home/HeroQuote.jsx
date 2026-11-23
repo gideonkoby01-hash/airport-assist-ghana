@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, CalendarDays, MapPin, Minus, Plane, Plus, Users } from "lucide-react";
 import { PACKAGE_DEFINITIONS } from "@/lib/packages";
 import { useMoney } from "@/lib/currency";
+import { useSettings } from "@/lib/SettingsContext";
+import { payWording } from "@/lib/payments";
 import { bookingAddress, MAX_PREFILL_PASSENGERS } from "@/lib/bookingPrefill";
 import { todayUtc } from "@/lib/bookingFormRules";
 import { useHomeCta } from "@/components/home/useHomeCta";
@@ -12,6 +14,7 @@ import { delayStyle } from "@/components/home/Reveal";
 // those choices into the real booking form. Prices come from the same package list the booking form falls back to.
 export default function HeroQuote({ slide, index, total, controls }) {
   const { formatFor } = useMoney();
+  const { settings } = useSettings();
   const { bookingLink } = useHomeCta();
   const [code, setCode] = useState(PACKAGE_DEFINITIONS[0].code);
   const [date, setDate] = useState("");
@@ -83,7 +86,7 @@ export default function HeroQuote({ slide, index, total, controls }) {
         </Link>
       </div>
       <p className="px-5 sm:px-6 pb-4 -mt-1 text-sm text-muted-foreground">
-        {pax} × {formatFor(code)(pkg.price)} per passenger. You pay at the airport; nothing is taken online.
+        {pax} × {formatFor(code)(pkg.price)} per passenger. {payWording(settings).short}
       </p>
     </form>
   );

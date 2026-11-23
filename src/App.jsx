@@ -19,6 +19,8 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
 import Book from '@/pages/Book';
+import Pay from '@/pages/Pay';
+import PayReturn from '@/pages/PayReturn';
 import { ThemeProvider } from '@/lib/theme';
 import RoleRedirect from '@/components/RoleRedirect';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
@@ -73,6 +75,8 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<Privacy />} />
       {/* The booking page is public: signing in comes at its last step */}
       <Route path="/book" element={<Book />} />
+      <Route path="/pay" element={<Pay />} />
+      <Route path="/pay/return" element={<PayReturn />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* Public company homepage — no sign-in required */}

@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { appUrl, recipientsByRole, userCan } from './auth.ts';
 import { bookingEmailAddress, bookingOwnerId } from './bookingAccess.ts';
 import { sendTransactionalEmail } from './email.ts';
+import { onlinePaymentOpen, payLink } from './payNow.ts';
 
 // Ghana time, the way staff read dates in alerts.
 export const accraTime = (d: Date | string = new Date()) =>
@@ -127,10 +128,13 @@ export async function notifyNewBooking(admin: SupabaseClient, bookingId: string)
   let passenger_email = null;
   if (booking.booking_channel === 'online') {
     const ghs = (n: unknown) => (typeof n === 'number' ? `GHS ${n.toFixed(2)}` : '—');
+    // With online payment open, the confirmation also carries a "Pay now" link (paying at the airport stays possible).
+    const payOnline = Number(booking.outstanding_balance) > 0 && (await onlinePaymentOpen(admin).catch(() => false));
     passenger_email = await emailBookingPassenger(admin, booking, {
       eventKey: `booking_confirmation:${bookingId}`,
-      templateName: 'BookingConfirmation',
+      templateName: payOnline ? 'BookingConfirmationPay' : 'BookingConfirmation',
       variables: {
+        ...(payOnline ? { pay_url: payLink(booking) } : {}),
         order_id: booking.reference || bookingId,
         item_name: booking.package_name || booking.package_code || '—',
         flight_line: [booking.airline, booking.flight_number].filter(Boolean).join(' ') || 'To be confirmed',

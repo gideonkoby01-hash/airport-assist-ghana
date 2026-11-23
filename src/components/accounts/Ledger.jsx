@@ -9,6 +9,7 @@ import { formatGHS } from "@/lib/packages";
 import { downloadCsv, toCsv } from "@/lib/csv";
 import { useAuth } from "@/lib/AuthContext";
 import { LoadState, Panel, fmtDate, methodLabel, useLoad } from "./shared";
+import ReviewPayments from "./ReviewPayments";
 
 const TYPE_LABELS = { payment: "Payment", refund: "Refund", write_off: "Write-off" };
 const SHOWN = 200;
@@ -35,6 +36,8 @@ export default function Ledger({ from, to }) {
   ]));
 
   return (
+    <div className="space-y-5">
+    <ReviewPayments />
     <Panel
       title="Ledger"
       note="Every payment, refund and write-off, newest first. Entries cannot be edited or deleted; a mistake is corrected by a new entry."
@@ -92,5 +95,6 @@ export default function Ledger({ from, to }) {
         )}
       </LoadState>
     </Panel>
+    </div>
   );
 }
