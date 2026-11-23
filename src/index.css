@@ -313,3 +313,15 @@
   .takeoff { display: none; }
   .flight-plane, .flight-trail { transition: none; }
 }
+
+
+/* The back office on a phone: no grey flash or 300ms delay on taps, no accidental text selection on the menus, and long-press
+   menus off the navigation. Applies in the browser and in the installed app. */
+.app-shell { -webkit-tap-highlight-color: transparent; }
+.app-shell a, .app-shell button, .app-shell [role="button"], .app-shell select, .app-shell summary { touch-action: manipulation; }
+.app-shell nav, .app-shell header { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.app-shell main { -webkit-touch-callout: default; }
+/* Installed as an app: the page does not slide sideways at the screen edges. */
+@media (display-mode: standalone) {
+  html { overscroll-behavior-x: none; }
+}
