@@ -13,7 +13,7 @@ const PACKAGES = [
     code: "full_arrival", kind: "arrival", tag: "ARR", name: "Full Arrival Service", price: 700,
     description: "Met at the airbridge and taken through the airport to your transfer.",
     inclusions: ["Meet and greet at the air-bridge", "Fast-track escort through security and immigration", "Luggage assistance", "Customs clearance support", "Ground transfer coordination"],
-    image: "/images/terminal-arrivals-hall.webp", position: "50% 45%", place: "Arrivals hall",
+    image: "/images/card-akwaaba.webp", position: "50% 50%", place: "Arrivals welcome",
   },
   {
     code: "full_departure", kind: "departure", tag: "DEP", name: "Full Departure Service", price: 850,
@@ -25,13 +25,13 @@ const PACKAGES = [
     code: "departure_priority", kind: "departure", tag: "DEP", name: "Departure Priority Only", price: 500,
     description: "The quick route to your gate, without the lounge.",
     inclusions: ["Curbside meet and greet", "Check-in assistance", "Fast-track escort through immigration and screening"],
-    image: "/images/card-escort-path.webp", position: "50% 40%", place: "VIP escort path",
+    image: "/images/card-lounge-greeting.webp", position: "50% 50%", place: "Private greeting",
   },
   {
     code: "porter_only", kind: "porter", tag: "PTR", name: "Porter Service Only", price: 100,
     description: "A porter for your luggage, and an escort to the checkpoints.",
     inclusions: ["Luggage handling across the terminal", "Porter escort to checkpoints"],
-    image: "/images/card-priority-reclaim.webp", position: "50% 40%", place: "Priority reclaim",
+    image: "/images/card-porter-trolley.webp", position: "50% 50%", place: "Porter at check-in",
   },
 ];
 
