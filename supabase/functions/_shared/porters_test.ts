@@ -1,6 +1,6 @@
 // Run: deno test supabase/functions/_shared/porters_test.ts
 import { assertEquals } from 'jsr:@std/assert@1';
-import { checkPorterShare, porterCommission } from './porters.ts';
+import { checkPorterShare, isPorterService, porterCommission } from './porters.ts';
 
 Deno.test('a porter can be credited up to the passengers on the booking', () => {
   assertEquals(checkPorterShare([], 3, 3), null);
@@ -40,4 +40,27 @@ Deno.test('nobody changes porters on a cancelled booking', () => {
   const dead = { booking_channel: 'walk_in', assigned_supervisor_id: 's1', status: 'cancelled' };
   assertEquals(canAssignPorter({ id: 'm1', role: 'management' }, dead), false);
   assertEquals(canAssignPorter({ id: 's1', role: 'supervisor' }, dead), false);
+});
+
+// A stand-in for the service list: code -> kind. A code that is not listed has no record.
+function services(rows: Record<string, string>) {
+  return {
+    from: () => ({ select: () => ({ eq: (_col: string, code: string) => ({ maybeSingle: () => Promise.resolve({ data: code in rows ? { kind: rows[code] } : null }) }) }) }),
+  };
+}
+
+Deno.test('a service is a porter service by its kind, including ones the admin adds', async () => {
+  const db = services({ porter_only: 'porter', full_arrival: 'meet_assist', wheelchair_assist: 'porter', vip_fast_track: 'meet_assist' });
+  assertEquals(await isPorterService(db, 'porter_only'), true);
+  assertEquals(await isPorterService(db, 'wheelchair_assist'), true);
+  assertEquals(await isPorterService(db, 'full_arrival'), false);
+  assertEquals(await isPorterService(db, 'vip_fast_track'), false);
+});
+
+Deno.test('a code with no record keeps the original rule, and nothing is a porter service when no code is given', async () => {
+  const db = services({});
+  assertEquals(await isPorterService(db, 'porter_only'), true);
+  assertEquals(await isPorterService(db, 'something_new'), false);
+  assertEquals(await isPorterService(db, ''), false);
+  assertEquals(await isPorterService(db, undefined), false);
 });

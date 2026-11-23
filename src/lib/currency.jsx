@@ -6,7 +6,7 @@ import { formatForPackage, formatGhsAmount, hasUsdPrice } from "@/lib/money";
 // Which currency a passenger views prices in. Management sets a dollar price on each service; a service without one shows cedis.
 // Staff always see cedis, because shift reports, accounts and cash counts are in cedis.
 const KEY = "aag-currency";
-const CurrencyContext = createContext({ currency: "GHS", setCurrency: (/** @type {string} */ _c) => {}, packages: /** @type {any[]} */ ([]) });
+const CurrencyContext = createContext({ currency: "GHS", setCurrency: (/** @type {string} */ _c) => {}, packages: /** @type {any[]} */ ([]), allPackages: /** @type {any[]} */ ([]) });
 
 function read() {
   try {
@@ -18,7 +18,7 @@ function read() {
 
 export function CurrencyProvider({ children }) {
   const [currency, setCurrencyState] = useState(read);
-  const [packages, setPackages] = useState([]);
+  const [allPackages, setAllPackages] = useState([]);
   const setCurrency = useCallback((c) => {
     const next = c === "USD" ? "USD" : "GHS";
     setCurrencyState(next);
@@ -30,12 +30,20 @@ export function CurrencyProvider({ children }) {
   }, []);
   // The service list (anyone can read it) carries each service's dollar price.
   useEffect(() => {
-    api.entities.ServicePackage.filter({ active: true }, { sort: "price" })
-      .then((page) => setPackages(page.items || []))
+    api.entities.ServicePackage.filter({}, { sort: "price" })
+      .then((page) => setAllPackages(page.items || []))
       .catch(() => {});
   }, []);
-  const value = useMemo(() => ({ currency, setCurrency, packages }), [currency, setCurrency, packages]);
+  // `packages` are the services that can be booked now; `allPackages` also has the ones switched off, so an old booking is still understood.
+  const packages = useMemo(() => allPackages.filter((p) => p.active), [allPackages]);
+  const value = useMemo(() => ({ currency, setCurrency, packages, allPackages }), [currency, setCurrency, packages, allPackages]);
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
+}
+
+/** The service list: `packages` (on now) and `allPackages` (including switched off). Anyone can read it. */
+export function useServiceList() {
+  const { packages, allPackages } = useContext(CurrencyContext);
+  return { packages, allPackages };
 }
 
 /**

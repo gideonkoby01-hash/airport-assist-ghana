@@ -2,7 +2,7 @@ import { adminClient, requireCaller } from '../_shared/auth.ts';
 import { loadSettings } from '../_shared/config.ts';
 import { canOperateBooking } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
-import { canAssignPorter, checkPorterShare, porterCommission } from '../_shared/porters.ts';
+import { canAssignPorter, checkPorterShare, isPorterService, porterCommission } from '../_shared/porters.ts';
 
 const MESSAGES: Record<string, [number, string]> = {
   booking_closed: [409, 'This service is already finished, so its price cannot change.'],
@@ -71,7 +71,7 @@ serve('updateBookingOperations', async (req) => {
   } else if (action === 'set_porters_waived') {
     // A meet and assist does not always need a porter. This sets how many passengers need none; porters already added still count.
     if (!canAssignPorter(user, booking)) throw new HttpError(403, 'Porters for this booking cannot be changed.');
-    if (booking.package_code === 'porter_only') throw new HttpError(400, 'Porter Service Only always needs a porter for each passenger.');
+    if (await isPorterService(admin, booking.package_code)) throw new HttpError(400, 'This service always needs a porter for each passenger.');
     const count = Number(body.count);
     const covered = (Array.isArray(booking.porters) ? booking.porters : []).reduce((s: number, p: Record<string, unknown>) => s + (Number(p.passengers_handled) || 0), 0);
     if (!Number.isInteger(count) || count < 0 || covered + count > Number(booking.num_passengers)) {

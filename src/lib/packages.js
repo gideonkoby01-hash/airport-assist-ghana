@@ -4,6 +4,7 @@
 export const PACKAGE_DEFINITIONS = [
   {
     code: "full_arrival",
+    kind: "meet_assist",
     name: "Full Arrival Assist",
     price: 700,
     flight_type: "arrival",
@@ -14,6 +15,7 @@ export const PACKAGE_DEFINITIONS = [
   },
   {
     code: "full_departure",
+    kind: "meet_assist",
     name: "Full Departure Assist",
     price: 850,
     flight_type: "departure",
@@ -24,6 +26,7 @@ export const PACKAGE_DEFINITIONS = [
   },
   {
     code: "departure_priority",
+    kind: "meet_assist",
     name: "Departure Priority Only",
     price: 500,
     flight_type: "departure",
@@ -33,6 +36,7 @@ export const PACKAGE_DEFINITIONS = [
   },
   {
     code: "porter_only",
+    kind: "porter",
     name: "Porter Service Only",
     price: 100,
     flight_type: "both",

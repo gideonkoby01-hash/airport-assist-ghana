@@ -39,3 +39,18 @@ export function canAssignPorter(user: Actor | null, booking: BookingForPorter | 
   return user.role === 'supervisor' && !!booking.assigned_supervisor_id && booking.assigned_supervisor_id === user.id;
 }
 
+
+// Anything with `.from(table)` that behaves like the database client; the tests pass a small stand-in.
+// deno-lint-ignore no-explicit-any
+type ServiceLookup = { from: (table: string) => any };
+
+/**
+ * Is this a porter-type service (a porter for every passenger, no supervisor commission), like Porter Service Only? Decided by the
+ * service's kind in the service list. A code with no record falls back to the original rule, so older data still works.
+ */
+export async function isPorterService(admin: ServiceLookup, code: unknown): Promise<boolean> {
+  const c = String(code ?? '').trim();
+  if (!c) return false;
+  const { data } = await admin.from('service_packages').select('kind').eq('code', c).maybeSingle();
+  return data ? data.kind === 'porter' : c === 'porter_only';
+}

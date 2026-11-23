@@ -1,3 +1,4 @@
+import { isPorterService } from "@/lib/services";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, CheckCircle2, Zap } from "lucide-react";
 import { api } from "@/api/db";
@@ -64,7 +65,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
   const passengerCount = Math.max(1, Math.min(50, Math.trunc(Number(count)) || 1));
   const slots = Array.from({ length: passengerCount }, (_, i) => porterIds[i] || "");
   const NO_PORTER = "none"; // a meet and assist does not always need a porter
-  const mayGoWithoutPorter = Boolean(pkg) && pkg.code !== "porter_only";
+  const mayGoWithoutPorter = Boolean(pkg) && !isPorterService(pkg);
   const waivedCount = slots.filter((v) => v === NO_PORTER).length;
   const setSlot = (i, value) => setPorterIds(slots.map((v, k) => (k === i ? value : v)));
 
@@ -130,7 +131,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         <p className="text-sm text-muted-foreground mt-1">
           {done.reference} · {done.package_name} · {formatGHS(done.total_value)} ({PAYMENT_METHOD_LABELS[done.payment_method] || done.payment_method})
         </p>
-        {done.package_code !== "porter_only" && (
+        {!isPorterService(done.package_code, packages) && (
           <p className="text-xs text-emerald-700 mt-2">Your commission of {formatGHS(supervisorCommission)} is added automatically and comes off today's takings.</p>
         )}
         <Button className="mt-4" onClick={reset}>Record another sale</Button>
@@ -272,7 +273,7 @@ export default function QuickSaleForm({ onRecorded = undefined }) {
         </div>
       </div>
 
-      {pkg && pkg.code !== "porter_only" && (
+      {pkg && !isPorterService(pkg) && (
         <p className="text-xs text-muted-foreground rounded-lg border border-border p-3">
           Every meet and assist earns you a commission of <span className="font-medium text-foreground">{formatGHS(supervisorCommission)}</span>. It is added automatically and comes off today's takings in your shift report.
         </p>

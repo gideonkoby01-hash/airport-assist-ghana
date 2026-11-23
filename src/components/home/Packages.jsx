@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Check, MapPin } from "lucide-react";
+import { ArrowUpRight, Check, Luggage, MapPin, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import { useHomeCta } from "@/components/home/useHomeCta";
 import { bookingAddress } from "@/lib/bookingPrefill";
 import Reveal from "@/components/home/Reveal";
-import { CurrencyToggle, useMoney } from "@/lib/currency";
+import { CurrencyToggle, useMoney, useServiceList } from "@/lib/currency";
+import { inclusionList } from "@/lib/bookingDraft";
+import { isPorterService } from "@/lib/services";
 
 // Fixed public pricing per passenger. The booking flow reads live ServicePackage records; prices shown here are the
 // advertised rates and match the canonical PACKAGE_DEFINITIONS in src/lib/packages.js.
@@ -37,11 +39,42 @@ const PACKAGES = [
 
 const FILTERS = [["all", "All"], ["arrival", "Arrival"], ["departure", "Departure"], ["porter", "Porter"]];
 
+const WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+const countWord = (n) => WORDS[n] || String(n);
+
+const TAGS = { arrival: "ARR", departure: "DEP", porter: "PTR" };
+const ICONS = { arrival: PlaneLanding, departure: PlaneTakeoff, porter: Luggage };
+
+// The cards follow the services that are switched on (so a service an admin adds appears here, and one they switch off goes).
+// The four original services keep their photo and wording, with the price from the service list; a new service is built from
+// what the admin entered, with a plain branded header in place of a photo. Before the list loads, the four original cards show.
+function buildCards(live) {
+  if (!live.length) return PACKAGES;
+  const fixed = PACKAGES.filter((c) => live.some((p) => p.code === c.code)).map((c) => ({ ...c, price: Number(live.find((p) => p.code === c.code).price) || c.price }));
+  const added = live
+    .filter((p) => !PACKAGES.some((c) => c.code === p.code))
+    .sort((a, b) => String(a.created_date || "").localeCompare(String(b.created_date || "")))
+    .map((p) => {
+      const kind = isPorterService(p) ? "porter" : p.flight_type === "departure" ? "departure" : "arrival";
+      const items = inclusionList(p.inclusions);
+      return {
+        code: p.code, kind, tag: TAGS[kind], name: p.name, price: Number(p.price) || 0, lounge: Boolean(p.includes_lounge),
+        description: p.description || (kind === "porter" ? "A porter to help with your luggage." : kind === "departure" ? "Help with your departure at Kotoka." : "Help with your arrival at Kotoka."),
+        inclusions: items, image: null, place: null,
+      };
+    });
+  return [...fixed, ...added];
+}
+
 export default function Packages() {
   const { formatFor } = useMoney();
   const { bookingLink } = useHomeCta();
   const [filter, setFilter] = useState("all");
-  const shown = PACKAGES.filter((p) => filter === "all" || p.kind === filter);
+  const { packages: live } = useServiceList();
+  const cards = useMemo(() => buildCards(live), [live]);
+  const shown = cards.filter((p) => filter === "all" || p.kind === filter);
+  // Services an admin adds say on their own card what they include; if any include the lounge, the note below says so.
+  const addedWithLounge = cards.filter((c) => !PACKAGES.some((o) => o.code === c.code) && c.lounge);
 
   return (
     <section id="prices" style={{ background: "var(--grad-soft)" }}>
@@ -50,7 +83,7 @@ export default function Packages() {
           <div className="lg:col-span-7">
             <p className="flex items-center gap-3 eyebrow" style={{ color: "hsl(var(--pink))" }}><span className="h-px w-8" style={{ background: "hsl(var(--pink))" }} aria-hidden="true" /> Choose your service</p>
             <h2 className="serif mt-4 text-[clamp(2.2rem,4.8vw,3.6rem)] leading-[1.05] text-foreground">
-              Four services.<br /><span className="serif-i" style={{ color: "hsl(var(--violet))" }}>One Airport Assist standard.</span>
+              {countWord(cards.length)} services.<br /><span className="serif-i" style={{ color: "hsl(var(--violet))" }}>One Airport Assist standard.</span>
             </h2>
           </div>
           <p className="lg:col-span-5 text-[1.02rem] leading-relaxed text-muted-foreground">
@@ -73,11 +106,17 @@ export default function Packages() {
             <Reveal as="li" key={p.code} delay={i * 80} className="list-none">
               <article className="lift group h-full flex flex-col overflow-hidden rounded-[18px] border border-border bg-card shadow-[0_10px_30px_-22px_hsl(var(--foreground)/0.5)]">
                 <div className="relative h-40 overflow-hidden">
-                  <img src={p.image} alt="" loading="lazy" width="960" height="480" style={{ objectPosition: p.position }}
-                    className={`w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]`} />
+                  {p.image ? (
+                    <img src={p.image} alt="" loading="lazy" width="960" height="480" style={{ objectPosition: p.position }}
+                      className={`w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]`} />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center bg-[hsl(var(--site-dark))]" style={{ backgroundImage: "var(--grad-brand)" }} aria-hidden="true">
+                      {React.createElement(ICONS[p.kind] || PlaneLanding, { className: "w-14 h-14 text-white/85", strokeWidth: 1.4 })}
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" aria-hidden="true" />
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/95 text-[0.68rem] font-bold tracking-widest text-[hsl(var(--site-dark))]">{p.tag}</span>
-                  <p className="absolute bottom-3 left-3 flex items-center gap-1.5 text-[0.78rem] text-white"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {p.place}</p>
+                  {p.place && <p className="absolute bottom-3 left-3 flex items-center gap-1.5 text-[0.78rem] text-white"><MapPin className="w-3.5 h-3.5" aria-hidden="true" /> {p.place}</p>}
                 </div>
                 <div className="p-5 flex-1 flex flex-col">
                   <h3 className="font-bold text-foreground leading-snug">{p.name}</h3>
@@ -103,6 +142,7 @@ export default function Packages() {
         </ul>
         <p className="mt-6 text-sm text-muted-foreground">
           Lounge access depends on the package. Full Arrival and Full Departure include it; Departure Priority Only and Porter Service Only do not.
+          {addedWithLounge.length > 0 && ` ${addedWithLounge.map((c) => c.name).join(" and ")} ${addedWithLounge.length === 1 ? "includes" : "include"} it too.`}
         </p>
       </div>
     </section>

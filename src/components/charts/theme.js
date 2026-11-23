@@ -13,6 +13,10 @@ export const METHOD_COLOURS = { cash: SERIES[0], mobile_money: SERIES[1], card: 
 export const CHANNEL_COLOURS = { online: SERIES[0], walk_in: SERIES[1] };
 export const DIRECTION_COLOURS = { arrival: SERIES[0], departure: SERIES[1] };
 export const PACKAGE_COLOURS = { full_arrival: SERIES[0], full_departure: SERIES[1], departure_priority: SERIES[2], porter_only: SERIES[3] };
+/** The colour for a service in a chart: the four original services keep theirs; a service added later takes the next colour in turn. */
+export function packageColour(code, index = 0) {
+  return PACKAGE_COLOURS[code] || SERIES[(4 + index) % SERIES.length];
+}
 export const STATUS_COLOURS = { completed: SERIES[2], in_progress: SERIES[0], assigned: SERIES[6], confirmed: SERIES[3], cancelled: SERIES[7], no_show: NEUTRAL };
 
 export const AXIS = { fill: "hsl(var(--muted-foreground))", fontSize: 12 };
