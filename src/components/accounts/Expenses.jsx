@@ -72,27 +72,27 @@ export default function Expenses({ from, to }) {
   return (
     <div className="space-y-5">
       <Panel title="Record an expense" note="Rent, salaries, fuel and the other costs of running the business. An expense is never deleted; if one is wrong, cancel it with a reason and enter it again.">
-        <form onSubmit={save} noValidate className="grid sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
-          <div className="space-y-1.5 lg:col-span-2"><Label htmlFor="ex-date" className="text-xs">Date</Label><Input id="ex-date" type="date" value={form.expense_date} max={todayUtc()} onChange={(e) => set("expense_date", e.target.value)} /></div>
-          <div className="space-y-1.5 lg:col-span-3">
+        <form onSubmit={save} noValidate className="grid sm:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
+          <div className="space-y-1.5 xl:col-span-2"><Label htmlFor="ex-date" className="text-xs">Date</Label><Input id="ex-date" type="date" value={form.expense_date} max={todayUtc()} onChange={(e) => set("expense_date", e.target.value)} /></div>
+          <div className="space-y-1.5 xl:col-span-3">
             <Label htmlFor="ex-cat" className="text-xs">Category</Label>
             <Select value={form.category} onValueChange={(v) => set("category", v)}>
               <SelectTrigger id="ex-cat"><SelectValue /></SelectTrigger>
               <SelectContent>{EXPENSE_CATEGORIES.map(([k, l]) => (<SelectItem key={k} value={k}>{l}</SelectItem>))}</SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5 lg:col-span-4"><Label htmlFor="ex-desc" className="text-xs">What was it for?</Label><Input id="ex-desc" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. Office rent, November" autoComplete="off" /></div>
-          <div className="space-y-1.5 lg:col-span-3"><Label htmlFor="ex-amount" className="text-xs">Amount (GHS)</Label><Input id="ex-amount" type="number" min={0} step="0.01" inputMode="decimal" value={form.amount} onChange={(e) => set("amount", e.target.value)} /></div>
-          <div className="space-y-1.5 lg:col-span-4"><Label htmlFor="ex-payee" className="text-xs">Paid to <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="ex-payee" value={form.payee} onChange={(e) => set("payee", e.target.value)} autoComplete="off" /></div>
-          <div className="space-y-1.5 lg:col-span-3">
+          <div className="space-y-1.5 xl:col-span-4"><Label htmlFor="ex-desc" className="text-xs">What was it for?</Label><Input id="ex-desc" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. Office rent, November" autoComplete="off" /></div>
+          <div className="space-y-1.5 xl:col-span-3"><Label htmlFor="ex-amount" className="text-xs">Amount (GHS)</Label><Input id="ex-amount" type="number" min={0} step="0.01" inputMode="decimal" value={form.amount} onChange={(e) => set("amount", e.target.value)} /></div>
+          <div className="space-y-1.5 xl:col-span-3"><Label htmlFor="ex-payee" className="text-xs">Paid to <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="ex-payee" value={form.payee} onChange={(e) => set("payee", e.target.value)} autoComplete="off" /></div>
+          <div className="space-y-1.5 xl:col-span-3">
             <Label htmlFor="ex-method" className="text-xs">Paid by</Label>
             <Select value={form.method} onValueChange={(v) => set("method", v)}>
               <SelectTrigger id="ex-method"><SelectValue /></SelectTrigger>
               <SelectContent>{EXPENSE_METHODS.map(([k, l]) => (<SelectItem key={k} value={k}>{l}</SelectItem>))}</SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5 lg:col-span-3"><Label htmlFor="ex-ref" className="text-xs">Receipt or reference <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="ex-ref" value={form.reference} onChange={(e) => set("reference", e.target.value)} autoComplete="off" /></div>
-          <div className="lg:col-span-2"><Button type="submit" className="w-full" disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />} Add expense</Button></div>
+          <div className="space-y-1.5 xl:col-span-3"><Label htmlFor="ex-ref" className="text-xs">Receipt or reference <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="ex-ref" value={form.reference} onChange={(e) => set("reference", e.target.value)} autoComplete="off" /></div>
+          <div className="xl:col-span-3"><Button type="submit" className="w-full whitespace-nowrap" disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />} Add expense</Button></div>
         </form>
         {formError && <p role="alert" className="text-sm text-destructive mt-3">{formError}</p>}
       </Panel>

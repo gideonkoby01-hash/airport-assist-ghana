@@ -52,28 +52,28 @@ function TransferForm({ accounts, onDone }) {
           </button>
         ))}
       </div>
-      <div className="grid sm:grid-cols-12 gap-3 items-end">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
         {f.preset === "custom" ? (
           <>
-            <div className="space-y-1.5 sm:col-span-3">
+            <div className="space-y-1.5 xl:col-span-3">
               <Label htmlFor="tr-from" className="text-xs">From</Label>
               <Select value={f.from} onValueChange={(v) => setF({ ...f, from: v })}><SelectTrigger id="tr-from"><SelectValue /></SelectTrigger>
                 <SelectContent>{money.map((a) => (<SelectItem key={a.code} value={a.code}>{a.name}</SelectItem>))}</SelectContent></Select>
             </div>
-            <div className="space-y-1.5 sm:col-span-3">
+            <div className="space-y-1.5 xl:col-span-3">
               <Label htmlFor="tr-to" className="text-xs">To</Label>
               <Select value={f.to} onValueChange={(v) => setF({ ...f, to: v })}><SelectTrigger id="tr-to"><SelectValue /></SelectTrigger>
                 <SelectContent>{money.map((a) => (<SelectItem key={a.code} value={a.code}>{a.name}</SelectItem>))}</SelectContent></Select>
             </div>
           </>
         ) : (
-          <p className="sm:col-span-6 text-sm flex items-center gap-2 h-10"><span className="font-medium">{name(f.from)}</span><ArrowRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" /><span className="font-medium">{name(f.to)}</span></p>
+          <p className="sm:col-span-2 xl:col-span-6 text-sm flex items-center gap-2 h-10"><span className="font-medium">{name(f.from)}</span><ArrowRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" /><span className="font-medium">{name(f.to)}</span></p>
         )}
-        <div className="space-y-1.5 sm:col-span-3"><Label htmlFor="tr-date" className="text-xs">Date</Label><Input id="tr-date" type="date" max={todayUtc()} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></div>
-        <div className="space-y-1.5 sm:col-span-3"><Label htmlFor="tr-amount" className="text-xs">Amount (GHS)</Label><Input id="tr-amount" type="number" min={0} step="0.01" inputMode="decimal" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></div>
-        <div className="space-y-1.5 sm:col-span-4"><Label htmlFor="tr-ref" className="text-xs">Deposit slip or reference <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="tr-ref" value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} autoComplete="off" /></div>
-        <div className="space-y-1.5 sm:col-span-5"><Label htmlFor="tr-note" className="text-xs">Note <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="tr-note" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} autoComplete="off" /></div>
-        <div className="sm:col-span-3"><Button type="submit" className="w-full" disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />} Record transfer</Button></div>
+        <div className="space-y-1.5 xl:col-span-3"><Label htmlFor="tr-date" className="text-xs">Date</Label><Input id="tr-date" type="date" max={todayUtc()} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></div>
+        <div className="space-y-1.5 xl:col-span-3"><Label htmlFor="tr-amount" className="text-xs">Amount (GHS)</Label><Input id="tr-amount" type="number" min={0} step="0.01" inputMode="decimal" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></div>
+        <div className="space-y-1.5 xl:col-span-4"><Label htmlFor="tr-ref" className="text-xs">Deposit slip or reference <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="tr-ref" value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} autoComplete="off" /></div>
+        <div className="space-y-1.5 xl:col-span-5"><Label htmlFor="tr-note" className="text-xs">Note <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="tr-note" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} autoComplete="off" /></div>
+        <div className="xl:col-span-3"><Button type="submit" className="w-full whitespace-nowrap" disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />} Record transfer</Button></div>
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </form>

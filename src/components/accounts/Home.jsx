@@ -57,7 +57,7 @@ export default function Home({ onGo }) {
       {h && (
         <div className="space-y-5">
           <Panel title="Where the money is" note="Balances today, from every payment, expense, payout and transfer recorded.">
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5">
               <Balance label="Cash on hand" value={h.cash_on_hand} onClick={() => onGo("banking")} />
               <Balance label="Mobile money" value={h.mobile_money} onClick={() => onGo("banking")} />
               <Balance label="Card, to be settled" value={h.card_to_settle} onClick={() => onGo("banking")} />
