@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Download, Loader2, Plus, Printer, Shuffle, Star, Trash2, UserMinus, Wand2 } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Download, Loader2, Pencil, Plus, Printer, Shuffle, Star, Trash2, UserMinus, UserPlus, Wand2, X } from "lucide-react";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -75,12 +75,31 @@ function StartForm({ kind, month, hasEarlier, busy, onGenerate }) {
   );
 }
 
-function PersonRow({ m, editable, busy, onMove, onLead, onRemove }) {
+function PersonRow({ m, editable, busy, onMove, onLead, onRemove, onRename }) {
+  const nameOnly = String(m.person_id).startsWith("name:");
+  const [renaming, setRenaming] = useState(false);
+  const [value, setValue] = useState(m.person_name);
+  if (renaming) {
+    return (
+      <li className="py-1.5">
+        <form className="flex items-center gap-1.5" onSubmit={(e) => { e.preventDefault(); onRename(m, value.trim()); setRenaming(false); }}>
+          <Input aria-label={`New name for ${m.person_name}`} className="h-8 flex-1" value={value} maxLength={60} onChange={(e) => setValue(e.target.value)} autoFocus />
+          <button type="submit" aria-label="Save the name" disabled={value.trim().length < 2} className="press p-1.5 rounded-md text-emerald-700 disabled:opacity-40"><Check className="w-4 h-4" aria-hidden="true" /></button>
+          <button type="button" aria-label="Keep the old name" onClick={() => { setRenaming(false); setValue(m.person_name); }} className="press p-1.5 rounded-md text-muted-foreground"><X className="w-4 h-4" aria-hidden="true" /></button>
+        </form>
+      </li>
+    );
+  }
   return (
     <li className="flex items-center gap-2 py-1.5">
       <span className="flex-1 min-w-0 truncate text-sm">{m.lead ? "**" : ""}{m.person_name}</span>
       {editable && (
         <>
+          {nameOnly && (
+            <button type="button" onClick={() => { setValue(m.person_name); setRenaming(true); }} disabled={busy} aria-label={`Correct the name ${m.person_name}`} className="press p-1.5 rounded-md text-muted-foreground hover:text-foreground">
+              <Pencil className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
           <button type="button" onClick={() => onLead(m)} disabled={busy} aria-pressed={m.lead} aria-label={`${m.lead ? "Remove the ** mark from" : "Mark"} ${m.person_name}`}
             className={`press p-1.5 rounded-md ${m.lead ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}>
             <Star className="w-4 h-4" fill={m.lead ? "currentColor" : "none"} aria-hidden="true" />
@@ -95,6 +114,36 @@ function PersonRow({ m, editable, busy, onMove, onLead, onRemove }) {
         </>
       )}
     </li>
+  );
+}
+
+// Adds someone by name, to a shift, as and when it is needed. A name that belongs to a supervisor account (or a porter on the register) adds that account.
+function AddPerson({ kind, busy, onAdd }) {
+  const [name, setName] = useState("");
+  const [group, setGroup] = useState("1");
+  const [lead, setLead] = useState(false);
+  const word = kind === "porter" ? "porter" : "supervisor";
+  const submit = async (e) => {
+    e.preventDefault();
+    const ok = await onAdd(name.trim(), Number(group), lead);
+    if (ok) { setName(""); setLead(false); }
+  };
+  return (
+    <form onSubmit={submit} className="mt-4 pt-4 border-t border-border flex flex-wrap items-end gap-3" aria-label={`Add a ${word}`}>
+      <div className="space-y-1.5 flex-1 min-w-[12rem]">
+        <Label htmlFor="ro-add-name">Add a {word}</Label>
+        <Input id="ro-add-name" value={name} maxLength={60} autoComplete="off" onChange={(e) => setName(e.target.value)} placeholder="Name" />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ro-add-shift">Shift</Label>
+        <select id="ro-add-shift" value={group} onChange={(e) => setGroup(e.target.value)} className="h-10 rounded-md border border-input bg-card px-2 text-sm">
+          {SHIFT_NAMES.map((n, i) => <option key={n} value={i + 1}>Shift {n}</option>)}
+        </select>
+      </div>
+      <label className="flex items-center gap-2 text-sm h-10"><input type="checkbox" checked={lead} onChange={(e) => setLead(e.target.checked)} /> Mark with **</label>
+      <Button type="submit" disabled={busy || name.trim().length < 2}><UserPlus className="w-4 h-4 mr-1.5" aria-hidden="true" /> Add to roster</Button>
+      {kind === "porter" && <p className="basis-full text-xs text-muted-foreground">A new porter should also be added to the porter register (Admin &gt; Porters) with a phone number.</p>}
+    </form>
   );
 }
 
@@ -122,7 +171,9 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
 
   const { data, months } = state;
   const thisMonth = monthStart(todayUtc());
-  const editable = canManage && month >= thisMonth;
+  const isAdmin = user?.role === "admin";
+  const structural = canManage && month >= thisMonth; // making, reshuffling, restarting and deleting: this month or later
+  const editable = canManage && (month >= thisMonth || isAdmin); // the people: an admin may also correct a past month
   const hasEarlier = months.some((m) => m.month < month);
   const hasLater = months.some((m) => m.month > month);
   const sheet = useMemo(() => (data ? buildSheet(data.roster, data.members) : null), [data]);
@@ -136,8 +187,10 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
       await fn();
       if (after) after();
       await load();
+      return true;
     } catch (e) {
       notifyError(e.message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -176,7 +229,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
       {state.loading && !data && <div className="flex items-center justify-center py-14 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> Loading…</div>}
 
       {!state.loading && !data && !state.error && (
-        editable
+        structural
           ? <StartForm kind={kind} month={month} hasEarlier={hasEarlier} busy={busy}
               onGenerate={(first, head) => run(() => api.rosters.generate(kind, month, hasEarlier ? null : first, head))} />
           : <p className="text-sm text-muted-foreground rounded-2xl border border-border bg-card p-5" role="status">
@@ -197,24 +250,30 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
             </section>
           )}
 
-          {!editable && canManage && <p className="text-xs text-muted-foreground" role="status">Past months cannot be changed.</p>}
+          {canManage && month < thisMonth && (
+            <p className="text-xs text-muted-foreground" role="status">
+              {isAdmin ? "This month is over. As admin you can still correct who is on it; the pattern of the month is fixed." : "Past months cannot be changed. An admin can correct who was on one."}
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => printSheet(sheet)}><Printer className="w-4 h-4 mr-1.5" aria-hidden="true" /> Print or save as PDF</Button>
             <Button variant="outline" size="sm" onClick={exportCsv}><Download className="w-4 h-4 mr-1.5" aria-hidden="true" /> Download for Excel</Button>
             {editable && (
               <>
+                {structural && (
                 <ConfirmAction title="Reshuffle everyone?" confirmLabel="Reshuffle" onConfirm={() => run(() => api.rosters.shuffle(data.roster.id))}
                   description="Everyone is put into the four shifts again, at random and evenly, with the people marked ** kept in different shifts. You can still move anyone afterwards. The pattern of morning, night and off days does not change.">
                   <Button variant="outline" size="sm" disabled={busy}><Shuffle className="w-4 h-4 mr-1.5" aria-hidden="true" /> Reshuffle</Button>
                 </ConfirmAction>
+                )}
                 <Button variant="outline" size="sm" disabled={busy} onClick={() => run(async () => { const n = await api.rosters.addMissing(data.roster.id); if (!n) notifyError("Everyone is already on this roster."); })}>
                   <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" /> Add people who are missing
                 </Button>
-                {!hasLater && (
+                {structural && !hasLater && (
                   <Button variant="outline" size="sm" disabled={busy} onClick={() => setCycle({ open: !cycle.open, first: "1", head: "" })}>Change who starts</Button>
                 )}
-                {!hasLater && (
+                {structural && !hasLater && (
                   <ConfirmAction title={`Delete the ${monthTitle(month)} roster?`} destructive confirmLabel="Delete it" onConfirm={() => run(() => api.rosters.remove(data.roster.id))}
                     description="The roster for this month is removed. You can make it again afterwards, which starts from the last month.">
                     <Button variant="ghost" size="sm" className="text-destructive" disabled={busy}><Trash2 className="w-4 h-4 mr-1.5" aria-hidden="true" /> Delete</Button>
@@ -223,7 +282,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
               </>
             )}
           </div>
-          {editable && hasLater === false && cycle.open && (
+          {structural && hasLater === false && cycle.open && (
             <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap items-end gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="ro-cycle-first">Shift on the morning of the 1st</Label>
@@ -251,7 +310,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
           <section className="rounded-2xl border border-border bg-card p-4" aria-label="People and shifts">
             <h3 className="text-sm font-semibold">People and shifts</h3>
             <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-              {editable ? "Move someone with the shift list beside their name. The star puts ** in front of the name on the sheet." : "Who is in each shift."}
+              {editable ? "Move someone with the shift list beside their name. The star puts ** in front of the name on the sheet. The pencil corrects a name that was typed in." : "Who is in each shift."}
               {" "}{sizes.join(" · ")} people in shifts One to Four.
               {!isBalanced(data.members) && <span className="text-amber-700"> The shifts are uneven; Reshuffle evens them out.</span>}
             </p>
@@ -267,6 +326,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
                         <PersonRow key={m.person_id} m={m} editable={editable} busy={busy}
                           onMove={(p, to) => run(() => api.rosters.setMember(data.roster.id, p.person_id, to, null))}
                           onLead={(p) => run(() => api.rosters.setMember(data.roster.id, p.person_id, p.group_no, !p.lead))}
+                          onRename={(p, name) => run(() => api.rosters.renameMember(data.roster.id, p.person_id, name))}
                           onRemove={(p) => run(() => api.rosters.removeMember(data.roster.id, p.person_id))} />
                       ))}
                     </ul>
@@ -274,6 +334,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
                 ))}
               </div>
             )}
+            {editable && <AddPerson kind={kind} busy={busy} onAdd={(name, group, lead) => run(() => api.rosters.addPerson(data.roster.id, name, group, lead))} />}
           </section>
         </>
       )}

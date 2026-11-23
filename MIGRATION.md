@@ -286,12 +286,14 @@ New or changed Edge Functions (`supabase/functions/...`) must also be deployed b
 
 ## Shift rosters (supervisors and porters)
 
-Management menu > **Shift roster** (also under Admin, and read-only for supervisors). It makes the monthly roster in the same layout the team uses on paper: four shifts, each day Morning (M), Night (N) or Off (O), with the head supervisor (H. SUP) mark moving on every five days for supervisors. Run `supabase/migrations/20261127000001_shift_rosters.sql` first.
+Management menu > **Shift roster** (also under Admin, and read-only for supervisors). It makes the monthly roster in the same layout the team uses on paper: four shifts, each day Morning (M), Night (N) or Off (O), with the head supervisor (H. SUP) mark moving on every five days for supervisors. Run `supabase/migrations/20261127000001_shift_rosters.sql`, `20261128000001_roster_named_people.sql` and `20261128000002_roster_edit_people.sql` first. `supabase/one-off/real_roster_names_nov_2026.sql` adds the real November 2026 names (kept out of the migrations folder on purpose).
 
 - **Who can make and change rosters:** the task "Make and change shift rosters" (`rosters.manage`). The General manager and the Operations manager have it; an admin can give it to any other role under Settings > Roles and tasks. Management without the task, and supervisors, can only read.
 - **The first roster** asks which shift works the morning on the 1st (and, for supervisors, the first day of the H. SUP mark). Every later month carries on from the last: the same pattern, the same people in the same shifts, new supervisors and porters added to the smallest shift, people who have left dropped.
 - **Reshuffling:** move anyone to another shift with the list beside their name, mark them with the star (shown as ** on the sheet), take them off, press **Reshuffle** to spread everyone evenly at random (marked people end up in different shifts), or **Change who starts** to start the pattern with another shift. Changes to a month apply to the whole month. Past months are fixed.
-- **Who is on it:** supervisors are the active supervisor accounts; porters are the active people on the porter register (Admin > Porters).
+- **Who is on it:** supervisors are the active supervisor accounts; porters are the active people on the porter register (Admin > Porters). Supervisors who do not have a login yet can be on it by name.
+- **Adding people as needed:** under "People and shifts", **Add a supervisor** (or **Add a porter**) takes a name, a shift and an optional ** mark. A name that matches a supervisor account or a porter on the register adds that account instead, so nobody is on a roster twice. The pencil corrects a name that was typed in. When a supervisor's account is made later, "Add people who are missing" puts the account in the place of the name, in the same shift. The Operations manager, the General manager and admin can all do this.
+- **Admin corrections:** an admin can also correct who was on a past month (add, move, remove, correct a name). The pattern of a past month, reshuffling it, and deleting it stay locked for everyone.
 - **Print:** "Print or save as PDF" opens the sheet in its own tab; "Download for Excel" gives a spreadsheet file.
 
 ## Known limits and follow-ups
