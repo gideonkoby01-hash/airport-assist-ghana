@@ -8,7 +8,10 @@ import '@fontsource-variable/sora'
 import '@fontsource-variable/playfair-display'
 import '@fontsource-variable/playfair-display/wght-italic.css'
 import '@/index.css'
+import { registerServiceWorker } from '@/lib/pwa'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
 )
+
+registerServiceWorker()

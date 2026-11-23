@@ -5,11 +5,13 @@ import { useAuth } from "@/lib/AuthContext";
 import { visibleNav } from "@/lib/permissions";
 import {
   Armchair, BadgeDollarSign, Banknote, Calculator, BarChart3, Bell, Contact, ClipboardList, FileText, LayoutDashboard, LogOut,
-  Luggage, Mail, Menu, MoreHorizontal, Package, Percent, Settings, Star, Trophy, UserCheck,
+  Luggage, Mail, Menu, MoreHorizontal, RefreshCw, Package, Percent, Settings, Star, Trophy, UserCheck,
   UserCircle, Users, X, Zap,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import UserMenu from "@/components/UserMenu";
+import AppBanners from "@/components/AppBanners";
+import { readStandalone } from "@/lib/pwa";
 import { roleLabel } from "@/lib/packages";
 import { initials } from "@/lib/profile";
 import { cn } from "@/lib/utils";
@@ -96,6 +98,7 @@ export default function AppLayout({ children }) {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const standalone = readStandalone();
 
   const role = user?.role === "user" ? "passenger" : user?.role || "passenger";
   const groups = visibleNav(NAV[role] || [], user);
@@ -204,7 +207,7 @@ export default function AppLayout({ children }) {
       {drawerOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={close} />
-          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-sidebar shadow-xl">
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-sidebar shadow-xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]">
             <button onClick={close} className="absolute top-3 right-3 text-white p-1" aria-label="Close menu">
               <X className="w-5 h-5" />
             </button>
@@ -215,7 +218,7 @@ export default function AppLayout({ children }) {
 
       <div className="lg:ml-64 min-h-screen flex flex-col">
         {/* Top bar: where you are, notifications, account */}
-        <header className="sticky top-0 z-20 bg-[hsl(var(--canvas))]/85 backdrop-blur border-b border-border">
+        <header className="sticky top-0 z-20 bg-[hsl(var(--canvas))]/85 backdrop-blur border-b border-border pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center gap-3">
             <button onClick={() => setDrawerOpen(true)} className="lg:hidden -ml-2 p-2 text-foreground" aria-label="Open menu">
               <Menu className="w-6 h-6" />
@@ -224,6 +227,12 @@ export default function AppLayout({ children }) {
               <p className="text-xs text-muted-foreground leading-none hidden sm:block">{(role !== "admin" && user?.staff_role_name) || CONSOLE_NAME[role]}</p>
               <h1 className="text-lg font-semibold tracking-tight text-foreground truncate sm:mt-1">{pageTitle}</h1>
             </div>
+            {/* An installed iPhone app has no reload button or pull-to-refresh, so give it one. */}
+            {standalone && (
+              <button type="button" onClick={() => window.location.reload()} aria-label="Refresh" className="lg:hidden p-2.5 rounded-full text-foreground hover:bg-secondary outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                <RefreshCw className="w-5 h-5" />
+              </button>
+            )}
             <Link
               to={bellTarget}
               aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
@@ -237,12 +246,15 @@ export default function AppLayout({ children }) {
         </header>
 
         <main className="flex-1 min-w-0">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-28 lg:pb-10">{children}</div>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-28 lg:pb-10">
+            <AppBanners />
+            {children}
+          </div>
         </main>
       </div>
 
       {/* Phone bottom bar: the four things used most, then everything else */}
-      <nav aria-label="Quick links" className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Quick links" className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-border pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <ul className="flex">
           {bottomItems.map((item) => {
             const on = isActive(item);
