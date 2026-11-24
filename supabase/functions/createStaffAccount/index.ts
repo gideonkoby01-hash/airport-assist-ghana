@@ -65,5 +65,5 @@ serve('createStaffAccount', async (req) => {
     throw flagError;
   }
 
-  return json({ ok: true, email, full_name: fullName, role: staffRoleKey ?? loginRole, temporary_password: password });
+  return json({ ok: true, user_id: created.user.id, email, full_name: fullName, role: staffRoleKey ?? loginRole, temporary_password: password });
 });
