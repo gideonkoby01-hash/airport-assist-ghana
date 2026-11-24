@@ -8,8 +8,8 @@
 export const CYCLE = ["M", "N", "O", "O"];
 export const GROUP_COUNT = 4;
 export const HEAD_EVERY = 5;
-/** The days the sheet shades: Tuesday and Wednesday (0 is Sunday). */
-export const SHADED_WEEKDAYS = [2, 3];
+/** The days the sheet shades: Saturday and Sunday (0 is Sunday). Only for looks. */
+export const SHADED_WEEKDAYS = [0, 6];
 export const KINDS = { supervisor: "Supervisors", porter: "Porters" };
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -86,19 +86,18 @@ export function monthDays(month) {
   });
 }
 
-/** The people of a shift as the header lists them: in the order they were put on the roster, with the marked ones last and ** in front. */
+/** The people of a shift as the header lists them: in the order they were put on the roster (then by name). */
 export function groupNames(members, group) {
-  const mine = (members || []).filter((m) => Number(m.group_no) === group);
   const pos = (m) => (m.position === null || m.position === undefined ? Number.MAX_SAFE_INTEGER : Number(m.position));
-  const byOrder = (a, b) => pos(a) - pos(b) || String(a.person_name).localeCompare(String(b.person_name), "en", { sensitivity: "base" });
-  const plain = mine.filter((m) => !m.lead).sort(byOrder);
-  const lead = mine.filter((m) => m.lead).sort(byOrder);
-  return [...plain.map((m) => ({ ...m, label: m.person_name })), ...lead.map((m) => ({ ...m, label: `**${m.person_name}` }))];
+  return (members || [])
+    .filter((m) => Number(m.group_no) === group)
+    .sort((a, b) => pos(a) - pos(b) || String(a.person_name).localeCompare(String(b.person_name), "en", { sensitivity: "base" }))
+    .map((m) => ({ ...m, label: m.person_name }));
 }
 
 /**
  * Everything the sheet needs: the title, the four headers with their people, and one row for each day with a cell for each shift.
- * `roster` is { kind, month, anchor_date, phases, head_anchor }, `members` rows of { person_name, group_no, lead }.
+ * `roster` is { kind, month, anchor_date, phases, head_anchor }, `members` rows of { person_name, group_no, position }.
  */
 export function buildSheet(roster, members) {
   const supervisors = roster.kind === "supervisor";
@@ -157,22 +156,30 @@ export function sheetCss() {
 .roster tr.s td{background:var(--shade)}
 .roster td.hs{font-weight:700}.roster .h{display:block;font-weight:700}.roster sup{font-size:10px;line-height:0}
 .roster tr.next td{background:var(--shade);font-weight:700}
-.roster .legend{margin-top:8px;font-size:12px;color:#444}`;
+
+.roster .legend{margin-top:8px;font-size:12px;color:#444}
+.roster.screen .cd{display:inline-block;min-width:1.9em;border-radius:6px;padding:0 5px;font-weight:600}
+.roster.screen .cd.m{background:#fde68a;color:#78350f}
+.roster.screen .cd.n{background:#c7d2fe;color:#312e81}
+.roster.screen .cd.o{color:rgba(0,0,0,.42);font-weight:400}
+.roster.screen tr.today td{outline:2px solid #0b213c;outline-offset:-2px;font-weight:700}
+.roster.screen tr.today td.n::after{content:" \\2190";color:#0b213c}`;
 }
 
 /** The sheet as an HTML fragment (the table and its title), the same markup on screen and on paper. */
-export function sheetHtml(sheet) {
+export function sheetHtml(sheet, opts = {}) {
   const shade = sheet.kind === "porter" ? "#00b0f0" : "#92d050";
   const head = sheet.groups.map((g) => `<th>SHIFT ${["ONE", "TWO", "THREE", "FOUR"][g.no - 1]}<small>${esc(g.people.map((p) => p.label).join(", ")) || "&nbsp;"}</small></th>`).join("");
   const body = sheet.rows.map((r) => {
-    const cells = r.cells.map((c) => `<td class="c${c.head ? " hs" : ""}">${esc(c.code)}${c.head ? '<span class="h">H. SUP</span>' : ""}</td>`).join("");
-    return `<tr${r.shaded ? ' class="s"' : ""}><td class="n">${ordinal(r.day).replace(/(st|nd|rd|th)$/, "<sup>$1</sup>")}</td><td class="w">${esc(r.weekdayName)}</td>${cells}</tr>`;
+    const cells = r.cells.map((c) => `<td class="c${c.head ? " hs" : ""}"><span class="cd ${c.code.toLowerCase()}">${esc(c.code)}</span>${c.head ? '<span class="h">H. SUP</span>' : ""}</td>`).join("");
+    const classes = [r.shaded ? "s" : "", opts.today && r.date === opts.today ? "today" : ""].filter(Boolean).join(" ");
+    return `<tr${classes ? ` class="${classes}"` : ""}><td class="n">${ordinal(r.day).replace(/(st|nd|rd|th)$/, "<sup>$1</sup>")}</td><td class="w">${esc(r.weekdayName)}</td>${cells}</tr>`;
   }).join("");
-  return `<div class="roster" style="--shade:${shade}"><h2>${esc(sheet.title)}</h2>
+  return `<div class="roster${opts.screen ? " screen" : ""}" style="--shade:${shade}"><h2>${esc(sheet.title)}</h2>
 <table><colgroup><col style="width:12%"><col style="width:19%"><col style="width:17.25%"><col style="width:17.25%"><col style="width:17.25%"><col style="width:17.25%"></colgroup>
 <thead><tr><th>${esc(sheet.monthName)}:</th><th>12H SHIFT REPRESENTATION</th>${head}</tr></thead><tbody>${body}
 <tr class="next"><td colspan="6">${esc(sheet.nextMonthName)}:</td></tr></tbody></table>
-<p class="legend">M = morning shift · N = night shift · O = off${sheet.kind === "supervisor" ? " · H. SUP = head supervisor · ** = marked in the shift" : ""}</p></div>`;
+<p class="legend">M = morning shift · N = night shift · O = off${sheet.kind === "supervisor" ? " · H. SUP = head supervisor" : ""}</p></div>`;
 }
 
 /** How tall each day's row is on paper, so the month fills one A4 page (shorter for a month with many two-line H. SUP rows). */

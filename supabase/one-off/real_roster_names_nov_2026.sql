@@ -7,7 +7,7 @@
 --     press "Add people who are missing" on the roster, the account takes the place of the name, in the same shift.
 --   * The roster for November 2026 is made for both, with the paper pattern (Shift Three on the morning of the 1st; the head supervisor starts
 --     on the 4th). If a November 2026 roster already exists it is REPLACED by this one.
--- Names marked ** on the paper sheet (Ankrah and Sydney) have the ** mark. Safe to run more than once.
+-- Safe to run more than once.
 
 -- 0. An earlier version of this script added five two-word names as one porter each (they are two people each). Remove those, if they
 --    were added and have no phone number, so each person is on the register once.
@@ -34,9 +34,9 @@ insert into public.shift_rosters (kind, month, anchor_date, phases, head_anchor,
 insert into public.shift_roster_members (roster_id, person_id, person_name, group_no, lead)
 select r.id, coalesce(public.roster_match_person('supervisor', s.name), 'name:' || lower(s.name)), s.name, s.grp, s.lead
 from (values
-  ('Doreen', 1, false), ('Emmanuella', 1, false), ('Ankrah', 1, true),
+  ('Doreen', 1, false), ('Emmanuella', 1, false), ('Ankrah', 1, false),
   ('Mavis', 2, false), ('Betty', 2, false),
-  ('Faustina', 3, false), ('Wasila', 3, false), ('Sydney', 3, true),
+  ('Faustina', 3, false), ('Wasila', 3, false), ('Sydney', 3, false),
   ('Desmond', 4, false), ('Deborah', 4, false), ('Eunice', 4, false)
 ) as s(name, grp, lead)
 join public.shift_rosters r on r.kind = 'supervisor' and r.month = date '2026-11-01'

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Download, Loader2, Pencil, Plus, Printer, Shuffle, Star, Trash2, UserMinus, UserPlus, Wand2, X } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Download, Loader2, Pencil, Plus, Printer, Shuffle, Trash2, UserMinus, UserPlus, Wand2, X } from "lucide-react";
 import { api } from "@/api/db";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ function StartForm({ kind, month, hasEarlier, busy, onGenerate }) {
   );
 }
 
-function PersonRow({ m, editable, busy, onMove, onLead, onRemove, onRename }) {
+function PersonRow({ m, editable, busy, onMove, onRemove, onRename }) {
   const nameOnly = String(m.person_id).startsWith("name:");
   const [renaming, setRenaming] = useState(false);
   const [value, setValue] = useState(m.person_name);
@@ -92,7 +92,7 @@ function PersonRow({ m, editable, busy, onMove, onLead, onRemove, onRename }) {
   }
   return (
     <li className="flex items-center gap-2 py-1.5">
-      <span className="flex-1 min-w-0 truncate text-sm">{m.lead ? "**" : ""}{m.person_name}</span>
+      <span className="flex-1 min-w-0 truncate text-sm">{m.person_name}</span>
       {editable && (
         <>
           {nameOnly && (
@@ -100,10 +100,6 @@ function PersonRow({ m, editable, busy, onMove, onLead, onRemove, onRename }) {
               <Pencil className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
-          <button type="button" onClick={() => onLead(m)} disabled={busy} aria-pressed={m.lead} aria-label={`${m.lead ? "Remove the ** mark from" : "Mark"} ${m.person_name}`}
-            className={`press p-1.5 rounded-md ${m.lead ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}>
-            <Star className="w-4 h-4" fill={m.lead ? "currentColor" : "none"} aria-hidden="true" />
-          </button>
           <select aria-label={`Shift for ${m.person_name}`} value={m.group_no} disabled={busy} onChange={(e) => onMove(m, Number(e.target.value))}
             className="h-8 rounded-md border border-input bg-card px-1.5 text-sm">
             {SHIFT_NAMES.map((n, i) => <option key={n} value={i + 1}>Shift {n}</option>)}
@@ -121,12 +117,11 @@ function PersonRow({ m, editable, busy, onMove, onLead, onRemove, onRename }) {
 function AddPerson({ kind, busy, onAdd }) {
   const [name, setName] = useState("");
   const [group, setGroup] = useState("1");
-  const [lead, setLead] = useState(false);
   const word = kind === "porter" ? "porter" : "supervisor";
   const submit = async (e) => {
     e.preventDefault();
-    const ok = await onAdd(name.trim(), Number(group), lead);
-    if (ok) { setName(""); setLead(false); }
+    const ok = await onAdd(name.trim(), Number(group));
+    if (ok) setName("");
   };
   return (
     <form onSubmit={submit} className="mt-4 pt-4 border-t border-border flex flex-wrap items-end gap-3" aria-label={`Add a ${word}`}>
@@ -140,7 +135,6 @@ function AddPerson({ kind, busy, onAdd }) {
           {SHIFT_NAMES.map((n, i) => <option key={n} value={i + 1}>Shift {n}</option>)}
         </select>
       </div>
-      <label className="flex items-center gap-2 text-sm h-10"><input type="checkbox" checked={lead} onChange={(e) => setLead(e.target.checked)} /> Mark with **</label>
       <Button type="submit" disabled={busy || name.trim().length < 2}><UserPlus className="w-4 h-4 mr-1.5" aria-hidden="true" /> Add to roster</Button>
       {kind === "porter" && <p className="basis-full text-xs text-muted-foreground">A new porter should also be added to the porter register (Admin &gt; Porters) with a phone number.</p>}
     </form>
@@ -263,7 +257,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
               <>
                 {structural && (
                 <ConfirmAction title="Reshuffle everyone?" confirmLabel="Reshuffle" onConfirm={() => run(() => api.rosters.shuffle(data.roster.id))}
-                  description="Everyone is put into the four shifts again, at random and evenly, with the people marked ** kept in different shifts. You can still move anyone afterwards. The pattern of morning, night and off days does not change.">
+                  description="Everyone is put into the four shifts again, at random and evenly. You can still move anyone afterwards. The pattern of morning, night and off days does not change.">
                   <Button variant="outline" size="sm" disabled={busy}><Shuffle className="w-4 h-4 mr-1.5" aria-hidden="true" /> Reshuffle</Button>
                 </ConfirmAction>
                 )}
@@ -304,13 +298,13 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
 
           <div className="overflow-x-auto rounded-2xl border border-border bg-white p-4 text-black" tabIndex={0} aria-label={`${KINDS[kind]} roster for ${monthTitle(month)}`}>
             <style>{sheetCss()}</style>
-            <div dangerouslySetInnerHTML={{ __html: sheetHtml(sheet) }} />
+            <div dangerouslySetInnerHTML={{ __html: sheetHtml(sheet, { screen: true, today: todayUtc() }) }} />
           </div>
 
           <section className="rounded-2xl border border-border bg-card p-4" aria-label="People and shifts">
             <h3 className="text-sm font-semibold">People and shifts</h3>
             <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-              {editable ? "Move someone with the shift list beside their name. The star puts ** in front of the name on the sheet. The pencil corrects a name that was typed in." : "Who is in each shift."}
+              {editable ? "Move someone with the shift list beside their name. The pencil corrects a name that was typed in." : "Who is in each shift."}
               {" "}{sizes.join(" · ")} people in shifts One to Four.
               {!isBalanced(data.members) && <span className="text-amber-700"> The shifts are uneven; Reshuffle evens them out.</span>}
             </p>
@@ -324,8 +318,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
                     <ul className="divide-y divide-border/60">
                       {groupNames(data.members, g).map((m) => (
                         <PersonRow key={m.person_id} m={m} editable={editable} busy={busy}
-                          onMove={(p, to) => run(() => api.rosters.setMember(data.roster.id, p.person_id, to, null))}
-                          onLead={(p) => run(() => api.rosters.setMember(data.roster.id, p.person_id, p.group_no, !p.lead))}
+                          onMove={(p, to) => run(() => api.rosters.setMember(data.roster.id, p.person_id, to))}
                           onRename={(p, name) => run(() => api.rosters.renameMember(data.roster.id, p.person_id, name))}
                           onRemove={(p) => run(() => api.rosters.removeMember(data.roster.id, p.person_id))} />
                       ))}
@@ -334,7 +327,7 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
                 ))}
               </div>
             )}
-            {editable && <AddPerson kind={kind} busy={busy} onAdd={(name, group, lead) => run(() => api.rosters.addPerson(data.roster.id, name, group, lead))} />}
+            {editable && <AddPerson kind={kind} busy={busy} onAdd={(name, group) => run(() => api.rosters.addPerson(data.roster.id, name, group))} />}
           </section>
         </>
       )}

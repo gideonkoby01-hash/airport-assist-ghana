@@ -65,9 +65,9 @@ test('a head mark that starts on the last day of a month finishes on the first o
   assert.equal(dec.rows[0].cells.filter((c) => c.head).length, 1);
 });
 
-test('the shaded days are Tuesdays and Wednesdays, as on the paper sheet', () => {
+test('the shaded days are the weekends (only for looks)', () => {
   const shaded = monthDays('2026-11-01').filter((d) => d.shaded).map((d) => d.day);
-  assert.deepEqual(shaded, [3, 4, 10, 11, 17, 18, 24, 25]);
+  assert.deepEqual(shaded, [1, 7, 8, 14, 15, 21, 22, 28, 29]);
   assert.equal(monthDays('2026-11-01')[0].weekdayName, 'Sunday');
 });
 
@@ -92,16 +92,16 @@ test('the morning shift of a day is the one working M', () => {
 });
 
 const people = [
-  { person_id: 'a', person_name: 'Doreen', group_no: 1, lead: false },
-  { person_id: 'b', person_name: 'Emmanuella', group_no: 1, lead: false },
-  { person_id: 'c', person_name: 'Ankrah', group_no: 1, lead: true },
-  { person_id: 'd', person_name: 'Mavis', group_no: 2, lead: false },
-  { person_id: 'e', person_name: 'Betty', group_no: 2, lead: false },
+  { person_id: 'a', person_name: 'Doreen', group_no: 1, position: 1 },
+  { person_id: 'b', person_name: 'Emmanuella', group_no: 1, position: 2 },
+  { person_id: 'c', person_name: 'Ankrah', group_no: 1, position: 3 },
+  { person_id: 'd', person_name: 'Mavis', group_no: 2, position: 4 },
+  { person_id: 'e', person_name: 'Betty', group_no: 2, position: 5 },
 ];
 
-test('a header lists people by name with the marked ones last, ** in front', () => {
-  assert.deepEqual(groupNames(people, 1).map((p) => p.label), ['Doreen', 'Emmanuella', '**Ankrah']);
-  assert.deepEqual(groupNames(people, 2).map((p) => p.label), ['Betty', 'Mavis']);
+test('a header lists people in the order they were put on the roster', () => {
+  assert.deepEqual(groupNames(people, 1).map((p) => p.label), ['Doreen', 'Emmanuella', 'Ankrah']);
+  assert.deepEqual(groupNames(people, 2).map((p) => p.label), ['Mavis', 'Betty']);
   assert.deepEqual(groupNames(people, 4), []);
 });
 
@@ -111,8 +111,8 @@ test('one person\'s own shifts follow their shift', () => {
   assert.equal(mine.length, 30);
   assert.equal(mine.map((m) => m.code).join(''), NOV[1]);
   assert.equal(personShifts(roster, people, 'nobody'), null);
-  const lead = personShifts(roster, people, 'd').filter((m) => m.head).map((m) => m.day);
-  assert.deepEqual(lead, [4, 5, 24, 25]);
+  const headDays = personShifts(roster, people, 'd').filter((m) => m.head).map((m) => m.day);
+  assert.deepEqual(headDays, [4, 5, 24, 25]);
 });
 
 test('balance is within one person', () => {
@@ -127,17 +127,29 @@ test('the sheet reads like the paper one', () => {
   assert.equal(sheet.monthName, 'NOVEMBER');
   assert.equal(sheet.nextMonthName, 'DECEMBER');
   const html = sheetHtml(sheet);
-  for (const text of ['SUPERVISORS', 'NOVEMBER:', '12H SHIFT REPRESENTATION', 'SHIFT ONE', 'Doreen, Emmanuella, **Ankrah', 'SHIFT FOUR', 'Tuesday', 'DECEMBER:', 'H. SUP', '1<sup>st</sup>', '22<sup>nd</sup>']) {
+  for (const text of ['SUPERVISORS', 'NOVEMBER:', '12H SHIFT REPRESENTATION', 'SHIFT ONE', 'Doreen, Emmanuella, Ankrah', 'SHIFT FOUR', 'Tuesday', 'DECEMBER:', 'H. SUP', '1<sup>st</sup>', '22<sup>nd</sup>']) {
     assert.ok(html.includes(text), text);
   }
-  assert.equal((html.match(/class="s"/g) || []).length, 8, 'eight shaded days');
+  assert.equal((html.match(/class="s"/g) || []).length, 9, 'nine shaded days (the weekends)');
+  assert.ok(!html.includes('**'), 'no ** mark anywhere');
+  assert.ok(!html.includes('class="roster screen"') && !html.includes('today'), 'the plain sheet (for paper) has no screen styling');
   assert.ok(html.includes('#92d050'), 'supervisors are green');
   assert.ok(sheetHtml(buildSheet(porters, [])).includes('#00b0f0'), 'porters are blue');
   assert.ok(!sheetHtml(buildSheet(porters, [])).includes('H. SUP ·'), 'no head supervisor legend for porters');
 });
 
+test('on screen the sheet marks today and colours the morning and night cells; the paper page does not', () => {
+  const sheet = buildSheet(supervisors().roster, []);
+  const screen = sheetHtml(sheet, { screen: true, today: '2026-11-23' });
+  assert.ok(screen.includes('class="roster screen"'));
+  assert.equal((screen.match(/class="today"/g) || []).length, 1);
+  assert.ok(screen.includes('class="cd m"') && screen.includes('class="cd n"'));
+  assert.ok(sheetCss().includes('.roster.screen .cd.m'), 'the colours are only styled for the screen version');
+  assert.ok(!sheetPage(sheet).includes('class="roster screen"'), 'the printed page is plain like the paper sheet');
+});
+
 test('names are escaped so a name cannot break the page', () => {
-  const sheet = buildSheet(supervisors().roster, [{ person_id: 'x', person_name: '<img src=x onerror=alert(1)>', group_no: 1, lead: false }]);
+  const sheet = buildSheet(supervisors().roster, [{ person_id: 'x', person_name: '<img src=x onerror=alert(1)>', group_no: 1 }]);
   assert.ok(!sheetHtml(sheet).includes('<img'));
   assert.ok(sheetHtml(sheet).includes('&lt;img'));
   assert.ok(sheetPage(sheet).startsWith('<!doctype html>'));
@@ -151,13 +163,13 @@ test('the CSV has a line for every day', () => {
 
 test('names keep the order they were put in, with the marked ones last', () => {
   const list = [
-    { person_name: 'Zed', group_no: 1, lead: false, position: 1 },
-    { person_name: 'Abe', group_no: 1, lead: false, position: 2 },
-    { person_name: 'Mid', group_no: 1, lead: true, position: 3 },
-    { person_name: 'New', group_no: 1, lead: false, position: 1052 },
-    { person_name: 'Unordered', group_no: 1, lead: false },
+    { person_name: 'Zed', group_no: 1, position: 1 },
+    { person_name: 'Abe', group_no: 1, position: 2 },
+    { person_name: 'Mid', group_no: 1, position: 3 },
+    { person_name: 'New', group_no: 1, position: 1052 },
+    { person_name: 'Unordered', group_no: 1 },
   ];
-  assert.deepEqual(groupNames(list, 1).map((p) => p.label), ['Zed', 'Abe', 'New', 'Unordered', '**Mid']);
+  assert.deepEqual(groupNames(list, 1).map((p) => p.label), ['Zed', 'Abe', 'Mid', 'New', 'Unordered']);
 });
 
 test('printing keeps the colours and the sheet fits one A4 page', () => {
