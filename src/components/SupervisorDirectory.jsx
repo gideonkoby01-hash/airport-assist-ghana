@@ -81,7 +81,7 @@ export default function SupervisorDirectory({ readOnly = false }) {
         )}
       </div>
       <p className="text-xs text-muted-foreground mb-4">
-        Approved supervisors appear here automatically. Only active supervisors can be assigned bookings.
+        Every supervisor account appears here automatically, and a supervisor adds their photo and contact details from their own profile. Only active supervisors can be assigned bookings; switching someone to Inactive, or disabling their account, stops that.
       </p>
       {loading ? (
         <div className="flex items-center text-muted-foreground text-sm py-4">
@@ -89,7 +89,7 @@ export default function SupervisorDirectory({ readOnly = false }) {
         </div>
       ) : supervisors.length === 0 ? (
         <p className="text-sm text-muted-foreground py-4">
-          No supervisors in the directory yet. Approve a supervisor request or sync from existing users.
+          No supervisors yet. Create a supervisor account under Staff accounts, or approve a supervisor request.
         </p>
       ) : (
         <div className="space-y-2">
