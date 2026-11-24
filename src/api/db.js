@@ -449,6 +449,7 @@ export const ROSTER_ERRORS = {
   name_required: 'Type the name (2 to 60 letters).',
   already_on: 'That person is already on this roster.',
   not_name_only: 'That name comes from the person\'s account, so it is changed there.',
+  not_supervisor: 'That account is not an active supervisor.',
   not_found: 'That person or roster was not found. Refresh the page and try again.',
 };
 async function rosterRpc(name, args) {
@@ -481,6 +482,8 @@ const rosters = {
   addPerson: (/** @type {string} */ roster, /** @type {string} */ name, /** @type {number} */ group) =>
     rosterRpc('roster_add_person', { p_roster: roster, p_name: name, p_group: group, p_lead: false }),
   renameMember: (/** @type {string} */ roster, /** @type {string} */ person, /** @type {string} */ name) => rosterRpc('roster_rename_member', { p_roster: roster, p_person: person, p_name: name }),
+  /** Replaces a supervisor who was on the rosters by name with their new account, in every month. Admin only. */
+  linkAccount: (/** @type {string} */ person, /** @type {string} */ account) => rosterRpc('roster_link_account', { p_person: person, p_account: account }),
   removeMember: (/** @type {string} */ roster, /** @type {string} */ person) => rosterRpc('roster_remove_member', { p_roster: roster, p_person: person }),
   addMissing: (/** @type {string} */ roster) => rosterRpc('roster_add_missing', { p_roster: roster }),
   shuffle: (/** @type {string} */ roster) => rosterRpc('roster_shuffle', { p_roster: roster, p_seed: null }),

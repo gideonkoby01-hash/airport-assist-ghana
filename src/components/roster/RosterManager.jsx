@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ConfirmAction from "@/components/ConfirmAction";
+import SupervisorLogins from "@/components/roster/SupervisorLogins";
 import { downloadCsv, toCsv } from "@/lib/csv";
 import { notifyError } from "@/lib/notify";
 import { todayUtc } from "@/lib/bookingFormRules";
@@ -327,8 +328,10 @@ export default function RosterManager({ canManage = false, highlightPerson = nul
                 ))}
               </div>
             )}
+            <p className="text-xs text-muted-foreground mt-3">{kind === "supervisor" ? "Anyone who is made a supervisor is put on the roster automatically." : "Anyone added to the porter register is put on the roster automatically."}</p>
             {editable && <AddPerson kind={kind} busy={busy} onAdd={(name, group) => run(() => api.rosters.addPerson(data.roster.id, name, group))} />}
           </section>
+          {kind === "supervisor" && isAdmin && <SupervisorLogins members={data.members} onDone={load} />}
         </>
       )}
     </div>

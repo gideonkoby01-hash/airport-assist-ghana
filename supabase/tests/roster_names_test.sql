@@ -88,9 +88,9 @@ select pg_temp.check_that('the Operations manager can add a supervisor by name, 
 select pg_temp.raises('the same name cannot be added twice', format($q$select public.roster_add_person(%L, 'mia addo', 1, false)$q$, (select v from keep where k = 'r')), 'already_on');
 select pg_temp.raises('a name is needed', format($q$select public.roster_add_person(%L, ' ', 1, false)$q$, (select v from keep where k = 'r')), 'name_required');
 select pg_temp.raises('and one of the four shifts', format($q$select public.roster_add_person(%L, 'Someone', 9, false)$q$, (select v from keep where k = 'r')), 'invalid_group');
-insert into keep select 'kwesi', public.roster_add_person((select v::uuid from keep where k = 'r'), 'Kwesi Pratt', 1, true);
-select pg_temp.check_that('a name that is an account adds the account, not a name-only copy',
-  (select v = '00000000-0000-0000-0000-0000000000e6' from keep where k = 'kwesi'));
+select pg_temp.check_that('a supervisor account made before the roster change is already on the roster, picked up by itself',
+  (select exists (select 1 from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'r') and person_id = '00000000-0000-0000-0000-0000000000e6' and person_name = 'Kwesi Pratt')));
+select pg_temp.raises('so adding the same name again is refused', format($q$select public.roster_add_person(%L, 'Kwesi Pratt', 1, false)$q$, (select v from keep where k = 'r')), 'already_on');
 select public.roster_rename_member((select v::uuid from keep where k = 'r'), 'name:mia addo', 'Mia Addoh');
 select pg_temp.check_that('a person added by name can be renamed',
   (select exists (select 1 from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'r') and person_id = 'name:mia addoh' and person_name = 'Mia Addoh')));
@@ -143,5 +143,59 @@ select pg_temp.check_that('the next month keeps the order',
   (select string_agg(person_name, ',' order by position) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'por'))
   = (select string_agg(person_name, ',' order by position) from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'pornext')));
 reset role;
+
+-- ---- creating logins for supervisors on the roster by name -------------------------------------------------------------------------
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000e7', 'yaw-rn@example.com'),
+  ('00000000-0000-0000-0000-0000000000e8', 'notsup-rn@example.com');
+update public.profiles set role = 'management', full_name = 'Not Supervisor' where email = 'notsup-rn@example.com';
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
+insert into keep select 'sup-next', public.roster_generate('supervisor', (date_trunc('month', current_date) + interval '1 month')::date, null, null);
+reset role;
+-- the login is made after both months have the name
+update public.profiles set role = 'supervisor', full_name = 'Kwabena Asare' where email = 'yaw-rn@example.com';
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e4');
+select pg_temp.raises('the Operations manager cannot link an account', $q$select public.roster_link_account('name:yaw', '00000000-0000-0000-0000-0000000000e7')$q$, '42501');
+reset role;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e5');
+select pg_temp.raises('only a supervisor account can be linked', $q$select public.roster_link_account('name:yaw', '00000000-0000-0000-0000-0000000000e8')$q$, 'not_supervisor');
+select pg_temp.raises('only a name-only person can be replaced', $q$select public.roster_link_account('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000e7')$q$, 'not_name_only');
+insert into keep select 'linked', public.roster_link_account('name:yaw', '00000000-0000-0000-0000-0000000000e7')::text;
+select pg_temp.check_that('the name is replaced by the account in every month it was on, with the same shift and order',
+  (select v::int >= 2 from keep where k = 'linked')
+  and not exists (select 1 from public.shift_roster_members where person_id = 'name:yaw')
+  and (select count(*) = 2 and bool_and(group_no = 3) and bool_and(person_name = 'Kwabena Asare') from public.shift_roster_members where person_id = '00000000-0000-0000-0000-0000000000e7'));
+reset role;
+
+-- ---- anyone added is picked up by the roster ---------------------------------------------------------------------------------------
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000e1');
+insert into keep select 'pick', public.roster_generate('porter', (date_trunc('month', current_date) + interval '2 months')::date, null, null);
+reset role;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000e9', 'fresh-sup-rn@example.com');
+set local role service_role;
+insert into public.porters (full_name, phone_number, active) values ('Fresh Porter', '0240001111', true), ('Gone Porter', '0240002222', false);
+update public.profiles set role = 'supervisor', full_name = 'Fresh Supervisor' where email = 'fresh-sup-rn@example.com';
+reset role;
+select pg_temp.check_that('a new porter is on this month and the later ones, but a porter who is not active is not',
+  (select count(*) = (select count(*) from public.shift_rosters where kind = 'porter' and month >= date_trunc('month', current_date)::date) and count(*) >= 3 from public.shift_roster_members where person_name = 'Fresh Porter' and roster_id in (select id from public.shift_rosters where kind = 'porter' and month >= date_trunc('month', current_date)::date))
+  and not exists (select 1 from public.shift_roster_members where person_name = 'Gone Porter'));
+select pg_temp.check_that('a new supervisor is on the supervisor rosters',
+  (select exists (select 1 from public.shift_roster_members m join public.shift_rosters r on r.id = m.roster_id where r.kind = 'supervisor' and m.person_id = '00000000-0000-0000-0000-0000000000e9' and m.person_name = 'Fresh Supervisor')));
+select pg_temp.check_that('and goes to the smallest shift',
+  (select group_no = (select g from generate_series(1, 4) g order by (select count(*) from public.shift_roster_members x where x.roster_id = m.roster_id and x.group_no = g and x.person_id <> m.person_id), g limit 1)
+   from public.shift_roster_members m join public.shift_rosters r on r.id = m.roster_id where r.kind = 'supervisor' and m.person_id = '00000000-0000-0000-0000-0000000000e9' limit 1));
+set local role service_role;
+update public.porters set full_name = 'Fresh Porter Renamed' where full_name = 'Fresh Porter';
+update public.porters set active = true where full_name = 'Gone Porter';
+reset role;
+select pg_temp.check_that('a new name follows to the rosters, and a porter who becomes active is picked up',
+  (select count(*) = (select count(*) from public.shift_rosters where kind = 'porter' and month >= date_trunc('month', current_date)::date) from public.shift_roster_members where person_name = 'Fresh Porter Renamed')
+  and (select count(*) >= 1 from public.shift_roster_members where person_name = 'Gone Porter'));
+-- a month that is over is left alone
+set local role service_role;
+update public.shift_rosters set month = (date_trunc('month', current_date) - interval '2 months')::date, anchor_date = (date_trunc('month', current_date) - interval '2 months')::date where id = (select v::uuid from keep where k = 'old');
+reset role;
+insert into public.porters (full_name, phone_number, active) values ('After Old Porter', '0240003333', true);
+select pg_temp.check_that('past months are not changed by new people', not exists (select 1 from public.shift_roster_members where roster_id = (select v::uuid from keep where k = 'old') and person_name = 'After Old Porter'));
 
 rollback;
