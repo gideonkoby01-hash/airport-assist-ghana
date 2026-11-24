@@ -12,9 +12,13 @@ serve('disableUser', async (req) => {
   const disable = body.disabled !== false;
   if (!userId) throw new HttpError(400, 'user_id is required');
   if (userId === caller.id) throw new HttpError(400, 'You cannot disable your own account.');
+  // The super admin account cannot be disabled by anyone. (The column exists once the super admin update has been applied.)
+  const { data: target } = await admin.from('profiles').select('is_super_admin').eq('id', userId).maybeSingle();
+  if (target?.is_super_admin) throw new HttpError(403, 'That is the super admin account. It cannot be disabled.');
 
   const { error } = await admin.from('profiles').update({ disabled: disable, updated_by_id: caller.id }).eq('id', userId);
   if (error) {
+    if (error.message.includes('super_admin_protected')) throw new HttpError(403, 'That is the super admin account. It cannot be disabled.');
     if (error.message.includes('last_admin')) throw new HttpError(409, 'That is the only active admin. Make someone else an admin first.');
     throw error;
   }

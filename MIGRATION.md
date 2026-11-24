@@ -284,6 +284,22 @@ Some updates include a new file in `supabase/migrations/`. The site itself updat
 
 New or changed Edge Functions (`supabase/functions/...`) must also be deployed before the feature works. `createStaffAccount` is new.
 
+## The super admin (owner account)
+
+One admin account can be the **super admin** (`20261203000001_super_admin.sql`). It is the owner of the system:
+
+- It **cannot be disabled, erased, demoted or given another role by anyone**, other admins included, and it cannot be deleted (this is enforced in the database, so it holds for every screen and function). Its name can be changed. In Staff accounts it shows a "Super admin" badge with no Disable or Erase buttons.
+- **Only the super admin can make someone an admin or take admin away from an admin.** Other admins keep everything else, including the roles of every non-admin, Settings, accounts and rosters.
+- There is **one** super admin. Until one is set, nothing is different for anyone.
+
+Setting it, or handing it to another admin, is done in the Supabase **SQL Editor** (so whoever owns the database can always recover the account), or by the current super admin from the same editor:
+
+```sql
+select public.transfer_super_admin('the-admin@example.com');
+```
+
+The person must be an active admin. The previous super admin becomes an ordinary admin.
+
 ## Shift rosters (supervisors and porters)
 
 Management menu > **Shift roster** (also under Admin, and read-only for supervisors). It makes the monthly roster in the same layout the team uses on paper: four shifts, each day Morning (M), Night (N) or Off (O), with the head supervisor (H. SUP) mark moving on every five days for supervisors. Saturday and Sunday rows are shaded (green for supervisors, blue for porters), only for looks. Run `supabase/migrations/20261127000001_shift_rosters.sql`, `20261128000001_roster_named_people.sql` and `20261128000002_roster_edit_people.sql` and `20261129000001_roster_member_order.sql`, `20261130000001_roster_clear_marks.sql`, `20261201000001_roster_link_account.sql` and `20261201000002_roster_pick_up_people.sql` first. `supabase/one-off/real_roster_names_nov_2026.sql` adds the real November 2026 names (and `roster_paper_name_order.sql` puts them in the paper order) (kept out of the migrations folder on purpose).
