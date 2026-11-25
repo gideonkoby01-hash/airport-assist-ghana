@@ -2,6 +2,7 @@ import { adminClient, recipientsByRole, requireCaller } from '../_shared/auth.ts
 import { bookingOwnerId, canOperateBooking } from '../_shared/bookingAccess.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { accraTime, emailBookingPassenger } from '../_shared/notify.ts';
+import { smsBookingPassenger, smsStatus } from '../_shared/sms.ts';
 
 const ALLOWED = ['confirmed', 'assigned', 'in_progress', 'completed', 'cancelled', 'no_show'];
 const NOTIFIABLE = ['in_progress', 'completed', 'cancelled', 'no_show'];
@@ -62,6 +63,11 @@ serve('updateBookingStatus', async (req) => {
     } catch (e) {
       console.error('updateBookingStatus: passenger email failed:', e instanceof Error ? e.message : e);
     }
+    // The same by text message (only if text messages are switched on in Settings).
+    await smsBookingPassenger(admin, updated, {
+      eventKey: `sms_status:${bookingId}:${previous}:${newStatus}:${updated.updated_date}`,
+      build: (company) => smsStatus(newStatus, updated, company) ?? '',
+    }).catch((e) => console.error('updateBookingStatus: passenger text failed:', e instanceof Error ? e.message : e));
   }
 
   if (!NOTIFIABLE.includes(newStatus)) {

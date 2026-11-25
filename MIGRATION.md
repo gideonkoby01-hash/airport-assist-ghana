@@ -103,6 +103,21 @@ How it behaves:
 - Fees are paid by the business (the passenger is charged exactly the booking total). To pass fees on to passengers instead, ask for a change; it affects prices.
 - It was built against Paystack's documented behaviour and tested with a stand-in for Paystack (the signature check is verified against a published HMAC-SHA512 test vector). Run the test-mode payment in step 5 before relying on it; that is the one thing no automated test can cover.
 
+### 2d. Text messages to passengers through Hubtel (optional)
+
+Passengers can be texted at the phone number on their booking: when the booking is received, when a supervisor is assigned (with the supervisor's name and number), and when the service starts, finishes, is cancelled or missed. Staff are not texted, and walk-in bookings are not texted. Emails carry on as normal. It is **off** until you switch it on.
+
+1. Hubtel account: SMS switched on, with credit. Copy the SMS **client ID and client secret**.
+2. Ask Hubtel to approve a **sender name** (up to 11 letters or numbers, no spaces).
+3. Admin > Settings > **Text messages**: save the client ID and secret, type the sender name and save.
+4. Type your own number next to **Send test text** and press it. When the text arrives, switch on "Text passengers about their booking" and save.
+
+What to know:
+- Each text costs Hubtel credit. If credit runs out the text fails (the booking is never affected) and the reason is kept in the `sms_deliveries` table.
+- The same event is never texted twice. The phone number and the text are erased from the log once Hubtel accepts the message.
+- The database change is `supabase/migrations/20261205000001_sms_deliveries.sql`.
+- **Not yet verified against the live service.** The sender follows Hubtel's documented SMS API (`https://smsc.hubtel.com/v1/messages/send`, Basic auth with the client ID and secret), but it could not be tried here without a Hubtel account. The test text is the check: if it fails, the message on the page says why (wrong keys, no credit, sender name not approved), and the send code is in `supabase/functions/_shared/sms.ts`.
+
 ## 3. Deploy the Edge Functions
 
 ```bash

@@ -3,6 +3,7 @@ import { appUrl, recipientsByRole, userCan } from './auth.ts';
 import { bookingEmailAddress, bookingOwnerId } from './bookingAccess.ts';
 import { sendTransactionalEmail } from './email.ts';
 import { onlinePaymentOpen, payLink } from './payNow.ts';
+import { smsBookingPassenger, smsConfirmed } from './sms.ts';
 
 // Ghana time, the way staff read dates in alerts.
 export const accraTime = (d: Date | string = new Date()) =>
@@ -144,6 +145,12 @@ export async function notifyNewBooking(admin: SupabaseClient, bookingId: string)
         total: ghs(Number(booking.total_value)),
       },
     });
+
+    // The same news by text message (only if text messages are switched on in Settings).
+    await smsBookingPassenger(admin, booking, {
+      eventKey: `sms_booking_confirmation:${bookingId}`,
+      build: (company) => smsConfirmed(booking, company, payOnline ? payLink(booking) : undefined),
+    }).catch((e) => console.error('notifyNewBooking: confirmation text failed:', e instanceof Error ? e.message : e));
   }
   return { ok: failed.length === 0 || notified > 0, recipients: users.length, notified, duplicates_skipped: duplicates, failed, passenger_email, staff_emails };
 }

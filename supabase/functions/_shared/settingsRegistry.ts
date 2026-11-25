@@ -8,7 +8,7 @@ export type SettingType = 'text' | 'textarea' | 'email' | 'number' | 'boolean' |
 
 export interface SettingDef {
   key: string;
-  group: 'business' | 'bookings' | 'operations' | 'privacy' | 'email' | 'payments';
+  group: 'business' | 'bookings' | 'operations' | 'privacy' | 'email' | 'payments' | 'sms';
   label: string;
   help: string;
   type: SettingType;
@@ -27,7 +27,7 @@ export interface SettingDef {
 
 export interface SecretDef {
   name: string;
-  group: 'email' | 'payments';
+  group: 'email' | 'payments' | 'sms';
   label: string;
   help: string;
   prefix?: string; // what a genuine key starts with (omit for passwords, which have no fixed shape)
@@ -39,6 +39,7 @@ export interface SecretDef {
 
 export const GROUPS: Record<SettingDef['group'], { title: string; blurb: string }> = {
   email: { title: 'Email', blurb: 'How the system sends its emails (booking confirmations, alerts, staff invitations): through Resend, or through any SMTP mail server.' },
+  sms: { title: 'Text messages', blurb: 'Text passengers about their booking through Hubtel: that it was received, who their supervisor is, and when the service starts or finishes. The text goes to the phone number given on the booking. Emails carry on as normal.' },
   business: { title: 'Business details', blurb: 'Shown on the public website: the footer, the contact section and the privacy notice.' },
   bookings: { title: 'Bookings', blurb: 'Rules applied when a passenger books online. Walk-in sales at the desk are not held to these.' },
   operations: { title: 'Operations', blurb: 'Shifts, escalation and porter commission.' },
@@ -61,6 +62,11 @@ export const SETTINGS: SettingDef[] = [
     help: 'Must match the port. If a test says the connection failed, this and the port are the first things to check.' },
   { key: 'smtp_username', group: 'email', label: 'SMTP username', type: 'text', default: '', optional: true, maxLength: 200, showWhen: { key: 'email_provider', value: 'smtp' },
     help: 'Often your email address. Leave empty only for a server that needs no sign-in.' },
+
+  { key: 'sms_enabled', group: 'sms', label: 'Text passengers about their booking', type: 'boolean', default: 'false',
+    help: 'Switch on only after the Hubtel keys and the sender name are saved and a test text has reached your phone. Each text costs Hubtel credit.' },
+  { key: 'sms_sender_id', group: 'sms', label: 'Sender name', type: 'text', default: '', maxLength: 11, optional: true,
+    help: 'What passengers see as the sender: up to 11 letters or numbers, no spaces (for example AirportAsst). Hubtel must approve it for your account first; ask Hubtel support if texts are refused.' },
 
   { key: 'public_site_enabled', group: 'business', label: 'Public website', type: 'boolean', default: 'true', public: true, superAdminOnly: true,
     help: 'When this is off, the public pages (home, booking, payment and privacy) are closed and visitors are taken to the staff sign-in. Staff dashboards are not affected. Only the super admin can change it.' },
@@ -99,6 +105,10 @@ export const SECRETS: SecretDef[] = [
     help: 'Lets the system trust delivery reports (delivered, bounced, spam) coming from Resend.' },
   { name: 'SMTP_PASSWORD', group: 'email', label: 'SMTP password', minLength: 1, allowSpaces: true, where: 'your mail provider (for Gmail and Microsoft 365 create an "app password"; your normal password will not work)', showWhen: { key: 'email_provider', value: 'smtp' },
     help: 'Used to sign in to the SMTP server. Stored encrypted.' },
+  { name: 'HUBTEL_CLIENT_ID', group: 'sms', label: 'Hubtel client ID', minLength: 4, where: 'Hubtel dashboard > Developers > API Keys (the SMS API credentials)',
+    help: 'Together with the client secret, lets the system send texts through your Hubtel account.' },
+  { name: 'HUBTEL_CLIENT_SECRET', group: 'sms', label: 'Hubtel client secret', minLength: 4, where: 'Hubtel dashboard > Developers > API Keys, next to the client ID',
+    help: 'Stored encrypted. Never shown again after saving.' },
   { name: 'PAYSTACK_SECRET_KEY', group: 'payments', label: 'Paystack secret key', prefix: 'sk_', where: 'Paystack dashboard > Settings > API Keys & Webhooks > Secret Key (start with the Test key, sk_test_...)',
     help: 'Lets the system start payments and check that they were paid. It also proves that payment reports really come from Paystack. Stored encrypted.' },
 ];
@@ -143,6 +153,7 @@ export function validateSetting(def: SettingDef, raw: unknown): Checked {
   }
   if (def.maxLength && text.length > def.maxLength) return fail(`keep it under ${def.maxLength} characters.`);
   if (text === '' && !def.optional) return fail('cannot be empty.');
+  if (def.key === 'sms_sender_id' && text !== '' && !/^[A-Za-z0-9]{1,11}$/.test(text)) return fail('use up to 11 letters or numbers, with no spaces or symbols.');
   if (def.key === 'email_from' && text !== '' && !/^[^<>@\s][^<>@]*<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>$|^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(text)) {
     return fail('use an address like noreply@yourdomain.com or Name <noreply@yourdomain.com>.');
   }
@@ -155,6 +166,7 @@ export function validateTogether(values: Record<string, string>): string | null 
     if (!values.smtp_host) return 'Enter the SMTP server address before choosing SMTP.';
     if (!values.email_from) return 'Enter the sender address before choosing SMTP.';
   }
+  if (values.sms_enabled === 'true' && !values.sms_sender_id) return 'Enter the sender name before switching text messages on.';
   const morning = values.shift_morning_start;
   const night = values.shift_night_start;
   if (morning && night && morning >= night) return 'The night shift must start after the morning shift starts (for example morning 06:00, night 18:00).';

@@ -1,5 +1,6 @@
 import { adminClient, appUrl, requireCaller, requirePermission } from '../_shared/auth.ts';
 import { emailBookingPassenger } from '../_shared/notify.ts';
+import { smsBookingPassenger, smsSupervisorAssigned } from '../_shared/sms.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 
@@ -72,6 +73,11 @@ serve('assignSupervisor', async (req) => {
         supervisor_name: entry.full_name || 'Your supervisor', supervisor_phone: entry.phone || '—',
         flight_line: flightLine, travel_line: travelLine,
       },
+    }));
+    // And by text message, with the supervisor's name and number (only if text messages are switched on).
+    sends.push(smsBookingPassenger(admin, booking, {
+      eventKey: `sms_passenger_assigned:${bookingId}:${supervisorId}:${stamp}`,
+      build: (company) => smsSupervisorAssigned(booking, company, entry.full_name || '', entry.phone || ''),
     }));
   }
   for (const r of await Promise.allSettled(sends)) {
