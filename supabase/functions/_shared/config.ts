@@ -10,6 +10,8 @@ const TTL_MS = 15_000;
 let settingsCache: { at: number; rows: { key: string; value: string }[] } | null = null;
 const secretCache = new Map<string, { at: number; value: string | undefined }>();
 
+export const PUBLIC_SITE_CLOSED = 'The public website is closed. Please contact the Airport Assist desk.';
+
 export function clearConfigCache() {
   settingsCache = null;
   secretCache.clear();

@@ -1,5 +1,5 @@
 import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
-import { buildOverview, clearSecret, resetSetting, saveSecret, saveSettings } from '../_shared/adminSettings.ts';
+import { buildOverview, clearSecret, resetSetting, saveSecret, saveSettings, superAdminState } from '../_shared/adminSettings.ts';
 import { getSecret } from '../_shared/config.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
 import { checkKey, keyMode, PaystackError } from '../_shared/paystack.ts';
@@ -15,33 +15,36 @@ serve('adminSettings', async (req) => {
   const user = await requireCaller(req, admin, ['admin']);
   const body = await readBody(req) as Record<string, any>;
   const env = (name: string) => Deno.env.get(name);
+  // Some settings (the public website switch) can be changed only by the super admin, once one has been set.
+  const sa = await superAdminState(admin, user.id);
+  const canChangeSuperOnly = { superAdmin: !sa.set || sa.you };
 
   switch (String(body.action || 'get')) {
     case 'get':
-      return json(await buildOverview(admin, env));
+      return json(await buildOverview(admin, env, user.id));
 
     case 'save': {
-      const result = await saveSettings(admin, user.id, (body.changes ?? {}) as Record<string, unknown>);
-      if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, saved: result.saved, overview: await buildOverview(admin, env) });
+      const result = await saveSettings(admin, user.id, (body.changes ?? {}) as Record<string, unknown>, canChangeSuperOnly);
+      if (!result.ok) throw new HttpError(result.error.startsWith('Only the super admin') ? 403 : 400, result.error);
+      return json({ ok: true, saved: result.saved, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'reset': {
-      const result = await resetSetting(admin, String(body.key || ''));
-      if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, overview: await buildOverview(admin, env) });
+      const result = await resetSetting(admin, String(body.key || ''), canChangeSuperOnly);
+      if (!result.ok) throw new HttpError(result.error.startsWith('Only the super admin') ? 403 : 400, result.error);
+      return json({ ok: true, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'save_secret': {
       const result = await saveSecret(admin, user, String(body.name || ''), body.value, env('SETTINGS_ENCRYPTION_KEY'));
       if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, overview: await buildOverview(admin, env) });
+      return json({ ok: true, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'clear_secret': {
       const result = await clearSecret(admin, user, String(body.name || ''));
       if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, overview: await buildOverview(admin, env) });
+      return json({ ok: true, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'test_smtp': {

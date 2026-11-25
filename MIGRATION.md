@@ -300,6 +300,17 @@ select public.transfer_super_admin('the-admin@example.com');
 
 The person must be an active admin. The previous super admin becomes an ordinary admin.
 
+## Staff-only mode: closing the public website
+
+For a client who only wants the operational dashboards, the **super admin** can close the public website: **Admin > Settings > Public website > Close the public website** (with a confirmation). Anyone with Settings can see whether it is open, but only the super admin can change it (while no super admin has been set, any admin can).
+
+When it is closed:
+- The home page, booking, payment and privacy pages (`/`, `/book`, `/pay`, `/pay/return`, `/privacy`) send visitors to the staff sign-in. Sign-in, forgot password and reset password still work, and every staff dashboard is untouched.
+- The booking, guest photo upload, discount check and online payment functions refuse requests from the public (staff at the desk can still make bookings). Bookings already made, and their payments, are not affected.
+- The last answer is remembered in the visitor's browser, so a closed website never flashes open while the setting loads. If the setting cannot be loaded at all, the website stays open (it fails open), but the functions above still check it.
+
+Open it again from the same place. No database update is needed for this.
+
 ## Shift rosters (supervisors and porters)
 
 Management menu > **Shift roster** (also under Admin, and read-only for supervisors). It makes the monthly roster in the same layout the team uses on paper: four shifts, each day Morning (M), Night (N) or Off (O), with the head supervisor (H. SUP) mark moving on every five days for supervisors. Saturday and Sunday rows are shaded (green for supervisors, blue for porters), only for looks. Run `supabase/migrations/20261127000001_shift_rosters.sql`, `20261128000001_roster_named_people.sql` and `20261128000002_roster_edit_people.sql` and `20261129000001_roster_member_order.sql`, `20261130000001_roster_clear_marks.sql`, `20261201000001_roster_link_account.sql` and `20261201000002_roster_pick_up_people.sql` first. `supabase/one-off/real_roster_names_nov_2026.sql` adds the real November 2026 names (and `roster_paper_name_order.sql` puts them in the paper order) (kept out of the migrations folder on purpose).

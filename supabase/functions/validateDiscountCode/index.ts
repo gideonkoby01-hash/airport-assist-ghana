@@ -1,5 +1,5 @@
 import { adminClient, clientIp, optionalCaller } from '../_shared/auth.ts';
-import { loadSettings } from '../_shared/config.ts';
+import { loadSettings, PUBLIC_SITE_CLOSED } from '../_shared/config.ts';
 import { evaluateDiscount, normalizeCode, publicDiscountView, round2 } from '../_shared/discounts.ts';
 import { json, readBody, serve } from '../_shared/http.ts';
 
@@ -19,6 +19,7 @@ serve('validateDiscountCode', async (req) => {
 
   // Guessing is throttled: after 10 failed attempts in 15 minutes the person must wait.
   const settings = await loadSettings(admin);
+  if (!caller && !settings.bool('public_site_enabled')) return json({ valid: false, message: PUBLIC_SITE_CLOSED });
   const windowSeconds = settings.num('discount_attempt_window_minutes') * 60;
   const tries = await admin.rpc('rate_limit_count', { p_key: `discount:${actorKey}`, p_window_seconds: windowSeconds });
   if ((tries.data ?? 0) >= settings.num('discount_attempt_limit')) return json({ valid: false, message: 'Too many attempts. Please wait a few minutes and try again.' });

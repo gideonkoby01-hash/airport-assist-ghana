@@ -5,6 +5,7 @@ export const PUBLIC_DEFAULTS = {
   contact_email: "moehamedi@gmail.com",
   contact_phone: "+233 537 755 063 / +233 246 222 777",
   contact_address: "39 Ring Road East, Nyaniba [GL-030-6750]",
+  public_site_enabled: "true",
   online_bookings_enabled: "true",
   online_bookings_message: "Online booking is paused right now. Please contact the Airport Assist desk.",
   porter_commission_per_passenger: "30",

@@ -1,21 +1,27 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "@/api/db";
 import { PUBLIC_DEFAULTS } from "@/lib/publicSettings";
+import { readCachedPublicSite, writeCachedPublicSite } from "@/lib/publicSite";
+
+const remembered = () => readCachedPublicSite(typeof localStorage === "undefined" ? undefined : localStorage);
+const startingSettings = () => ({ ...PUBLIC_DEFAULTS, public_site_enabled: remembered() ?? PUBLIC_DEFAULTS.public_site_enabled });
 
 // The settings the public website uses (business name and contact details, whether online booking is open, porter commission).
 // Until they load, or if they cannot be loaded, the built-in defaults are shown so the page never looks broken.
 const SettingsContext = createContext({ settings: PUBLIC_DEFAULTS, loaded: false, refresh: () => {} });
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(PUBLIC_DEFAULTS);
+  const [settings, setSettings] = useState(startingSettings);
   const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const saved = await api.settings.getPublic();
-      setSettings({ ...PUBLIC_DEFAULTS, ...saved });
+      const next = { ...PUBLIC_DEFAULTS, ...saved };
+      setSettings(next);
+      writeCachedPublicSite(typeof localStorage === "undefined" ? undefined : localStorage, next.public_site_enabled);
     } catch {
-      setSettings(PUBLIC_DEFAULTS);
+      setSettings(startingSettings());
     } finally {
       setLoaded(true);
     }

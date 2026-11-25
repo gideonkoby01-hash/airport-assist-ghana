@@ -19,6 +19,7 @@ export interface SettingDef {
   unit?: string;
   maxLength?: number;
   public?: boolean; // shown to visitors on the website
+  superAdminOnly?: boolean; // only the super admin may change it (while no super admin is set, any admin may)
   options?: { value: string; label: string }[]; // for type 'select'
   optional?: boolean; // may be left empty
   showWhen?: { key: string; value: string }; // the page only shows it while another setting has this value
@@ -61,6 +62,8 @@ export const SETTINGS: SettingDef[] = [
   { key: 'smtp_username', group: 'email', label: 'SMTP username', type: 'text', default: '', optional: true, maxLength: 200, showWhen: { key: 'email_provider', value: 'smtp' },
     help: 'Often your email address. Leave empty only for a server that needs no sign-in.' },
 
+  { key: 'public_site_enabled', group: 'business', label: 'Public website', type: 'boolean', default: 'true', public: true, superAdminOnly: true,
+    help: 'When this is off, the public pages (home, booking, payment and privacy) are closed and visitors are taken to the staff sign-in. Staff dashboards are not affected. Only the super admin can change it.' },
   { key: 'company_name', group: 'business', label: 'Business name', type: 'text', default: 'Airport Assist Ghana', maxLength: 80, public: true, help: 'Used in the footer and the privacy notice.' },
   { key: 'contact_email', group: 'business', label: 'Contact email', type: 'email', default: 'moehamedi@gmail.com', maxLength: 120, public: true, help: 'The public contact address, and where privacy requests are sent.' },
   { key: 'contact_phone', group: 'business', label: 'Contact phone numbers', type: 'text', default: '+233 537 755 063 / +233 246 222 777', maxLength: 120, public: true, help: 'Separate several numbers with a slash.' },

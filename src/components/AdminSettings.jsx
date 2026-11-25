@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Copy, CreditCard, KeyRound, Loader2, Mail, Settings2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Copy, CreditCard, Globe, KeyRound, Loader2, Mail, Settings2, ShieldAlert } from "lucide-react";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,6 +127,46 @@ function SecretField({ secret, encryptionReady, onSave, onClear }) {
   );
 }
 
+// The public website switch. Anyone with Settings can see whether the public website is open; only the super admin can change it
+// (while no super admin has been set, any admin can). When it is closed, the home, booking, payment and privacy pages send visitors
+// to the staff sign-in, and the booking and payment functions refuse. Staff dashboards are never affected.
+function PublicSiteCard({ overview, onChange, busy }) {
+  const open = overview.settings.find((s) => s.key === "public_site_enabled")?.value !== "false";
+  const may = !overview.super_admin?.set || overview.super_admin?.you;
+  return (
+    <section className={`rounded-2xl border p-5 ${open ? "bg-card border-border" : "bg-amber-50 border-amber-200"}`} aria-label="Public website">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold flex items-center gap-2"><Globe className="w-4 h-4 text-accent" aria-hidden="true" /> Public website
+            <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${open ? "bg-emerald-100 text-emerald-800" : "bg-amber-200 text-amber-900"}`}>{open ? "Open" : "Closed"}</span>
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            {open
+              ? "Visitors can see the home page, book and pay. Close it to run the system as staff-only: the public pages send visitors to the staff sign-in, and online booking and payment stop."
+              : "The public website is closed. Visitors are taken to the staff sign-in, and online booking and payment are refused. Staff sign in and work as normal."}
+          </p>
+          {!may && <p className="text-xs text-muted-foreground mt-2">Only the super admin can change this.</p>}
+        </div>
+        {may && (
+          <ConfirmAction
+            title={open ? "Close the public website?" : "Open the public website?"}
+            description={open
+              ? "The home page, booking, payment and privacy pages stop working for visitors and send them to the staff sign-in. Bookings already made are not affected, and staff keep working as normal. You can open it again at any time."
+              : "The home page, booking, payment and privacy pages become available to the public again."}
+            confirmLabel={open ? "Close the website" : "Open the website"}
+            destructive={open}
+            onConfirm={() => onChange(open ? "false" : "true")}
+          >
+            <Button variant={open ? "outline" : "default"} disabled={busy}>
+              {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> : null}{open ? "Close the public website" : "Open the public website"}
+            </Button>
+          </ConfirmAction>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // The admin Settings page. Everything is drawn from the list the adminSettings function sends, so the rules shown here are
 // the rules the server enforces. API keys are written but never read back.
 export default function AdminSettings() {
@@ -186,6 +226,20 @@ export default function AdminSettings() {
       refreshPublic();
     } catch (e) {
       notifyError(e.message || "Could not reset that setting.");
+    }
+  };
+
+  const [siteBusy, setSiteBusy] = useState(false);
+  const setPublicSite = async (value) => {
+    setSiteBusy(true);
+    setError("");
+    try {
+      adopt((await call({ action: "save", changes: { public_site_enabled: value } })).overview);
+      refreshPublic();
+    } catch (e) {
+      setError(e.message || "Could not change the public website.");
+    } finally {
+      setSiteBusy(false);
     }
   };
 
@@ -286,8 +340,10 @@ export default function AdminSettings() {
         </div>
       )}
 
+      <PublicSiteCard overview={overview} onChange={setPublicSite} busy={siteBusy} />
+
       {order.map((group) => {
-        const allFields = (byGroup[group] || []).filter(visible);
+        const allFields = (byGroup[group] || []).filter(visible).filter((f) => !f.superAdminOnly);
         // The way of sending comes first, because the keys and fields below depend on it.
         const leadFields = allFields.filter((f) => f.key === "email_provider");
         const fields = allFields.filter((f) => f.key !== "email_provider");

@@ -122,3 +122,33 @@ Deno.test('the overview describes every setting and key, and never contains a ke
   const text = JSON.stringify(o);
   for (const leaked of ['re_live_abcdef123456', 'whsec_from_environment_9999', 'ciphertext', key]) assertEquals(text.includes(leaked), false, leaked);
 });
+
+Deno.test('the public website switch: only the super admin may change it, and it is public and on by default', async () => {
+  clearConfigCache();
+  const a = fakeAdmin();
+  const refused = await saveSettings(a as never, 'admin-2', { public_site_enabled: 'false' }, { superAdmin: false });
+  assertEquals(refused.ok, false);
+  assertEquals((refused as { error: string }).error, 'Only the super admin can change the public website switch.');
+  assertEquals(a.t.app_settings.length, 0, 'nothing was saved');
+  // other settings are not affected by who asks, and one refused setting stops the whole save (all or none)
+  assertEquals((await saveSettings(a as never, 'admin-2', { min_lead_hours: '3' }, { superAdmin: false })).ok, true);
+  const mixed = await saveSettings(a as never, 'admin-2', { min_lead_hours: '5', public_site_enabled: 'false' }, { superAdmin: false });
+  assertEquals(mixed.ok, false);
+  assertEquals(a.t.app_settings.find((r) => r.key === 'min_lead_hours')?.value, '3');
+  // the super admin (or anyone while none is set) can
+  const ok = await saveSettings(a as never, 'owner', { public_site_enabled: 'false' }, { superAdmin: true });
+  assertEquals(ok.ok, true);
+  const row = a.t.app_settings.find((r) => r.key === 'public_site_enabled');
+  assertEquals([row?.value, row?.is_public], ['false', true]);
+  assertEquals((await saveSettings(a as never, 'owner', { public_site_enabled: 'maybe' })).ok, false, 'a switch is on or off');
+});
+
+Deno.test('going back to the default for the public website switch is also for the super admin only', async () => {
+  clearConfigCache();
+  const a = fakeAdmin();
+  await saveSettings(a as never, 'owner', { public_site_enabled: 'false' });
+  assertEquals((await resetSetting(a as never, 'public_site_enabled', { superAdmin: false })).ok, false);
+  assertEquals(a.t.app_settings.length, 1);
+  assertEquals((await resetSetting(a as never, 'public_site_enabled', { superAdmin: true })).ok, true);
+  assertEquals(a.t.app_settings.length, 0);
+});
