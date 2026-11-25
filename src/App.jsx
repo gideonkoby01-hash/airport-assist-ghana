@@ -34,6 +34,7 @@ const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Security = lazy(() => import('@/pages/Security'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
+const PorterApp = lazy(() => import('@/pages/PorterApp'));
 
 // The public pages (home, booking, payment, privacy). When the super admin has closed the public website they send visitors to the staff sign-in.
 const PublicGate = ({ children }) => {
@@ -89,6 +90,8 @@ const AuthenticatedApp = () => {
       <Route path="/book" element={<PublicGate><Book /></PublicGate>} />
       <Route path="/pay" element={<PublicGate><Pay /></PublicGate>} />
       <Route path="/pay/return" element={<PublicGate><PayReturn /></PublicGate>} />
+      {/* Porters sign in with a phone number and have their own session, so this page is outside the staff sign-in. */}
+      <Route path="/porter" element={<PorterApp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* Public company homepage — no sign-in required */}

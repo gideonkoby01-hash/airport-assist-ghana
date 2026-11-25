@@ -311,6 +311,19 @@ When it is closed:
 
 Open it again from the same place. No database update is needed for this.
 
+## Porter logins and the porter dashboard
+
+Porters sign in at the same page as staff (`/login`) with their **phone number and a password**, and land on their own page (`/porter`): today's shift and jobs, their shifts from the roster, all their jobs, their earnings, and a **Mark done** button on each job. They see only their own work, and no passenger phone number, email or ID photo.
+
+Porters are not accounts of the sign-in service. Each has a row in `porter_logins` (salted password hash, never the password), and the three functions `porterLogin`, `porterApp` and `managePorterLogin` do the rest. The porter session is a signed token that lasts 12 hours and is signed with a key made from `SETTINGS_ENCRYPTION_KEY`, so that key must be set (it already is if the Admin Settings page works).
+
+- **Giving a porter a login:** Admin > Porters > **Give login**. A temporary password is shown **once**, with a button that copies a ready message to send. The porter must choose their own password the first time they sign in. The number they sign in with is the one on the porter register.
+- **Forgotten password:** Admin > Porters > **Reset password** makes a new temporary one. This also signs the porter out everywhere.
+- **Switch login off / Remove login:** ends their access at once.
+- **Marking a job done** stamps the porter's own entry on the booking (shown to the office as "Marked done 10:42"). It does not complete the booking and does not change what the porter is paid; the supervisor still completes the booking, and only completed bookings count towards earnings.
+- **Limits:** 8 wrong attempts per phone number and 30 per network address in ten minutes, then a ten-minute pause.
+- The database change is `supabase/migrations/20261204000001_porter_logins.sql` (run it in the SQL Editor if it is not applied automatically).
+
 ## Shift rosters (supervisors and porters)
 
 Management menu > **Shift roster** (also under Admin, and read-only for supervisors). It makes the monthly roster in the same layout the team uses on paper: four shifts, each day Morning (M), Night (N) or Off (O), with the head supervisor (H. SUP) mark moving on every five days for supervisors. Saturday and Sunday rows are shaded (green for supervisors, blue for porters), only for looks. Run `supabase/migrations/20261127000001_shift_rosters.sql`, `20261128000001_roster_named_people.sql` and `20261128000002_roster_edit_people.sql` and `20261129000001_roster_member_order.sql`, `20261130000001_roster_clear_marks.sql`, `20261201000001_roster_link_account.sql` and `20261201000002_roster_pick_up_people.sql` first. `supabase/one-off/real_roster_names_nov_2026.sql` adds the real November 2026 names (and `roster_paper_name_order.sql` puts them in the paper order) (kept out of the migrations folder on purpose).

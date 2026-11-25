@@ -1,4 +1,4 @@
-// What a person types in the sign-in box: an email address, or a phone number (porters sign in with their phone number). Pure functions,
+// What a person types in the sign-in box: an email address (staff), or a phone number (porters sign in with their phone number and a password). Pure functions,
 // tested in loginIdentifier.test.mjs.
 
 /**
@@ -18,8 +18,8 @@ export function normalizePhone(text) {
   return null;
 }
 
-/** The credentials object for Supabase sign-in: { phone } for a phone number, otherwise { email }. */
-export function signInCredentials(text, password) {
+/** Who is signing in: a porter (a phone number) or a staff member (an email address). */
+export function whoIsSigningIn(text) {
   const phone = normalizePhone(text);
-  return phone ? { phone, password } : { email: String(text ?? "").trim(), password };
+  return phone ? { porter: true, phone } : { porter: false, email: String(text ?? "").trim() };
 }

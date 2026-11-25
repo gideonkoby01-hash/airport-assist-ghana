@@ -48,18 +48,6 @@ serve('managePorterLogin', async (req) => {
     return json({ ok: true, phone: row!.phone, temporary_password: password });
   }
 
-  if (action === 'set_phone') {
-    const phone = normalizePhone(body.phone);
-    if (!phone) throw new HttpError(400, 'Enter a valid phone number, for example 024 123 4567.');
-    const { data: row } = await admin.from('porter_logins').select('token_version').eq('porter_id', porter.id).single();
-    const { error } = await admin.from('porter_logins').update({ phone, token_version: row!.token_version + 1 }).eq('porter_id', porter.id);
-    if (error) {
-      if (error.code === '23505') throw new HttpError(409, 'Another porter already uses that phone number to sign in.');
-      throw error;
-    }
-    return json({ ok: true, phone });
-  }
-
   if (action === 'disable' || action === 'enable') {
     const { data: row } = await admin.from('porter_logins').select('token_version').eq('porter_id', porter.id).single();
     const { error } = await admin.from('porter_logins').update({ disabled: action === 'disable', token_version: row!.token_version + 1 }).eq('porter_id', porter.id);

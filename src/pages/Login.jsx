@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDocumentTitle } from "@/hooks/use-document-title";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/api/supabaseClient";
+import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/PasswordInput";
@@ -9,15 +10,18 @@ import { Label } from "@/components/ui/label";
 import { LogIn, UserRound, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { safeReturnTo } from "@/lib/authReturnTo";
-import { signInCredentials } from "@/lib/loginIdentifier";
+import { whoIsSigningIn } from "@/lib/loginIdentifier";
+import { currentPorterSession, rememberPorterSession } from "@/lib/porterSession";
 import { useSettings } from "@/lib/SettingsContext";
 
 export default function Login() {
   useDocumentTitle("Sign in");
   const { settings } = useSettings();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [who, setWho] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(location.state?.notice || "");
   const [loading, setLoading] = useState(false);
   // Post-login destination (e.g. the MCP OAuth consent page sends users here
   // with returnTo so the grant flow can resume). Same-origin paths only.
@@ -26,13 +30,25 @@ export default function Login() {
   const returnTo = safeReturnTo();
   const postLoginDest = returnTo === "/" ? "/portal" : returnTo;
 
+  // A porter who is still signed in goes straight back to their page.
+  useEffect(() => {
+    if (currentPorterSession()) navigate("/porter", { replace: true });
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      // Staff sign in with their email; porters with the phone number they gave.
-      const { error: signInError } = await supabase.auth.signInWithPassword(signInCredentials(who, password));
+      const who_ = whoIsSigningIn(who);
+      if (who_.porter) {
+        // Porters sign in with their phone number: a separate, simpler session that opens only their own page.
+        const { data } = await api.functions.invoke("porterLogin", { phone: who_.phone, password });
+        rememberPorterSession({ token: data.token, expires_at: data.expires_at }, data.porter?.name);
+        navigate("/porter", { replace: true });
+        return;
+      }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: who_.email, password });
       if (signInError) throw signInError;
       window.location.href = postLoginDest;
     } catch (err) {
@@ -117,7 +133,7 @@ export default function Login() {
             "Sign in"
           )}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">Porters: sign in with the phone number you gave when you were registered.</p>
+        <p className="text-center text-xs text-muted-foreground">Porters: sign in with your phone number and the password the office gave you.</p>
       </form>
     </AuthLayout>
   );
