@@ -74,7 +74,6 @@ export default function Packages() {
   const cards = useMemo(() => buildCards(live), [live]);
   const shown = cards.filter((p) => filter === "all" || p.kind === filter);
   // Services an admin adds say on their own card what they include; if any include the lounge, the note below says so.
-  const addedWithLounge = cards.filter((c) => !PACKAGES.some((o) => o.code === c.code) && c.lounge);
 
   return (
     <section id="prices" style={{ background: "var(--grad-soft)" }}>
@@ -140,10 +139,6 @@ export default function Packages() {
             </Reveal>
           ))}
         </ul>
-        <p className="mt-6 text-sm text-muted-foreground">
-          Lounge access depends on the package. Full Arrival and Full Departure include it; Departure Priority Only and Porter Service Only do not.
-          {addedWithLounge.length > 0 && ` ${addedWithLounge.map((c) => c.name).join(" and ")} ${addedWithLounge.length === 1 ? "includes" : "include"} it too.`}
-        </p>
       </div>
     </section>
   );
