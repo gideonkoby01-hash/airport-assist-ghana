@@ -2,7 +2,7 @@
 -- A service that is missing is added at the standard price; one that already exists keeps its name and price, and only its
 -- wording and lounge switch are updated, and it is switched on so passengers can book it. Safe to run more than once.
 insert into public.service_packages (code, name, price, flight_type, includes_lounge, inclusions, exclusions, active) values
-  ('full_arrival', 'Full Arrival Assist', 700, 'arrival', false,
+  ('full_arrival', 'Full Arrival Assist', 800, 'arrival', false,
    'Meet and greet at the air-bridge, Fast-track escort through security and immigration, Luggage assistance, Customs clearance support, Ground transfer coordination.', '', true),
   ('full_departure', 'Full Departure Assist', 850, 'departure', true,
    'Curbside meet & greet, Check-in assistance, Fast-track escort through immigration and screening, Lounge access.', '', true),

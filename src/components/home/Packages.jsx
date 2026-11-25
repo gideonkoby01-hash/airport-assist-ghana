@@ -12,7 +12,7 @@ import { isPorterService } from "@/lib/services";
 // advertised rates and match the canonical PACKAGE_DEFINITIONS in src/lib/packages.js.
 const PACKAGES = [
   {
-    code: "full_arrival", kind: "arrival", tag: "ARR", name: "Full Arrival Service", price: 700,
+    code: "full_arrival", kind: "arrival", tag: "ARR", name: "Full Arrival Service", price: 800,
     description: "Met at the airbridge and taken through the airport to your transfer.",
     inclusions: ["Meet and greet at the air-bridge", "Fast-track escort through security and immigration", "Luggage assistance", "Customs clearance support", "Ground transfer coordination"],
     image: "/images/card-akwaaba.webp", position: "50% 50%", place: "Arrivals welcome",

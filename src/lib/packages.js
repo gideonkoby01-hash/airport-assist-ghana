@@ -6,7 +6,7 @@ export const PACKAGE_DEFINITIONS = [
     code: "full_arrival",
     kind: "meet_assist",
     name: "Full Arrival Assist",
-    price: 700,
+    price: 800,
     flight_type: "arrival",
     includes_lounge: false,
     inclusions:
