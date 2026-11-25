@@ -8,7 +8,7 @@ DB=aag_test
 psql -q -v ON_ERROR_STOP=1 -d postgres -c "drop database if exists $DB" -c "create database $DB" 2>&1 | grep -v NOTICE || true
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/tests/stub_supabase.sql
 for f in supabase/migrations/*.sql; do psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"; done
-for t in rls_test function_payloads_test storage_test retention_test governance_test shift_report_test email_delivery_test settings_test profile_self_service_test crm_test porter_pay_test extra_porter_test supervisor_commission_test accounts_test accounts_role_test one_porter_test accounting_test services_test roles_test paystack_test roster_test roster_names_test directory_sync_test super_admin_test; do
+for t in rls_test function_payloads_test storage_test retention_test governance_test shift_report_test email_delivery_test settings_test profile_self_service_test crm_test porter_pay_test extra_porter_test supervisor_commission_test accounts_test accounts_role_test one_porter_test accounting_test services_test roles_test paystack_test roster_test roster_names_test directory_sync_test super_admin_test porter_dashboard_test; do
   echo "== $t"
   psql -q -t -A -v ON_ERROR_STOP=1 -d "$DB" -f "supabase/tests/$t.sql" 2>&1 | grep -E "NOTICE|^function|ERROR|FAIL" | sed 's/^psql:[^ ]* //'
 done
