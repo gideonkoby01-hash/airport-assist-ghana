@@ -7,7 +7,7 @@ import { payWording } from "@/lib/payments";
 const FAQS = [
   { q: "Are services available around the clock?", a: "Yes. Airport Assist Ghana operates 24 hours a day, 7 days a week, so we can meet flights arriving or departing at any time." },
   { q: "Do you issue or guarantee visas or entry?", a: "No. We do not issue or guarantee visas or entry. Visa-on-arrival assistance is provided where applicable, but all visa and entry decisions rest with the relevant authorities." },
-  { q: "Is lounge access included in every package?", a: "No. Full Arrival and Full Departure include lounge access; Departure Priority Only and Porter Service Only do not." },
+  { q: "Is lounge access included in every package?", a: "No. Full Departure include lounge access; Full Arrival, Departure Priority Only and Porter Service Only do not." },
   { q: "Do you offer luggage delivery?", a: "Not yet. We are working on adding luggage delivery to our services. In the meantime we handle baggage inside the terminal as part of eligible packages." },
   { q: "How do I book a service?", a: "Choose Book assistance, pick your package, and give us your flight and passenger details. Our team then prepares your assistance." },
   { q: "How do I pay?", a: "" },
