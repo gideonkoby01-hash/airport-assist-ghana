@@ -3,7 +3,7 @@ import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
 import { KeyRound, Loader2 } from "lucide-react";
 
@@ -51,12 +51,12 @@ export default function ForcePasswordChange() {
       <form onSubmit={submit} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="fp-new">New password</Label>
-          <Input id="fp-new" type="password" autoComplete="new-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} className="h-12" />
+          <PasswordInput id="fp-new" autoComplete="new-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} className="h-12" />
           <p className="text-xs text-muted-foreground">At least 10 characters.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="fp-confirm">Confirm new password</Label>
-          <Input id="fp-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="h-12" />
+          <PasswordInput id="fp-confirm" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="h-12" />
         </div>
         <Button type="submit" className="w-full h-12 font-medium" disabled={saving}>
           {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save password and continue"}

@@ -9,6 +9,7 @@ import { roleLabel } from "@/lib/packages";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
 import { Loader2, LogOut, ShieldCheck } from "lucide-react";
 
@@ -135,12 +136,12 @@ export default function Profile() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="pf-new">New password</Label>
-              <Input id="pf-new" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <PasswordInput id="pf-new" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
               <p className="text-xs text-muted-foreground">At least 10 characters.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pf-confirm">Confirm new password</Label>
-              <Input id="pf-confirm" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              <PasswordInput id="pf-confirm" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             </div>
           </div>
           <Button type="submit" variant="outline" disabled={pwSaving || !newPassword}>
