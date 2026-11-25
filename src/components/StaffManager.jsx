@@ -79,7 +79,11 @@ export default function StaffManager() {
     } catch (e) {
       notifyError(/last_admin/.test(e.message || "")
         ? "That is the only active admin. Make someone else an admin first."
-        : e.message || "Failed to update role.");
+        : /super_admin_only/.test(e.message || "")
+          ? "Only the super admin can make someone an admin or take admin away."
+          : /super_admin_protected/.test(e.message || "")
+            ? "That is the super admin account. Its role cannot be changed."
+            : e.message || "Failed to update role.");
       load();
     }
   };
@@ -151,6 +155,11 @@ export default function StaffManager() {
                     <td className="py-2 pr-4 font-medium">{u.email}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{u.full_name || "—"}</td>
                     <td className="py-2 pr-4 w-44">
+                      {u.is_super_admin ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1" title="The owner account. It cannot be disabled, erased or demoted.">
+                          <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" /> Super admin
+                        </span>
+                      ) : (
                       <Select value={roleValue(u)} onValueChange={(r) => changeRole(u.id, r)}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
@@ -169,9 +178,11 @@ export default function StaffManager() {
                           ))}
                         </SelectContent>
                       </Select>
+                      )}
                     </td>
                     <td className="py-2 whitespace-nowrap">
-                      {["supervisor", "management", "accounts"].includes(u.role) && !u.disabled && (
+                      {u.is_super_admin && <span className="text-xs text-muted-foreground">Protected: it cannot be disabled or erased.</span>}
+                      {!u.is_super_admin && ["supervisor", "management", "accounts"].includes(u.role) && !u.disabled && (
                         <ConfirmAction
                           title={`Reset the password for ${u.email}?`}
                           description="Their current password stops working and a new temporary one is shown to you once. They must choose their own at next sign-in."
@@ -181,7 +192,7 @@ export default function StaffManager() {
                           <Button size="sm" variant="ghost">Reset password</Button>
                         </ConfirmAction>
                       )}
-                      {u.disabled ? (
+                      {u.is_super_admin ? null : u.disabled ? (
                         <Button size="sm" variant="outline" onClick={() => setDisabled(u, false)}>Enable</Button>
                       ) : (
                         <ConfirmAction
@@ -194,6 +205,7 @@ export default function StaffManager() {
                           <Button size="sm" variant="outline">Disable</Button>
                         </ConfirmAction>
                       )}
+                      {!u.is_super_admin && (
                       <ConfirmAction
                         title={`Delete the personal data of ${u.email}?`}
                         description="Their name, contact details, ID photos, notifications and login are removed. Payment records stay but no longer name them. This cannot be undone."
@@ -203,6 +215,7 @@ export default function StaffManager() {
                       >
                         <Button size="sm" variant="ghost" className="text-destructive">Erase</Button>
                       </ConfirmAction>
+                      )}
                     </td>
                   </tr>
                 ))}

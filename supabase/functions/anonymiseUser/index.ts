@@ -13,6 +13,9 @@ serve('anonymiseUser', async (req) => {
   if (!userId) throw new HttpError(400, 'user_id is required');
   if (userId === caller.id) throw new HttpError(400, 'You cannot delete your own account here.');
   if (body.confirm !== true) throw new HttpError(400, 'Confirmation is required: this cannot be undone.');
+  // The super admin account cannot be erased, and this is checked before anything is cleared. (The column exists once the super admin update has been applied.)
+  const { data: target } = await admin.from('profiles').select('is_super_admin').eq('id', userId).maybeSingle();
+  if (target?.is_super_admin) throw new HttpError(403, 'That is the super admin account. It cannot be erased.');
 
   const { data: files, error } = await admin.rpc('anonymise_user_data', { p_user_id: userId });
   if (error) throw error;
