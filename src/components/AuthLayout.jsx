@@ -35,8 +35,8 @@ export default function AuthLayout({ title, subtitle = undefined, footer = undef
       <div className="relative z-10 w-full max-w-[26rem]">
         <div className="auth-card relative overflow-hidden rounded-3xl px-7 pb-8 pt-9 sm:px-9">
           <div className="auth-flag absolute inset-x-0 top-0 h-1.5" aria-hidden="true" />
-          <img src="/images/logo-card.webp" alt="Airport Assist Ghana, Akwaaba Services" width="508" height="186" decoding="async" className="auth-logo h-16 w-auto" />
-          <div className="auth-head mt-6">
+          <img src="/images/logo-card.webp" alt="Airport Assist Ghana, Akwaaba Services" width="508" height="186" decoding="async" className="auth-logo mx-auto h-16 w-auto" />
+          <div className="auth-head mt-6 text-center">
             <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground">{title}</h1>
             {subtitle && <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
