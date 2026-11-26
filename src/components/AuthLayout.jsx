@@ -1,9 +1,9 @@
 import React from "react";
-import { ThemeToggle } from "@/lib/theme";
 
 // The stage every account screen sits on (sign in, forgot and reset password, choose a password, two-step verification): a deep navy
 // airport scene with the check-in photo faded into the background as a watermark, a large turning compass watermark, drifting gold and
-// violet light, a plane flying across, and a frosted card that rises into place. On wide screens the business name sits beside the card.
+// violet light, a plane flying across the top, and one light card that rises into place. The card carries everything the person needs
+// in one column: the logo, what this screen is, the form. The three-colour strip along its top edge is the one from the logo.
 // All motion stops for people who prefer reduced motion (see index.css).
 export default function AuthLayout({ title, subtitle = undefined, footer = undefined, children = undefined }) {
   return (
@@ -32,24 +32,17 @@ export default function AuthLayout({ title, subtitle = undefined, footer = undef
       </svg>
       <div className="auth-vignette absolute inset-0 -z-10" aria-hidden="true" />
 
-      <ThemeToggle className="absolute right-4 top-4 z-10 text-white/80 hover:bg-white/10 hover:text-white" />
-
-      <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.05fr_minmax(0,26rem)]">
-        {/* the welcome, beside the card on wide screens */}
-        <div className="auth-head hidden lg:block">
-          <h2 className="text-5xl font-extrabold leading-[1.05] tracking-tight">Airport Assist<br />Ghana</h2>
-        </div>
-
-        <div className="w-full">
-          <div className="auth-head mb-7 text-center lg:text-left">
-            <h1 className="block text-3xl font-bold tracking-tight">{title}</h1>
-            {subtitle && <p className="mt-2 text-white/70">{subtitle}</p>}
+      <div className="relative z-10 w-full max-w-[26rem]">
+        <div className="auth-card relative overflow-hidden rounded-3xl px-7 pb-8 pt-9 sm:px-9">
+          <div className="auth-flag absolute inset-x-0 top-0 h-1.5" aria-hidden="true" />
+          <img src="/images/logo-card.webp" alt="Airport Assist Ghana, Akwaaba Services" width="508" height="186" decoding="async" className="auth-logo h-16 w-auto" />
+          <div className="auth-head mt-6">
+            <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground">{title}</h1>
+            {subtitle && <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
-          <div className="auth-card rounded-3xl p-7 sm:p-8">
-            <div className="auth-stagger space-y-4">{children}</div>
-          </div>
-          {footer && <p className="mt-6 text-center text-sm text-white/70 [&_a]:text-[#f6c73a] [&_a]:font-medium [&_a:hover]:underline lg:text-left">{footer}</p>}
+          <div className="auth-stagger mt-6 space-y-4">{children}</div>
         </div>
+        {footer && <p className="mt-6 text-center text-sm text-white/75 [&_a]:font-medium [&_a]:text-[#f6c73a] [&_a:hover]:underline">{footer}</p>}
       </div>
     </main>
   );

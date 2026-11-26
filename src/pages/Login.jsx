@@ -23,6 +23,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(location.state?.notice || "");
   const [loading, setLoading] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
   // Post-login destination (e.g. the MCP OAuth consent page sends users here
   // with returnTo so the grant flow can resume). Same-origin paths only.
   // With no explicit destination, use /portal so each role lands on its
@@ -116,12 +117,15 @@ export default function Login() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyUp={(e) => setCapsLock(Boolean(e.getModifierState?.("CapsLock")))}
+              onBlur={() => setCapsLock(false)}
               className="pl-10 h-12"
               required
             />
           </div>
+          {capsLock && <p role="status" className="text-xs font-medium text-amber-700">Caps Lock is on.</p>}
         </div>
-        <Button type="submit" className="auth-glow-btn w-full h-12 font-medium" disabled={loading}>
+        <Button type="submit" className="auth-glow-btn w-full h-12 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
