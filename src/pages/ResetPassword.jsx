@@ -5,7 +5,7 @@ import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import PasswordInput from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
-import { Lock, Loader2, AlertTriangle } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { AUTH_LINK_KEY } from "@/lib/authLinkRedirect";
 
@@ -75,7 +75,6 @@ export default function ResetPassword() {
   if (!hasRecoverySession) {
     return (
       <AuthLayout
-        icon={AlertTriangle}
         title="This link no longer works"
         subtitle="It may have expired or already been used"
         footer={
@@ -94,7 +93,6 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout
-      icon={Lock}
       title={isInvite ? "Set your password" : "New password"}
       subtitle={isInvite ? "Choose a password to activate your Airport Assist account" : "Enter your new password below"}
     >

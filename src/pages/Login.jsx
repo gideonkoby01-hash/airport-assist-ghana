@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
-import { LogIn, UserRound, Lock, Loader2 } from "lucide-react";
+import { UserRound, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { whoIsSigningIn } from "@/lib/loginIdentifier";
@@ -15,7 +15,7 @@ import { currentPorterSession, rememberPorterSession } from "@/lib/porterSession
 import { useSettings } from "@/lib/SettingsContext";
 
 export default function Login() {
-  useDocumentTitle("Sign in");
+  useDocumentTitle("Staff portal");
   const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,9 +60,7 @@ export default function Login() {
 
   return (
     <AuthLayout
-      icon={LogIn}
-      title="Staff sign in"
-      subtitle="Airport Assist Ghana operations: supervisors, porters and management."
+      title="Staff portal"
       footer={
         // Passengers book on the public website. When the super admin has closed it, there is nothing to link to.
         settings.public_site_enabled !== "false" ? (

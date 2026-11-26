@@ -360,8 +360,6 @@
   .auth-stagger > *:nth-child(5), .auth-stagger > form > *:nth-child(5) { animation-delay: 0.7s; }
   .auth-head > * { animation: auth-rise-soft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
   .auth-head > *:nth-child(2) { animation-delay: 0.12s; } .auth-head > *:nth-child(3) { animation-delay: 0.24s; }
-  .auth-badge::before { content: ""; position: absolute; inset: -6px; border-radius: 1.1rem; border: 2px solid rgba(212, 175, 55, 0.55); animation: ring-ping 2.8s ease-out infinite; }
-  .auth-live { animation: auth-blink 2s ease-in-out infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-plane { offset-distance: 38%; }
@@ -373,4 +371,3 @@
 @keyframes auth-fly { from { offset-distance: -5%; } to { offset-distance: 105%; } }
 @keyframes auth-rise { from { opacity: 0; transform: translateY(28px) scale(0.98); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes auth-rise-soft { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes auth-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }

@@ -1,5 +1,4 @@
 import React from "react";
-import { ShieldCheck } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import MfaSetup from "@/components/MfaSetup";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ export default function MfaEnrolGate() {
   const { logout, checkUserAuth } = useAuth();
   return (
     <AuthLayout
-      icon={ShieldCheck}
       title="Set up two-step verification"
       subtitle="Required for admin and management accounts"
       footer={
