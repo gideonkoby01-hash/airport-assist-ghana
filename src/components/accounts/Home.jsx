@@ -7,10 +7,13 @@ import { LoadState, Panel, fmtMonth, useLoad } from "./shared";
 const n = (x) => Number(x) || 0;
 
 function Balance({ label, value, sub = undefined, onClick }) {
+  const amount = formatGHS(value);
+  // A very large amount steps down a size so it never runs into the edge of its card.
+  const size = amount.length > 15 ? "text-sm" : amount.length > 12 ? "text-base" : "text-base xl:text-lg";
   return (
-    <button type="button" onClick={onClick} className="press text-left rounded-xl border border-border bg-card p-3.5 hover:border-accent transition-colors">
+    <button type="button" onClick={onClick} className="press min-w-0 text-left rounded-xl border border-border bg-card p-3.5 hover:border-accent transition-colors">
       <span className="block text-xs text-muted-foreground">{label}</span>
-      <span className={`block text-base xl:text-lg font-semibold tabular whitespace-nowrap mt-1 ${n(value) < 0 ? "text-destructive" : "text-foreground"}`}>{formatGHS(value)}</span>
+      <span className={`block ${size} font-semibold tabular whitespace-nowrap mt-1 ${n(value) < 0 ? "text-destructive" : "text-foreground"}`}>{amount}</span>
       {sub && <span className="block text-xs text-muted-foreground mt-0.5">{sub}</span>}
     </button>
   );
@@ -57,7 +60,7 @@ export default function Home({ onGo }) {
       {h && (
         <div className="space-y-5">
           <Panel title="Where the money is" note="Balances today, from every payment, expense, payout and transfer recorded.">
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-2.5">
               <Balance label="Cash on hand" value={h.cash_on_hand} onClick={() => onGo("banking")} />
               <Balance label="Mobile money" value={h.mobile_money} onClick={() => onGo("banking")} />
               <Balance label="Card, to be settled" value={h.card_to_settle} onClick={() => onGo("banking")} />
