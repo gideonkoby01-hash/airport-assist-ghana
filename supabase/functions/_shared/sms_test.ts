@@ -18,10 +18,11 @@ Deno.test('sender names: up to 11 letters or numbers', () => {
 });
 
 Deno.test('the texts say what happened, in plain letters', () => {
-  assertEquals(smsConfirmed(booking, 'Airport Assist Ghana'), 'Airport Assist Ghana: booking AAG-1234 received for BA 078 on 2026-12-01 10:30. Pay at the airport.');
-  assertEquals(smsConfirmed(booking, 'AAG', 'https://x.example/pay?r=1'), 'AAG: booking AAG-1234 received for BA 078 on 2026-12-01 10:30. Pay online: https://x.example/pay?r=1');
-  assertEquals(smsConfirmed({ ...booking, outstanding_balance: 0 }, 'AAG'), 'AAG: booking AAG-1234 received for BA 078 on 2026-12-01 10:30.');
-  assertEquals(smsConfirmed({ reference: 'R1' }, 'AAG'), 'AAG: booking R1 received.');
+  const withService = { ...booking, package_name: 'Porter Service Only' };
+  assertEquals(smsConfirmed(withService, 'Airport Assist Ghana'), 'Airport Assist Ghana: Porter Service Only confirmed. Ref AAG-1234, BA 078 on 2026-12-01 10:30. Pay at the airport.');
+  assertEquals(smsConfirmed(withService, 'AAG', 'https://x.example/pay?r=1'), 'AAG: Porter Service Only confirmed. Ref AAG-1234, BA 078 on 2026-12-01 10:30. Pay online: https://x.example/pay?r=1');
+  assertEquals(smsConfirmed({ ...withService, outstanding_balance: 0 }, 'AAG'), 'AAG: Porter Service Only confirmed. Ref AAG-1234, BA 078 on 2026-12-01 10:30.');
+  assertEquals(smsConfirmed({ reference: 'R1' }, 'AAG'), 'AAG: booking confirmed. Ref R1.');
   assertEquals(smsSupervisorAssigned(booking, 'AAG', 'Doreen  Mensah', '0240000000'), 'AAG: Doreen Mensah will meet you for booking AAG-1234. Call 0240000000.');
   assertEquals(smsSupervisorAssigned(booking, 'AAG', '', ''), 'AAG: Your supervisor will meet you for booking AAG-1234.');
   assertEquals(smsStatus('in_progress', booking, 'AAG'), 'AAG: your service for AAG-1234 has started. Your supervisor is with you.');

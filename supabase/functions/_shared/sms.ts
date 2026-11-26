@@ -132,7 +132,8 @@ const flightWords = (b: Record<string, any>) => {
 export function smsConfirmed(b: Record<string, any>, company: string, payUrl?: string): string {
   const owes = Number(b.outstanding_balance) > 0;
   const pay = !owes ? '' : payUrl ? ` Pay online: ${payUrl}` : ' Pay at the airport.';
-  return `${company}: booking ${clean(b.reference)} received${flightWords(b) ? ` for ${flightWords(b)}` : ''}.${pay}`;
+  const service = clean(b.package_name);
+  return `${company}: ${service ? `${service} confirmed` : 'booking confirmed'}. Ref ${clean(b.reference)}${flightWords(b) ? `, ${flightWords(b)}` : ''}.${pay}`;
 }
 
 export function smsSupervisorAssigned(b: Record<string, any>, company: string, supervisorName: string, supervisorPhone: string): string {

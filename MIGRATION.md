@@ -105,6 +105,8 @@ How it behaves:
 
 ### 2d. Text messages to passengers through Hubtel (optional)
 
+**Who gets what:** every online booking is confirmed by text message to the phone number on the booking (when texts are switched on). Every service except **Porter Service Only** also emails a receipt, so its email address is required. For **Porter Service Only** the email address is optional: the text is the confirmation, and an email copy is sent only if the passenger gave an address (the booking page says which, and hides the online "Pay now" when there is no email, since card payment needs one). Walk-in bookings at the desk are not texted or emailed.
+
 Passengers can be texted at the phone number on their booking: when the booking is received, when a supervisor is assigned (with the supervisor's name and number), and when the service starts, finishes, is cancelled or missed. Staff are not texted, and walk-in bookings are not texted. Emails carry on as normal. It is **off** until you switch it on.
 
 1. Hubtel account: SMS switched on, with credit. Copy the SMS **client ID and client secret**.

@@ -36,6 +36,9 @@ test('an online booking needs an email address; a desk booking does not', () => 
   assert.ok(validateBooking({ ...good, form: { ...good.form, contact_email: '' } }).contact_email);
   assert.ok(validateBooking({ ...good, form: { ...good.form, contact_email: 'not an email' } }).contact_email);
   assert.equal(validateBooking({ ...good, channel: 'walk_in', consented: false, form: { ...good.form, contact_email: '' } }).contact_email, undefined);
+  // Porter Service Only is confirmed by text, so its email is optional, but a wrong one is still refused
+  assert.equal(validateBooking({ ...good, porterService: true, form: { ...good.form, contact_email: '' } }).contact_email, undefined);
+  assert.ok(validateBooking({ ...good, porterService: true, form: { ...good.form, contact_email: 'not an email' } }).contact_email);
   assert.ok(isEmail('name@example.com'));
   assert.ok(!isEmail('name@example'));
   assert.ok(!isEmail(''));

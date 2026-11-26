@@ -4,6 +4,7 @@ import { STAFF_ROLES } from '../_shared/bookingAccess.ts';
 import { evaluateDiscount, normalizeCode, round2 } from '../_shared/discounts.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { notifyNewBooking } from '../_shared/notify.ts';
+import { isPorterService } from '../_shared/porters.ts';
 import { makeReference } from '../_shared/reference.ts';
 import { checkFlight, isPhone } from '../_shared/validation.ts';
 
@@ -31,10 +32,15 @@ serve('createBooking', async (req) => {
   const actorKey = caller ? caller.id : `ip:${ip}`;
   const actorId = caller ? caller.id : 'guest';
   const contactEmail = String(body.contact_email ?? (caller && channel === 'online' ? caller.email : '') ?? '').trim().toLowerCase();
+  // Every service is confirmed by text message to the phone number. All but Porter Service Only also email a receipt, so only its email is optional.
+  const porterService = channel === 'online' && await isPorterService(admin, String(body.package_code ?? ''));
   if (channel === 'online') {
-    if (!contactEmail) throw new HttpError(400, 'Enter your email address. Your booking details are sent there.');
-    if (!EMAIL_REGEX.test(contactEmail) || contactEmail.length > 254) throw new HttpError(400, 'Enter a valid email address.');
+    if (!contactEmail && !porterService) throw new HttpError(400, 'Enter your email address. Your booking details are sent there.');
+    if (contactEmail && (!EMAIL_REGEX.test(contactEmail) || contactEmail.length > 254)) throw new HttpError(400, 'Enter a valid email address.');
   }
+  // Who a guest is, for limits and "one use each" rules: their email, or (with no email) their phone number.
+  const phoneDigits = String(body.contact ?? '').replace(/\D/g, '');
+  const guestKey = contactEmail || `phone:${phoneDigits}`;
   const settings = await loadSettings(admin);
   // The admin can pause online booking (Admin > Settings). Staff at the desk are never blocked.
   if (channel === 'online' && !isStaff && !settings.bool('online_bookings_enabled')) throw new HttpError(503, settings.str('online_bookings_message'));
@@ -48,7 +54,7 @@ serve('createBooking', async (req) => {
   const existingBooking = async () => {
     if (!idempotencyKey) return null;
     let query = admin.from('bookings').select('*').eq('idempotency_key', idempotencyKey);
-    query = caller ? query.eq(ownerColumn, caller.id) : query.is('passenger_user_id', null).eq('contact_email', contactEmail);
+    query = caller ? query.eq(ownerColumn, caller.id) : (contactEmail ? query.is('passenger_user_id', null).eq('contact_email', contactEmail) : query.is('passenger_user_id', null).is('contact_email', null).eq('contact', String(body.contact ?? '').trim()));
     const { data } = await query.maybeSingle();
     return data;
   };
@@ -67,7 +73,7 @@ serve('createBooking', async (req) => {
   if (!isStaff) {
     const hits = await admin.rpc('hit_rate_limit', { p_key: `booking:${actorKey}`, p_window_seconds: 3600 });
     if (hits.error) throw hits.error;
-    const emailHits = await admin.rpc('hit_rate_limit', { p_key: `booking_email:${contactEmail}`, p_window_seconds: 3600 });
+    const emailHits = await admin.rpc('hit_rate_limit', { p_key: `booking_email:${guestKey}`, p_window_seconds: 3600 });
     if (emailHits.error) throw emailHits.error;
     if (hits.data > settings.num('booking_limit_per_hour') || emailHits.data > settings.num('booking_limit_per_hour')) throw new HttpError(429, 'You have made a lot of bookings in the last hour. Please try again later, or contact the Airport Assist desk.');
   }
@@ -121,7 +127,7 @@ serve('createBooking', async (req) => {
 
   const countUses = async (codeId: string) => {
     const query = admin.from('discount_redemptions').select('id', { count: 'exact', head: true }).eq('discount_code_id', codeId);
-    const { count } = await (caller ? query.eq('user_id', caller.id) : query.ilike('user_email', contactEmail));
+    const { count } = await (caller ? query.eq('user_id', caller.id) : query.ilike('user_email', guestKey));
     return count ?? 0;
   };
 
@@ -134,7 +140,7 @@ serve('createBooking', async (req) => {
 
     const { data: record } = await admin.from('discount_codes').select('*').eq('code', normalizeCode(body.discount_code)).maybeSingle();
     if (!record) return await fail();
-    const result = evaluateDiscount({ record, userEmail: caller?.email ?? contactEmail, grossTotal: gross, usedByUser: await countUses(record.id) });
+    const result = evaluateDiscount({ record, userEmail: caller?.email ?? guestKey, grossTotal: gross, usedByUser: await countUses(record.id) });
     if (!result.ok) {
       console.log(`createBooking: discount ${record.code} refused for ${actorId}: ${result.message}`);
       return await fail();
@@ -234,7 +240,7 @@ serve('createBooking', async (req) => {
     // History row. The booking is already saved and priced, so a failure here is logged, not fatal.
     const { error } = await admin.from('discount_redemptions').insert({
       discount_code_id: discountRecord.id, code: discountRecord.code, booking_id: booking.id, booking_reference: booking.reference,
-      user_id: actorId, user_email: caller?.email ?? contactEmail, recipient_type: discountRecord.recipient_type || null,
+      user_id: actorId, user_email: caller?.email ?? guestKey, recipient_type: discountRecord.recipient_type || null,
       recipient_name: discountRecord.recipient_name || '', discount_type: discountRecord.discount_type,
       discount_value: Number(discountRecord.discount_value) || 0, discount_amount: discountAmounts.discount_amount,
       gross_total: discountAmounts.gross_total, net_total: discountAmounts.final_total, redeemed_at: new Date().toISOString(),
