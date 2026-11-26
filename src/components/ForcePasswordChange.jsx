@@ -5,7 +5,7 @@ import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import PasswordInput from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
-import { KeyRound, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // Shown to a person whose account an admin created with a temporary password: nothing else opens until they
 // have chosen their own.
@@ -38,7 +38,6 @@ export default function ForcePasswordChange() {
 
   return (
     <AuthLayout
-      icon={KeyRound}
       title="Choose your own password"
       subtitle={`Welcome${user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}. The temporary password you were given works only for this first sign-in.`}
       footer={

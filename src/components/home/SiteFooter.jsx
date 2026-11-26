@@ -46,7 +46,7 @@ export default function SiteFooter() {
             <li><a href="#how-it-works" className={link}>How it works</a></li>
             <li><a href="#faq" className={link}>Questions</a></li>
             <li><a href="#contact" className={link}>Contact</a></li>
-            <li><Link to={signInDest} className={link}>{isAuthenticated ? "My account" : "Staff sign in"}</Link></li>
+            <li><Link to={signInDest} className={link}>{isAuthenticated ? "My account" : "Staff portal"}</Link></li>
           </ul>
         </nav>
 

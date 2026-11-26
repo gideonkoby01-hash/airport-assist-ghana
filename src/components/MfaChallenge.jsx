@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
@@ -37,7 +37,6 @@ export default function MfaChallenge() {
 
   return (
     <AuthLayout
-      icon={ShieldCheck}
       title="Two-step verification"
       subtitle="Enter the 6-digit code from your authenticator app"
       footer={

@@ -3,9 +3,9 @@ import { ThemeToggle } from "@/lib/theme";
 
 // The stage every account screen sits on (sign in, forgot and reset password, choose a password, two-step verification): a deep navy
 // airport scene with the check-in photo faded into the background as a watermark, a large turning compass watermark, drifting gold and
-// violet light, a plane flying across, and a frosted card that rises into place. On wide screens a short welcome sits beside the card.
+// violet light, a plane flying across, and a frosted card that rises into place. On wide screens the business name sits beside the card.
 // All motion stops for people who prefer reduced motion (see index.css).
-export default function AuthLayout({ icon: Icon, title, subtitle = undefined, footer = undefined, children = undefined }) {
+export default function AuthLayout({ title, subtitle = undefined, footer = undefined, children = undefined }) {
   return (
     <main className="site auth-stage relative isolate min-h-screen overflow-hidden flex items-center justify-center px-4 py-10">
       {/* the picture, faded into a watermark */}
@@ -37,23 +37,11 @@ export default function AuthLayout({ icon: Icon, title, subtitle = undefined, fo
       <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.05fr_minmax(0,26rem)]">
         {/* the welcome, beside the card on wide screens */}
         <div className="auth-head hidden lg:block">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f6c73a]">
-            <span className="auth-live h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" /> Operations desk · Open 24/7
-          </p>
-          <h2 className="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight">Airport Assist<br />Ghana</h2>
-          <p className="mt-4 max-w-md text-lg text-white/70">Meet, assist and move every traveller through Kotoka. Sign in to run today's bookings, shifts and payments.</p>
-          <ul className="mt-8 grid max-w-md gap-3 text-sm text-white/80">
-            {["Assign supervisors and porters in seconds", "Rosters, jobs and earnings in one place", "Payments and books that balance themselves"].map((t) => (
-              <li key={t} className="flex items-center gap-3"><span className="h-px w-8 bg-[#d4af37]/70" aria-hidden="true" /> {t}</li>
-            ))}
-          </ul>
+          <h2 className="text-5xl font-extrabold leading-[1.05] tracking-tight">Airport Assist<br />Ghana</h2>
         </div>
 
         <div className="w-full">
           <div className="auth-head mb-7 text-center lg:text-left">
-            <div className="auth-badge relative mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6c73a] to-[#d4af37] text-[#0b213c] shadow-lg shadow-black/30">
-              <Icon className="h-7 w-7" aria-hidden="true" />
-            </div>
             <h1 className="block text-3xl font-bold tracking-tight">{title}</h1>
             {subtitle && <p className="mt-2 text-white/70">{subtitle}</p>}
           </div>

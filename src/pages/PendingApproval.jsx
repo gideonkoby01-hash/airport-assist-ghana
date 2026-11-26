@@ -3,7 +3,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 import { useAuth } from "@/lib/AuthContext";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, XCircle, LogOut } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function PendingApproval() {
@@ -25,11 +25,9 @@ export default function PendingApproval() {
   }, [user?.id]);
 
   const rejected = request?.status === "rejected";
-  const Icon = rejected ? XCircle : Clock;
 
   return (
     <AuthLayout
-      icon={Icon}
       title={rejected ? "Request Rejected" : "Awaiting Approval"}
       subtitle={
         rejected
