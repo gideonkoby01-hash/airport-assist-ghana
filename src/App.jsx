@@ -37,10 +37,11 @@ const Privacy = lazy(() => import('@/pages/Privacy'));
 const PorterApp = lazy(() => import('@/pages/PorterApp'));
 
 // The public pages (home, booking, payment, privacy). When the super admin has closed the public website they send visitors to the staff sign-in.
-const PublicGate = ({ children }) => {
+const PublicGate = ({ children, home = false }) => {
   const { settings, loaded } = useSettings();
   const decision = publicSiteDecision({ loaded, value: settings.public_site_enabled, cached: readCachedPublicSite(typeof localStorage === 'undefined' ? undefined : localStorage) });
-  if (decision === 'redirect') return <Navigate to="/login" replace />;
+  // The home address goes to /portal: staff already signed in land on their dashboard, everyone else on the sign-in page.
+  if (decision === 'redirect') return <Navigate to={home ? '/portal' : '/login'} replace />;
   if (decision === 'wait') {
     return <div className="fixed inset-0 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div></div>;
   }
@@ -95,7 +96,7 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* Public company homepage — no sign-in required */}
-      <Route path="/" element={<PublicGate><Home /></PublicGate>} />
+      <Route path="/" element={<PublicGate home><Home /></PublicGate>} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         {/* Role-based dashboard redirect for signed-in users */}
         <Route path="/portal" element={<RoleRedirect />} />

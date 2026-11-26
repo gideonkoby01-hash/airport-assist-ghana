@@ -68,7 +68,7 @@ export const SETTINGS: SettingDef[] = [
   { key: 'sms_sender_id', group: 'sms', label: 'Sender name', type: 'text', default: '', maxLength: 11, optional: true,
     help: 'What passengers see as the sender: up to 11 letters or numbers, no spaces (for example AirportAsst). Hubtel must approve it for your account first; ask Hubtel support if texts are refused.' },
 
-  { key: 'public_site_enabled', group: 'business', label: 'Public website', type: 'boolean', default: 'true', public: true, superAdminOnly: true,
+  { key: 'public_site_enabled', group: 'business', label: 'Public website', type: 'boolean', default: 'false', public: true, superAdminOnly: true,
     help: 'When this is off, the public pages (home, booking, payment and privacy) are closed and visitors are taken to the staff sign-in. Staff dashboards are not affected. Only the super admin can change it.' },
   { key: 'company_name', group: 'business', label: 'Business name', type: 'text', default: 'Airport Assist Ghana', maxLength: 80, public: true, help: 'Used in the footer and the privacy notice.' },
   { key: 'contact_email', group: 'business', label: 'Contact email', type: 'email', default: 'moehamedi@gmail.com', maxLength: 120, public: true, help: 'The public contact address, and where privacy requests are sent.' },
