@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { UserRound, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { whoIsSigningIn } from "@/lib/loginIdentifier";
 import { currentPorterSession, rememberPorterSession } from "@/lib/porterSession";
+import { offerToSavePassword, rememberedLogin, rememberLogin } from "@/lib/rememberedLogin";
 import { useSettings } from "@/lib/SettingsContext";
 
 export default function Login() {
@@ -19,7 +21,10 @@ export default function Login() {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
-  const [who, setWho] = useState("");
+  // The email or phone number used last time on this device is filled in, and the cursor starts on the password.
+  const [savedWho] = useState(() => rememberedLogin());
+  const [who, setWho] = useState(savedWho);
+  const [remember, setRemember] = useState(true);
   const [password, setPassword] = useState("");
   const [error, setError] = useState(location.state?.notice || "");
   const [loading, setLoading] = useState(false);
@@ -46,11 +51,15 @@ export default function Login() {
         // Porters sign in with their phone number: a separate, simpler session that opens only their own page.
         const { data } = await api.functions.invoke("porterLogin", { phone: who_.phone, password });
         rememberPorterSession({ token: data.token, expires_at: data.expires_at }, data.porter?.name);
+        rememberLogin(who, remember);
+        await offerToSavePassword(who.trim(), password);
         navigate("/porter", { replace: true });
         return;
       }
       const { error: signInError } = await supabase.auth.signInWithPassword({ email: who_.email, password });
       if (signInError) throw signInError;
+      rememberLogin(who, remember);
+      await offerToSavePassword(who.trim(), password);
       window.location.href = postLoginDest;
     } catch (err) {
       setError(/invalid login credentials/i.test(err.message || "") ? "That email, phone number or password is not right. Check it and try again." : err.message || "Could not sign in.");
@@ -80,20 +89,21 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} name="staff-sign-in" method="post" action="#" className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email or phone number</Label>
           <div className="relative">
             <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input
               id="email"
+              name="username"
               type="text"
               inputMode="email"
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              autoFocus
+              autoFocus={!savedWho}
               placeholder="Email or 024 123 4567"
               value={who}
               onChange={(e) => setWho(e.target.value)}
@@ -113,6 +123,8 @@ export default function Login() {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <PasswordInput
               id="password"
+              name="password"
+              autoFocus={Boolean(savedWho)}
               autoComplete="current-password"
               placeholder="••••••••"
               value={password}
@@ -124,6 +136,10 @@ export default function Login() {
             />
           </div>
           {capsLock && <p role="status" className="text-xs font-medium text-amber-700">Caps Lock is on.</p>}
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Checkbox id="remember" checked={remember} onCheckedChange={(v) => setRemember(v === true)} className="h-5 w-5" />
+          <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">Remember me on this device</Label>
         </div>
         <Button type="submit" className="auth-glow-btn w-full h-12 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
           {loading ? (
