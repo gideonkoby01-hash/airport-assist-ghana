@@ -131,7 +131,6 @@ export default function Login() {
             "Sign in"
           )}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">Porters: sign in with your phone number and the password the office gave you.</p>
       </form>
     </AuthLayout>
   );
