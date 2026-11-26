@@ -334,12 +334,13 @@
 .auth-orb { filter: blur(70px); border-radius: 9999px; }
 .auth-grid { background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 56px 56px;
   -webkit-mask-image: radial-gradient(70% 60% at 50% 45%, #000 20%, transparent 80%); mask-image: radial-gradient(70% 60% at 50% 45%, #000 20%, transparent 80%); }
-.auth-card { background: rgba(255, 255, 255, 0.92); color: hsl(var(--foreground)); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2);
+.auth-card { background: #fff; color: hsl(var(--foreground));
   border: 1px solid rgba(255, 255, 255, 0.55); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(212, 175, 55, 0.18); }
 /* The stage is dark in both themes, so the card always keeps the light palette (night mode's light-green colours would not read on it). */
 .auth-card { --background: 0 0% 100%; --foreground: 214 52% 12%; --card: 0 0% 100%; --card-foreground: 214 52% 12%; --popover: 0 0% 100%; --popover-foreground: 214 52% 12%;
   --primary: 214 62% 14%; --primary-foreground: 0 0% 100%; --secondary: 210 33% 97%; --secondary-foreground: 214 52% 12%; --muted: 210 30% 95%; --muted-foreground: 214 16% 36%;
   --accent: 44 72% 52%; --accent-foreground: 214 62% 12%; --destructive: 0 72% 50%; --destructive-foreground: 0 0% 100%; --border: 214 24% 88%; --input: 214 24% 88%; --ring: 44 72% 46%; }
+.auth-flag { background: linear-gradient(90deg, #1f9d3a 0 33.34%, #fcd116 33.34% 66.67%, #ce1126 66.67% 100%); }
 .auth-glow-btn { position: relative; overflow: hidden; }
 .auth-glow-btn::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%); transform: translateX(-130%) skewX(-18deg); }
 .auth-glow-btn:hover:not(:disabled)::after { transform: translateX(260%) skewX(-18deg); transition: transform 0.9s ease; }
@@ -358,8 +359,6 @@
   .auth-stagger > *:nth-child(3), .auth-stagger > form > *:nth-child(3) { animation-delay: 0.5s; }
   .auth-stagger > *:nth-child(4), .auth-stagger > form > *:nth-child(4) { animation-delay: 0.6s; }
   .auth-stagger > *:nth-child(5), .auth-stagger > form > *:nth-child(5) { animation-delay: 0.7s; }
-  .auth-head > * { animation: auth-rise-soft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-  .auth-head > *:nth-child(2) { animation-delay: 0.12s; } .auth-head > *:nth-child(3) { animation-delay: 0.24s; }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-plane { offset-distance: 38%; }
