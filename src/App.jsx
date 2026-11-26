@@ -5,7 +5,8 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import { SettingsProvider } from '@/lib/SettingsContext';
+import { SettingsProvider, useSettings } from '@/lib/SettingsContext';
+import { publicSiteDecision, readCachedPublicSite } from '@/lib/publicSite';
 import { CurrencyProvider } from '@/lib/currency';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MfaChallenge from '@/components/MfaChallenge';
@@ -33,6 +34,19 @@ const PendingApproval = lazy(() => import('@/pages/PendingApproval'));
 const Security = lazy(() => import('@/pages/Security'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
+const PorterApp = lazy(() => import('@/pages/PorterApp'));
+
+// The public pages (home, booking, payment, privacy). When the super admin has closed the public website they send visitors to the staff sign-in.
+const PublicGate = ({ children, home = false }) => {
+  const { settings, loaded } = useSettings();
+  const decision = publicSiteDecision({ loaded, value: settings.public_site_enabled, cached: readCachedPublicSite(typeof localStorage === 'undefined' ? undefined : localStorage) });
+  // The home address goes to /portal: staff already signed in land on their dashboard, everyone else on the sign-in page.
+  if (decision === 'redirect') return <Navigate to={home ? '/portal' : '/login'} replace />;
+  if (decision === 'wait') {
+    return <div className="fixed inset-0 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div></div>;
+  }
+  return children;
+};
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError, navigateToLogin, mfaRequired, mfaEnrolRequired, accountDisabled, mustChangePassword } = useAuth();
@@ -72,15 +86,17 @@ const AuthenticatedApp = () => {
       {/* Passengers do not have accounts: they book on /book and everything about the booking is emailed to them. */}
       <Route path="/register" element={<Navigate to="/book" replace />} />
       <Route path="/passenger" element={<Navigate to="/book" replace />} />
-      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/privacy" element={<PublicGate><Privacy /></PublicGate>} />
       {/* The booking page is public: signing in comes at its last step */}
-      <Route path="/book" element={<Book />} />
-      <Route path="/pay" element={<Pay />} />
-      <Route path="/pay/return" element={<PayReturn />} />
+      <Route path="/book" element={<PublicGate><Book /></PublicGate>} />
+      <Route path="/pay" element={<PublicGate><Pay /></PublicGate>} />
+      <Route path="/pay/return" element={<PublicGate><PayReturn /></PublicGate>} />
+      {/* Porters sign in with a phone number and have their own session, so this page is outside the staff sign-in. */}
+      <Route path="/porter" element={<PorterApp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       {/* Public company homepage — no sign-in required */}
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<PublicGate home><Home /></PublicGate>} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         {/* Role-based dashboard redirect for signed-in users */}
         <Route path="/portal" element={<RoleRedirect />} />

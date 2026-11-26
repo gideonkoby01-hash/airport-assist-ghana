@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Save, Trash2, Pencil, X, Luggage } from "lucide-react";
+import { Loader2, Plus, Save, Trash2, Pencil, X, Luggage, KeyRound, Copy, Check, Smartphone } from "lucide-react";
 
 const normalizePhone = (p) => (p || "").replace(/[\s\-()]/g, "");
 
+const when = (iso) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null);
+
 export default function PorterManager() {
   const [porters, setPorters] = useState([]);
+  const [logins, setLogins] = useState({}); // porter_id -> { phone, disabled, must_change_password, last_login_at }
+  const [issued, setIssued] = useState(null); // the temporary password just made, shown once
+  const [copied, setCopied] = useState(false);
+  const [busyLogin, setBusyLogin] = useState("");
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -27,6 +33,8 @@ export default function PorterManager() {
     try {
       const page = await api.entities.Porter.filter({}, { sort: "full_name" });
       setPorters(page.items || []);
+      const { data } = await api.functions.invoke("managePorterLogin", { action: "list" });
+      setLogins(Object.fromEntries((data?.logins || []).map((l) => [l.porter_id, l])));
     } catch (e) {
       setErr(e.message || "Failed to load porters.");
     } finally {
@@ -111,6 +119,33 @@ export default function PorterManager() {
     }
   };
 
+  // Gives a porter a login, resets it, switches it off or on, or removes it. A new temporary password is shown here once.
+  const loginAction = async (p, action) => {
+    setBusyLogin(p.id + action);
+    try {
+      const { data } = await api.functions.invoke("managePorterLogin", { action, porter_id: p.id });
+      if (data?.temporary_password) {
+        setIssued({ name: p.full_name, phone: data.phone, password: data.temporary_password });
+        setCopied(false);
+      }
+      await load();
+    } catch (e) {
+      notifyError(e.message || "Could not change the login.");
+    } finally {
+      setBusyLogin("");
+    }
+  };
+
+  const copyIssued = async () => {
+    const text = `Airport Assist porter sign-in\nPage: ${window.location.origin}/login\nPhone number: ${issued.phone}\nTemporary password: ${issued.password}\nYou will choose your own password the first time you sign in.`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      notifyError("Could not copy. Write the password down from the box instead.");
+    }
+  };
+
   const toggle = async (p) => {
     try {
       await api.entities.Porter.update(p.id, { active: !p.active });
@@ -152,6 +187,21 @@ export default function PorterManager() {
         {err && <p className="text-sm text-destructive mt-3">{err}</p>}
       </div>
 
+      {issued && (
+        <div role="status" className="rounded-2xl border border-accent/40 bg-accent/5 p-5 space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2"><KeyRound className="w-4 h-4 text-accent" /> Sign-in details for {issued.name}</h3>
+          <dl className="text-sm grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+            <dt className="text-muted-foreground">Phone number</dt><dd className="font-medium">{issued.phone}</dd>
+            <dt className="text-muted-foreground">Temporary password</dt><dd className="font-mono font-semibold break-all select-all">{issued.password}</dd>
+          </dl>
+          <p className="text-xs text-muted-foreground">This is shown only once. Give it to the porter now; they choose their own password the first time they sign in. Anything that was open on their phone is signed out.</p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={copyIssued}>{copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}{copied ? "Copied" : "Copy message to send"}</Button>
+            <Button size="sm" variant="outline" onClick={() => setIssued(null)}>Done</Button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-card rounded-2xl border border-border p-5">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Luggage className="w-4 h-4 text-accent" /> Porter Directory
@@ -190,6 +240,25 @@ export default function PorterManager() {
                   <div>
                     <p className="font-medium text-sm">{p.full_name}</p>
                     <p className="text-xs text-muted-foreground">{p.phone_number}</p>
+                    <p className="text-xs mt-0.5 flex items-center gap-1 text-muted-foreground">
+                      <Smartphone className="w-3 h-3" aria-hidden="true" />
+                      {!logins[p.id] ? "No porter login" : logins[p.id].disabled ? "Login switched off" : logins[p.id].must_change_password ? "Login given, not used yet" : `Signs in${logins[p.id].last_login_at ? `, last ${when(logins[p.id].last_login_at)}` : ""}`}
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                      {!logins[p.id] ? (
+                        <button className="text-xs text-primary hover:underline disabled:opacity-50" disabled={!p.active || !!busyLogin} onClick={() => loginAction(p, "create")}>Give login</button>
+                      ) : (
+                        <>
+                          <ConfirmAction title={`Reset ${p.full_name}'s password?`} description="A new temporary password is made and shown to you once. Their old password stops working and anything open on their phone is signed out." confirmLabel="Reset password" onConfirm={() => loginAction(p, "reset")}>
+                            <button className="text-xs text-primary hover:underline">Reset password</button>
+                          </ConfirmAction>
+                          <button className="text-xs text-primary hover:underline" onClick={() => loginAction(p, logins[p.id].disabled ? "enable" : "disable")}>{logins[p.id].disabled ? "Switch login on" : "Switch login off"}</button>
+                          <ConfirmAction title={`Remove ${p.full_name}'s login?`} description="They can no longer sign in. You can give them a new login later." confirmLabel="Remove login" destructive onConfirm={() => loginAction(p, "remove")}>
+                            <button className="text-xs text-rose-600 hover:underline">Remove login</button>
+                          </ConfirmAction>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">

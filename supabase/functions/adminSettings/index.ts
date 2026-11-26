@@ -1,6 +1,7 @@
 import { adminClient, appUrl, requireCaller } from '../_shared/auth.ts';
-import { buildOverview, clearSecret, resetSetting, saveSecret, saveSettings } from '../_shared/adminSettings.ts';
-import { getSecret } from '../_shared/config.ts';
+import { buildOverview, clearSecret, resetSetting, saveSecret, saveSettings, superAdminState } from '../_shared/adminSettings.ts';
+import { getSecret, loadSettings } from '../_shared/config.ts';
+import { sendSms } from '../_shared/sms.ts';
 import { sendTransactionalEmail } from '../_shared/email.ts';
 import { checkKey, keyMode, PaystackError } from '../_shared/paystack.ts';
 import { loadSmtpConfig } from '../_shared/emailConfig.ts';
@@ -15,33 +16,36 @@ serve('adminSettings', async (req) => {
   const user = await requireCaller(req, admin, ['admin']);
   const body = await readBody(req) as Record<string, any>;
   const env = (name: string) => Deno.env.get(name);
+  // Some settings (the public website switch) can be changed only by the super admin, once one has been set.
+  const sa = await superAdminState(admin, user.id);
+  const canChangeSuperOnly = { superAdmin: !sa.set || sa.you };
 
   switch (String(body.action || 'get')) {
     case 'get':
-      return json(await buildOverview(admin, env));
+      return json(await buildOverview(admin, env, user.id));
 
     case 'save': {
-      const result = await saveSettings(admin, user.id, (body.changes ?? {}) as Record<string, unknown>);
-      if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, saved: result.saved, overview: await buildOverview(admin, env) });
+      const result = await saveSettings(admin, user.id, (body.changes ?? {}) as Record<string, unknown>, canChangeSuperOnly);
+      if (!result.ok) throw new HttpError(result.error.startsWith('Only the super admin') ? 403 : 400, result.error);
+      return json({ ok: true, saved: result.saved, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'reset': {
-      const result = await resetSetting(admin, String(body.key || ''));
-      if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, overview: await buildOverview(admin, env) });
+      const result = await resetSetting(admin, String(body.key || ''), canChangeSuperOnly);
+      if (!result.ok) throw new HttpError(result.error.startsWith('Only the super admin') ? 403 : 400, result.error);
+      return json({ ok: true, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'save_secret': {
       const result = await saveSecret(admin, user, String(body.name || ''), body.value, env('SETTINGS_ENCRYPTION_KEY'));
       if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, overview: await buildOverview(admin, env) });
+      return json({ ok: true, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'clear_secret': {
       const result = await clearSecret(admin, user, String(body.name || ''));
       if (!result.ok) throw new HttpError(400, result.error);
-      return json({ ok: true, overview: await buildOverview(admin, env) });
+      return json({ ok: true, overview: await buildOverview(admin, env, user.id) });
     }
 
     case 'test_smtp': {
@@ -86,6 +90,18 @@ serve('adminSettings', async (req) => {
       });
       // Say plainly what happened, including why a send failed (for example an unverified sender domain).
       return json({ ok: result.sent, status: result.status, message: result.sent ? `A test email was sent to ${user.email}. Check your inbox (and spam).` : (result.message ?? 'The test email could not be sent.') });
+    }
+
+    case 'test_sms': {
+      // Sends a text to the number the admin types, with the saved Hubtel details. Five an hour: it costs credit and must not become a way to send texts.
+      const hits = await admin.rpc('hit_rate_limit', { p_key: `test-sms:${user.id}`, p_window_seconds: 3600 });
+      if ((hits.data ?? 0) > 5) throw new HttpError(429, 'That is enough test texts for now. Try again in an hour.');
+      const settings = await loadSettings(admin);
+      const result = await sendSms(admin, {
+        eventKey: `test:${crypto.randomUUID()}`, to: body.phone, test: true,
+        text: `${settings.str('company_name') || 'Airport Assist Ghana'}: this is a test text. Text messages are working.`,
+      });
+      return json({ ok: result.sent, status: result.status, message: result.sent ? 'The test text was sent. It should reach the phone within a minute.' : (result.message ?? 'The test text could not be sent.') });
     }
 
     default:

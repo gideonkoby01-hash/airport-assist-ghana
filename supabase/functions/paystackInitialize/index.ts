@@ -1,6 +1,6 @@
 import { adminClient, clientIp, requestAppUrl } from '../_shared/auth.ts';
 import { bookingEmailAddress, round2 } from '../_shared/bookingAccess.ts';
-import { getSecret, loadSettings } from '../_shared/config.ts';
+import { getSecret, loadSettings, PUBLIC_SITE_CLOSED } from '../_shared/config.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
 import { initializeTransaction, newReference, PaystackError } from '../_shared/paystack.ts';
 
@@ -18,6 +18,10 @@ serve('paystackInitialize', async (req) => {
 
   const quote = body.action === 'quote';
   const settings = await loadSettings(admin);
+  if (!settings.bool('public_site_enabled')) {
+    if (quote) return json({ payable: false, reason: 'unavailable' });
+    throw new HttpError(403, PUBLIC_SITE_CLOSED);
+  }
   const secret = settings.str('paystack_enabled') === 'true' ? await getSecret(admin, 'PAYSTACK_SECRET_KEY') : undefined;
   if (!secret) {
     if (quote) return json({ payable: false, reason: 'unavailable' });

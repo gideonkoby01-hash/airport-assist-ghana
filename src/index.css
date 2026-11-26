@@ -325,3 +325,52 @@
 @media (display-mode: standalone) {
   html { overscroll-behavior-x: none; }
 }
+
+/* ---- Staff sign-in and the other account screens: a dark airport stage with a faded photo, drifting light and a card that rises into place.
+   Every animation is switched off for people who prefer reduced motion. ---- */
+.auth-stage { background: radial-gradient(120% 90% at 20% 0%, #17406f 0%, #0b213c 55%, #07162a 100%); color: #fff; }
+.auth-photo { opacity: 0.2; filter: grayscale(0.35) contrast(1.05); mix-blend-mode: luminosity; }
+.auth-vignette { background: radial-gradient(80% 70% at 50% 40%, transparent 0%, rgba(7, 22, 42, 0.55) 70%, rgba(7, 22, 42, 0.9) 100%); }
+.auth-orb { filter: blur(70px); border-radius: 9999px; }
+.auth-grid { background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 45%, #000 20%, transparent 80%); mask-image: radial-gradient(70% 60% at 50% 45%, #000 20%, transparent 80%); }
+.auth-card { background: rgba(255, 255, 255, 0.92); color: hsl(var(--foreground)); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.55); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(212, 175, 55, 0.18); }
+/* The stage is dark in both themes, so the card always keeps the light palette (night mode's light-green colours would not read on it). */
+.auth-card { --background: 0 0% 100%; --foreground: 214 52% 12%; --card: 0 0% 100%; --card-foreground: 214 52% 12%; --popover: 0 0% 100%; --popover-foreground: 214 52% 12%;
+  --primary: 214 62% 14%; --primary-foreground: 0 0% 100%; --secondary: 210 33% 97%; --secondary-foreground: 214 52% 12%; --muted: 210 30% 95%; --muted-foreground: 214 16% 36%;
+  --accent: 44 72% 52%; --accent-foreground: 214 62% 12%; --destructive: 0 72% 50%; --destructive-foreground: 0 0% 100%; --border: 214 24% 88%; --input: 214 24% 88%; --ring: 44 72% 46%; }
+.auth-glow-btn { position: relative; overflow: hidden; }
+.auth-glow-btn::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%); transform: translateX(-130%) skewX(-18deg); }
+.auth-glow-btn:hover:not(:disabled)::after { transform: translateX(260%) skewX(-18deg); transition: transform 0.9s ease; }
+.auth-plane { offset-path: path("M -40 150 C 220 10, 520 230, 820 60 S 1240 20, 1500 120"); offset-rotate: auto; offset-distance: 0%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-photo { animation: auth-kenburns 40s ease-in-out infinite alternate; transform-origin: 60% 40%; will-change: transform; }
+  .auth-orb-a { animation: auth-drift-a 22s ease-in-out infinite alternate; }
+  .auth-orb-b { animation: auth-drift-b 28s ease-in-out infinite alternate; }
+  .auth-rings { animation: auth-spin 120s linear infinite; }
+  .auth-plane { animation: auth-fly 16s linear infinite; }
+  .auth-card { animation: auth-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .auth-stagger > *:not(form), .auth-stagger > form > * { animation: auth-rise-soft 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .auth-stagger > *:nth-child(1), .auth-stagger > form > *:nth-child(1) { animation-delay: 0.3s; }
+  .auth-stagger > *:nth-child(2), .auth-stagger > form > *:nth-child(2) { animation-delay: 0.4s; }
+  .auth-stagger > *:nth-child(3), .auth-stagger > form > *:nth-child(3) { animation-delay: 0.5s; }
+  .auth-stagger > *:nth-child(4), .auth-stagger > form > *:nth-child(4) { animation-delay: 0.6s; }
+  .auth-stagger > *:nth-child(5), .auth-stagger > form > *:nth-child(5) { animation-delay: 0.7s; }
+  .auth-head > * { animation: auth-rise-soft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .auth-head > *:nth-child(2) { animation-delay: 0.12s; } .auth-head > *:nth-child(3) { animation-delay: 0.24s; }
+  .auth-badge::before { content: ""; position: absolute; inset: -6px; border-radius: 1.1rem; border: 2px solid rgba(212, 175, 55, 0.55); animation: ring-ping 2.8s ease-out infinite; }
+  .auth-live { animation: auth-blink 2s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-plane { offset-distance: 38%; }
+}
+@keyframes auth-kenburns { from { transform: scale(1.04) translate3d(0, 0, 0); } to { transform: scale(1.16) translate3d(-1.5%, -1%, 0); } }
+@keyframes auth-drift-a { from { transform: translate3d(-4%, -2%, 0) scale(1); } to { transform: translate3d(10%, 8%, 0) scale(1.15); } }
+@keyframes auth-drift-b { from { transform: translate3d(6%, 4%, 0) scale(1.1); } to { transform: translate3d(-12%, -6%, 0) scale(0.95); } }
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+@keyframes auth-fly { from { offset-distance: -5%; } to { offset-distance: 105%; } }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(28px) scale(0.98); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes auth-rise-soft { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes auth-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }

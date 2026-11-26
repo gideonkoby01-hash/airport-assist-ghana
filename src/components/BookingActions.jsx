@@ -336,6 +336,7 @@ export default function BookingActions({ booking, user, onUpdated }) {
                     <span className="font-medium">{p.porter_name}</span>
                     {p.extra ? <> · <span className="text-xs font-semibold rounded-full bg-accent/20 px-2 py-0.5">Extra porter +{formatGHS(p.fee)}</span></> : <> · 1 passenger</>} ·{" "}
                     {formatGHS(p.commission)}
+                    {p.done_at ? <> · <span className="text-xs font-semibold text-emerald-700">Marked done {new Date(p.done_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></> : null}
                   </span>
                   <button aria-label={`Remove ${p.porter_name}`} onClick={() => removePorter(i)} className="text-rose-500 hover:text-rose-700">
                     <Trash2 className="w-4 h-4" />

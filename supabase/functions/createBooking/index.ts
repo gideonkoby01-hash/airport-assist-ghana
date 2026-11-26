@@ -1,5 +1,5 @@
 import { adminClient, clientIp, optionalCaller } from '../_shared/auth.ts';
-import { loadSettings } from '../_shared/config.ts';
+import { loadSettings, PUBLIC_SITE_CLOSED } from '../_shared/config.ts';
 import { STAFF_ROLES } from '../_shared/bookingAccess.ts';
 import { evaluateDiscount, normalizeCode, round2 } from '../_shared/discounts.ts';
 import { HttpError, json, readBody, serve } from '../_shared/http.ts';
@@ -38,6 +38,8 @@ serve('createBooking', async (req) => {
   const settings = await loadSettings(admin);
   // The admin can pause online booking (Admin > Settings). Staff at the desk are never blocked.
   if (channel === 'online' && !isStaff && !settings.bool('online_bookings_enabled')) throw new HttpError(503, settings.str('online_bookings_message'));
+  // When the super admin has closed the public website, nobody outside the staff makes a booking through it.
+  if (!isStaff && !settings.bool('public_site_enabled')) throw new HttpError(503, PUBLIC_SITE_CLOSED);
 
   // The same submission arriving twice (a retry after a timeout) returns the first booking instead of making a second.
   const idempotencyKey = typeof body.idempotency_key === 'string' && body.idempotency_key.length >= 8 && body.idempotency_key.length <= 100

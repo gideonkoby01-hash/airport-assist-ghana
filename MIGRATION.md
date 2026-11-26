@@ -103,6 +103,21 @@ How it behaves:
 - Fees are paid by the business (the passenger is charged exactly the booking total). To pass fees on to passengers instead, ask for a change; it affects prices.
 - It was built against Paystack's documented behaviour and tested with a stand-in for Paystack (the signature check is verified against a published HMAC-SHA512 test vector). Run the test-mode payment in step 5 before relying on it; that is the one thing no automated test can cover.
 
+### 2d. Text messages to passengers through Hubtel (optional)
+
+Passengers can be texted at the phone number on their booking: when the booking is received, when a supervisor is assigned (with the supervisor's name and number), and when the service starts, finishes, is cancelled or missed. Staff are not texted, and walk-in bookings are not texted. Emails carry on as normal. It is **off** until you switch it on.
+
+1. Hubtel account: SMS switched on, with credit. Copy the SMS **client ID and client secret**.
+2. Ask Hubtel to approve a **sender name** (up to 11 letters or numbers, no spaces).
+3. Admin > Settings > **Text messages**: save the client ID and secret, type the sender name and save.
+4. Type your own number next to **Send test text** and press it. When the text arrives, switch on "Text passengers about their booking" and save.
+
+What to know:
+- Each text costs Hubtel credit. If credit runs out the text fails (the booking is never affected) and the reason is kept in the `sms_deliveries` table.
+- The same event is never texted twice. The phone number and the text are erased from the log once Hubtel accepts the message.
+- The database change is `supabase/migrations/20261205000001_sms_deliveries.sql`.
+- **Not yet verified against the live service.** The sender follows Hubtel's documented SMS API (`https://smsc.hubtel.com/v1/messages/send`, Basic auth with the client ID and secret), but it could not be tried here without a Hubtel account. The test text is the check: if it fails, the message on the page says why (wrong keys, no credit, sender name not approved), and the send code is in `supabase/functions/_shared/sms.ts`.
+
 ## 3. Deploy the Edge Functions
 
 ```bash
@@ -299,6 +314,30 @@ select public.transfer_super_admin('the-admin@example.com');
 ```
 
 The person must be an active admin. The previous super admin becomes an ordinary admin.
+
+## Staff-only mode: closing the public website
+
+The public website is **closed by default**: the address of the site (`/`) goes straight to the staff sign-in (or to the dashboard if already signed in). To open it, the **super admin** uses the same switch. For a client who only wants the operational dashboards, leave it closed. The switch is in **Admin > Settings > Public website** (with a confirmation). Anyone with Settings can see whether it is open, but only the super admin can change it (while no super admin has been set, any admin can).
+
+When it is closed:
+- The home page, booking, payment and privacy pages (`/`, `/book`, `/pay`, `/pay/return`, `/privacy`) send visitors to the staff sign-in. Sign-in, forgot password and reset password still work, and every staff dashboard is untouched.
+- The booking, guest photo upload, discount check and online payment functions refuse requests from the public (staff at the desk can still make bookings). Bookings already made, and their payments, are not affected.
+- The last answer is remembered in the visitor's browser, so a closed website never flashes open while the setting loads. If the setting cannot be loaded at all, the website stays closed.
+
+No database update is needed for this.
+
+## Porter logins and the porter dashboard
+
+Porters sign in at the same page as staff (`/login`) with their **phone number and a password**, and land on their own page (`/porter`): today's shift and jobs, their shifts from the roster, all their jobs, their earnings, and a **Mark done** button on each job. They see only their own work, and no passenger phone number, email or ID photo.
+
+Porters are not accounts of the sign-in service. Each has a row in `porter_logins` (salted password hash, never the password), and the three functions `porterLogin`, `porterApp` and `managePorterLogin` do the rest. The porter session is a signed token that lasts 12 hours and is signed with a key made from `SETTINGS_ENCRYPTION_KEY`, so that key must be set (it already is if the Admin Settings page works).
+
+- **Giving a porter a login:** Admin > Porters > **Give login**. A temporary password is shown **once**, with a button that copies a ready message to send. The porter must choose their own password the first time they sign in. The number they sign in with is the one on the porter register.
+- **Forgotten password:** Admin > Porters > **Reset password** makes a new temporary one. This also signs the porter out everywhere.
+- **Switch login off / Remove login:** ends their access at once.
+- **Marking a job done** stamps the porter's own entry on the booking (shown to the office as "Marked done 10:42"). It does not complete the booking and does not change what the porter is paid; the supervisor still completes the booking, and only completed bookings count towards earnings.
+- **Limits:** 8 wrong attempts per phone number and 30 per network address in ten minutes, then a ten-minute pause.
+- The database change is `supabase/migrations/20261204000001_porter_logins.sql` (run it in the SQL Editor if it is not applied automatically).
 
 ## Shift rosters (supervisors and porters)
 

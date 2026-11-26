@@ -16,15 +16,25 @@ export const OTHER_KEYS = [
   { name: 'Website address (APP_URL) and allowed sites (ALLOWED_ORIGINS)', where: '`supabase secrets set APP_URL=...`', note: 'Controls which website may call the functions. A wrong value would lock everyone out of this page too, so it is not editable here.' },
 ];
 
+export const SUPER_ADMIN_ONLY_MESSAGE = 'Only the super admin can change the public website switch.';
+
+/** Is there a super admin, and is this person it? (Before the super admin update is applied there is none, so any admin may.) */
+export async function superAdminState(admin: SupabaseClient, actorId: string): Promise<{ set: boolean; you: boolean }> {
+  const { data, error } = await admin.from('profiles').select('id').eq('is_super_admin', true).maybeSingle();
+  if (error || !data) return { set: false, you: false };
+  return { set: true, you: data.id === actorId };
+}
+
 export interface Overview {
   groups: typeof GROUPS;
   settings: Array<(typeof SETTINGS)[number] & { value: string; source: string }>;
   secrets: Array<SecretDef & { configured: boolean; source: 'saved' | 'environment' | 'none'; last4: string; updated_date: string | null }>;
   system: { encryption_ready: boolean; encryption_problem: string | null; app_url: string; allowed_origins: string; staff_mfa_required: boolean; cron_secret_set: boolean; paystack_webhook_url: string };
   other_keys: typeof OTHER_KEYS;
+  super_admin: { set: boolean; you: boolean };
 }
 
-export async function buildOverview(admin: SupabaseClient, env: (n: string) => string | undefined): Promise<Overview> {
+export async function buildOverview(admin: SupabaseClient, env: (n: string) => string | undefined, actorId = ''): Promise<Overview> {
   const settings = await loadSettings(admin, { fresh: true, env });
   const { data: rows } = await admin.from('app_secrets').select('name,last4,updated_date');
   const saved = new Map((rows ?? []).map((r: { name: string; last4: string; updated_date: string }) => [r.name, r]));
@@ -55,13 +65,16 @@ export async function buildOverview(admin: SupabaseClient, env: (n: string) => s
       paystack_webhook_url: env('SUPABASE_URL') ? `${env('SUPABASE_URL')!.replace(/\/+$/, '')}/functions/v1/paystackWebhook` : '',
     },
     other_keys: OTHER_KEYS,
+    super_admin: actorId ? await superAdminState(admin, actorId) : { set: false, you: false },
   };
 }
 
 export type Outcome = { ok: true } | { ok: false; error: string };
 
 // Saves one or more settings together (all or none). Anything not in the registry is refused.
-export async function saveSettings(admin: SupabaseClient, actorId: string, changes: Record<string, unknown>): Promise<Outcome & { saved?: string[] }> {
+export async function saveSettings(
+  admin: SupabaseClient, actorId: string, changes: Record<string, unknown>, opts: { superAdmin: boolean } = { superAdmin: true },
+): Promise<Outcome & { saved?: string[] }> {
   const entries = Object.entries(changes);
   if (entries.length === 0) return { ok: false, error: 'Nothing to save.' };
 
@@ -69,6 +82,7 @@ export async function saveSettings(admin: SupabaseClient, actorId: string, chang
   for (const [key, raw] of entries) {
     const def = SETTING_BY_KEY.get(key);
     if (!def) return { ok: false, error: `Unknown setting: ${key}` };
+    if (def.superAdminOnly && !opts.superAdmin) return { ok: false, error: SUPER_ADMIN_ONLY_MESSAGE };
     const checked = validateSetting(def, raw);
     if (!checked.ok) return checked;
     clean[key] = checked.value;
@@ -91,8 +105,10 @@ export async function saveSettings(admin: SupabaseClient, actorId: string, chang
 }
 
 // Goes back to the environment value or the built-in default.
-export async function resetSetting(admin: SupabaseClient, key: string): Promise<Outcome> {
-  if (!SETTING_BY_KEY.has(key)) return { ok: false, error: `Unknown setting: ${key}` };
+export async function resetSetting(admin: SupabaseClient, key: string, opts: { superAdmin: boolean } = { superAdmin: true }): Promise<Outcome> {
+  const def = SETTING_BY_KEY.get(key);
+  if (!def) return { ok: false, error: `Unknown setting: ${key}` };
+  if (def.superAdminOnly && !opts.superAdmin) return { ok: false, error: SUPER_ADMIN_ONLY_MESSAGE };
   const { error } = await admin.from('app_settings').delete().eq('key', key);
   if (error) throw error;
   clearConfigCache();

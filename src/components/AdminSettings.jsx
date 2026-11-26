@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Copy, CreditCard, KeyRound, Loader2, Mail, Settings2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Copy, CreditCard, Globe, KeyRound, Loader2, Mail, MessageSquareText, Settings2, ShieldAlert } from "lucide-react";
 import { api } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,7 +103,7 @@ function SecretField({ secret, encryptionReady, onSave, onClear }) {
           autoComplete="new-password"
           spellCheck={false}
           value={value}
-          placeholder={secret.configured ? "Enter a new one to replace it" : secret.prefix ? `Paste the key (starts with ${secret.prefix})` : "Enter the password"}
+          placeholder={secret.configured ? "Enter a new one to replace it" : secret.prefix ? `Paste the key (starts with ${secret.prefix})` : secret.group === "sms" ? "Paste it here" : "Enter the password"}
           onChange={(e) => setValue(e.target.value)}
         />
         <Button onClick={save} disabled={busy || !value.trim() || !encryptionReady}>
@@ -127,6 +127,46 @@ function SecretField({ secret, encryptionReady, onSave, onClear }) {
   );
 }
 
+// The public website switch. Anyone with Settings can see whether the public website is open; only the super admin can change it
+// (while no super admin has been set, any admin can). When it is closed, the home, booking, payment and privacy pages send visitors
+// to the staff sign-in, and the booking and payment functions refuse. Staff dashboards are never affected.
+function PublicSiteCard({ overview, onChange, busy }) {
+  const open = overview.settings.find((s) => s.key === "public_site_enabled")?.value !== "false";
+  const may = !overview.super_admin?.set || overview.super_admin?.you;
+  return (
+    <section className={`rounded-2xl border p-5 ${open ? "bg-card border-border" : "bg-amber-50 border-amber-200"}`} aria-label="Public website">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold flex items-center gap-2"><Globe className="w-4 h-4 text-accent" aria-hidden="true" /> Public website
+            <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${open ? "bg-emerald-100 text-emerald-800" : "bg-amber-200 text-amber-900"}`}>{open ? "Open" : "Closed"}</span>
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            {open
+              ? "Visitors can see the home page, book and pay. Close it to run the system as staff-only: the public pages send visitors to the staff sign-in, and online booking and payment stop."
+              : "The public website is closed. Visitors are taken to the staff sign-in, and online booking and payment are refused. Staff sign in and work as normal."}
+          </p>
+          {!may && <p className="text-xs text-muted-foreground mt-2">Only the super admin can change this.</p>}
+        </div>
+        {may && (
+          <ConfirmAction
+            title={open ? "Close the public website?" : "Open the public website?"}
+            description={open
+              ? "The home page, booking, payment and privacy pages stop working for visitors and send them to the staff sign-in. Bookings already made are not affected, and staff keep working as normal. You can open it again at any time."
+              : "The home page, booking, payment and privacy pages become available to the public again."}
+            confirmLabel={open ? "Close the website" : "Open the website"}
+            destructive={open}
+            onConfirm={() => onChange(open ? "false" : "true")}
+          >
+            <Button variant={open ? "outline" : "default"} disabled={busy}>
+              {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> : null}{open ? "Close the public website" : "Open the public website"}
+            </Button>
+          </ConfirmAction>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // The admin Settings page. Everything is drawn from the list the adminSettings function sends, so the rules shown here are
 // the rules the server enforces. API keys are written but never read back.
 export default function AdminSettings() {
@@ -143,6 +183,9 @@ export default function AdminSettings() {
   const [checkingKey, setCheckingKey] = useState(false);
   const [keyResult, setKeyResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [smsPhone, setSmsPhone] = useState("");
+  const [smsTesting, setSmsTesting] = useState(false);
+  const [smsResult, setSmsResult] = useState(null);
 
   const adopt = useCallback((o) => {
     setOverview(o);
@@ -186,6 +229,20 @@ export default function AdminSettings() {
       refreshPublic();
     } catch (e) {
       notifyError(e.message || "Could not reset that setting.");
+    }
+  };
+
+  const [siteBusy, setSiteBusy] = useState(false);
+  const setPublicSite = async (value) => {
+    setSiteBusy(true);
+    setError("");
+    try {
+      adopt((await call({ action: "save", changes: { public_site_enabled: value } })).overview);
+      refreshPublic();
+    } catch (e) {
+      setError(e.message || "Could not change the public website.");
+    } finally {
+      setSiteBusy(false);
     }
   };
 
@@ -251,6 +308,18 @@ export default function AdminSettings() {
     }
   };
 
+  const sendTestSms = async () => {
+    setSmsTesting(true);
+    setSmsResult(null);
+    try {
+      setSmsResult(await call({ action: "test_sms", phone: smsPhone }));
+    } catch (e) {
+      setSmsResult({ ok: false, message: e.message || "The test text could not be sent." });
+    } finally {
+      setSmsTesting(false);
+    }
+  };
+
   const sendTest = async () => {
     setTesting(true);
     setTestResult(null);
@@ -270,7 +339,7 @@ export default function AdminSettings() {
   }
 
   const { groups, secrets, system, other_keys: otherKeys } = overview;
-  const order = ["email", "business", "bookings", "payments", "operations", "privacy"];
+  const order = ["email", "sms", "business", "bookings", "payments", "operations", "privacy"];
   const paystackKeySet = secrets.some((x) => x.name === "PAYSTACK_SECRET_KEY" && x.configured);
 
   return (
@@ -286,8 +355,10 @@ export default function AdminSettings() {
         </div>
       )}
 
+      <PublicSiteCard overview={overview} onChange={setPublicSite} busy={siteBusy} />
+
       {order.map((group) => {
-        const allFields = (byGroup[group] || []).filter(visible);
+        const allFields = (byGroup[group] || []).filter(visible).filter((f) => !f.superAdminOnly);
         // The way of sending comes first, because the keys and fields below depend on it.
         const leadFields = allFields.filter((f) => f.key === "email_provider");
         const fields = allFields.filter((f) => f.key !== "email_provider");
@@ -295,7 +366,7 @@ export default function AdminSettings() {
         const smtpOn = group === "email" && drafts.email_provider === "smtp";
         const changed = changedIn(group);
         return (
-          <Card key={group} icon={group === "email" ? Mail : group === "payments" ? CreditCard : Settings2} title={groups[group].title} blurb={groups[group].blurb}>
+          <Card key={group} icon={group === "email" ? Mail : group === "sms" ? MessageSquareText : group === "payments" ? CreditCard : Settings2} title={groups[group].title} blurb={groups[group].blurb}>
             <div className="space-y-5">
               {leadFields.map((def) => (
                 <SettingField
@@ -361,6 +432,30 @@ export default function AdminSettings() {
                   </Button>
                 )}
               </div>
+              {group === "sms" && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sms-test-phone" className="text-xs">Send a test text to</Label>
+                      <Input id="sms-test-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="024 123 4567" value={smsPhone} onChange={(e) => setSmsPhone(e.target.value)} className="w-52" />
+                    </div>
+                    <Button variant="outline" onClick={sendTestSms} disabled={smsTesting || !smsPhone.trim() || changed.length > 0}
+                      title={changed.length > 0 ? "Save your changes first; the test uses the saved settings" : undefined}>
+                      {smsTesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <MessageSquareText className="w-4 h-4 mr-2" aria-hidden="true" />} Send test text
+                    </Button>
+                  </div>
+                  {smsResult && <p className={`text-sm ${smsResult.ok ? "text-emerald-700" : "text-destructive"}`} role="status">{smsResult.message}</p>}
+                  <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground space-y-2">
+                    <p className="font-medium text-foreground">Set up text messages (once)</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>In your Hubtel account, make sure SMS is switched on and has credit. Copy the SMS <span className="font-medium text-foreground">client ID and client secret</span> and save them above.</li>
+                      <li>Ask Hubtel to approve your <span className="font-medium text-foreground">sender name</span> (up to 11 letters or numbers), then type it in above and save.</li>
+                      <li>Type your own phone number here and press "Send test text". When it arrives, switch on "Text passengers about their booking" and save.</li>
+                    </ol>
+                    <p>Passengers are texted at the phone number they gave on the booking, when the booking is received, when a supervisor is assigned (with their name and number), and when the service starts, finishes, is cancelled or missed. Staff are not texted.</p>
+                  </div>
+                </div>
+              )}
               {group === "payments" && (
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
