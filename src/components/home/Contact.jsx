@@ -63,7 +63,7 @@ export default function Contact() {
               <h3 className="mt-5 text-[1.5rem] font-bold leading-tight">Book online in minutes</h3>
               <p className="mt-2 text-white/85 leading-snug">Choose your service and flight, and we prepare your escort.</p>
               <ul className="mt-5 mb-7 space-y-2.5 text-[0.95rem]">
-                {["Live prices, no hidden fees", payWording(settings).bullet, "Confirmation sent to your email"].map((t) => (
+                {["Live prices, no hidden fees", payWording(settings).bullet, settings.sms_enabled === "true" ? "Confirmation by text, receipt by email" : "Confirmation sent to your email"].map((t) => (
                   <li key={t} className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" /> {t}</li>
                 ))}
               </ul>

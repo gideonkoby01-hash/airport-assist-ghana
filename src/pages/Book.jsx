@@ -6,12 +6,14 @@ import { ThemeToggle } from "@/lib/theme";
 import { CurrencyToggle } from "@/lib/currency";
 import { LOGO_URL } from "@/components/Logo";
 import BookingForm from "@/components/BookingForm";
+import { useSettings } from "@/lib/SettingsContext";
 
 // The booking page: one clear path from choosing a service to a confirmed booking, like booking a flight. No dashboard,
 // no menus, and no account: the booking is tied to the email address the passenger gives. The priority check-in desk is
 // the page's background, faded so the form stays easy to read.
 export default function Book() {
   useDocumentTitle("Book airport assistance");
+  const { settings } = useSettings();
   const [summary, setSummary] = useState({ service: "", flight: "", direction: "arrival", when: "", pax: 1, done: false });
 
 
@@ -42,7 +44,7 @@ export default function Book() {
         {!summary.done && (
           <div className="mt-6 mb-7 text-center">
             <h1 className="sora text-[clamp(1.7rem,5vw,2.5rem)] font-extrabold uppercase tracking-[0.04em] leading-tight">Book airport assistance</h1>
-            <p className="text-muted-foreground mt-2 text-sm sm:text-base">We will meet you at Kotoka. Your confirmation and updates are sent to your email.</p>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">{settings.sms_enabled === "true" ? "We will meet you at Kotoka. We confirm your booking by text message and email your receipt." : "We will meet you at Kotoka. Your confirmation and updates are sent to your email."}</p>
           </div>
         )}
         <div className={summary.done ? "mt-7" : ""}>

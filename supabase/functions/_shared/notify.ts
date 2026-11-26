@@ -28,8 +28,11 @@ export async function emailBookingPassenger(
     owner = data;
   }
   const name = String(booking.passengers?.[0]?.name || owner?.full_name || booking.contact || '').trim();
+  const to = bookingEmailAddress(booking, owner?.email);
+  // Porter Service Only passengers need not give an email: they are told by text message, so there is nothing to send and nothing to log.
+  if (!to && !String(booking.contact_email ?? '').trim() && !ownerId) return { status: 'skipped' as const, sent: false, reason: 'no_email' };
   return await sendTransactionalEmail(admin, {
-    eventKey: opts.eventKey, templateName: opts.templateName, to: bookingEmailAddress(booking, owner?.email),
+    eventKey: opts.eventKey, templateName: opts.templateName, to,
     userId: ownerId, relatedEntityId: booking.id,
     variables: { first_name: name.split(/\s+/)[0] || 'there', reference: booking.reference || '', ...opts.variables },
   });

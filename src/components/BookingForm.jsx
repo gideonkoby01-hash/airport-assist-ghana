@@ -17,6 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2, Loader2, Users, Plane, PlaneLanding, PlaneTakeoff, CheckCircle2 } from "lucide-react";
 import { validateBooking, todayUtc } from "@/lib/bookingFormRules";
+import { confirmationLine, emailFieldCopy } from "@/lib/bookingNotices";
+import { isPorterService } from "@/lib/services";
 import { parseBookingPrefill } from "@/lib/bookingPrefill";
 import { AIRLINES, OTHER_AIRLINE, airlineCode, isListedAirline } from "@/lib/airlines";
 import PaymentInformation from "@/components/PaymentInformation";
@@ -153,6 +155,10 @@ export default function BookingForm({ channel = "online", user = undefined, supe
   }, [packages, form.package_code]);
 
   const money = formatFor(selectedPkg);
+  // Every service is confirmed by text message; all but Porter Service Only also email a receipt (so only its email is optional).
+  const porterService = isPorterService(selectedPkg || form.package_code, packages);
+  const smsOn = settings.sms_enabled === "true";
+  const emailCopy = emailFieldCopy({ porterService, smsOn });
   // The page shows the choices on its departure board as they are made.
   useEffect(() => {
     if (!onSummary) return;
@@ -176,7 +182,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
   // After a field is left, show its message straight away instead of waiting for the submit button.
   const checkField = (/** @type {string} */ key) => {
-    const found = validateBooking({ form, passengers, channel, consented })[key];
+    const found = validateBooking({ form, passengers, channel, consented, porterService })[key];
     if (found) setErrors((e) => ({ ...e, [key]: found }));
   };
   const fp = (/** @type {string} */ key) => ({
@@ -258,7 +264,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
 
   // Moves on only when this step's own fields are fine; otherwise shows what to fix and stays.
   const next = () => {
-    const found = validateBooking({ form, passengers, channel, consented });
+    const found = validateBooking({ form, passengers, channel, consented, porterService });
     const mine = Object.fromEntries(Object.entries(found).filter(([k]) => STEP_FIELDS[step](k)));
     const firstKey = Object.keys(mine)[0];
     if (firstKey) {
@@ -289,7 +295,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    const found = validateBooking({ form, passengers, channel, consented });
+    const found = validateBooking({ form, passengers, channel, consented, porterService });
     const firstKey = Object.keys(found)[0];
     if (firstKey) {
       setErrors(found);
@@ -374,8 +380,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         <div className="text-center">
           <h2 className="serif text-3xl text-foreground">You are booked.</h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            We are emailing your confirmation to <span className="font-medium text-foreground">{created.contact_email || form.contact_email}</span>.
-            You will get another email when a supervisor is assigned, and if the status or a payment changes.
+            {confirmationLine({ porterService, smsOn, email: created.contact_email || form.contact_email, phone: form.contact })}
           </p>
         </div>
         <BoardingPass
@@ -392,7 +397,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           reference={created.reference}
           total={money(created.total_value)}
         />
-        <PayNow bookingId={created.id} reference={created.reference} quiet />
+        {(created.contact_email || form.contact_email) && <PayNow bookingId={created.id} reference={created.reference} quiet />}
         {Number(created.discount_amount || 0) > 0 && (
           <p className="text-xs text-emerald-700 text-center">Discount {created.discount_code} applied (−{money(created.discount_amount)} from {money(created.original_total)}).</p>
         )}
@@ -431,7 +436,7 @@ export default function BookingForm({ channel = "online", user = undefined, supe
         <p className="text-sm text-muted-foreground mt-4">
           {channel === "walk_in"
             ? "It is assigned to you. Record payment and progress from the booking."
-            : `We are emailing your confirmation to ${created.contact_email || form.contact_email}. You will get another email when a supervisor is assigned, and if the status or a payment changes. Keep your reference. If you do not receive an email, the Airport Assist desk will contact you by phone.`}
+            : confirmationLine({ porterService, smsOn, email: created.contact_email || form.contact_email, phone: form.contact })}
         </p>
         <div className="flex gap-3 justify-center mt-6">
           {channel === "walk_in" && (
@@ -599,10 +604,10 @@ export default function BookingForm({ channel = "online", user = undefined, supe
           </div>
           {channel === "online" && (
             <div className="space-y-1.5">
-              <Label htmlFor="bf-contact_email">Email address *</Label>
+              <Label htmlFor="bf-contact_email">{emailCopy.label}</Label>
               <Input {...fp("contact_email")} type="email" inputMode="email" autoComplete="email" value={form.contact_email} onChange={(e) => setField("contact_email", e.target.value)} placeholder="you@example.com" />
               {fieldError("contact_email")}
-              <p className="text-xs text-muted-foreground">You do not need an account. We email your confirmation, your supervisor's details and any update on your booking to this address. If you do not receive an email, the Airport Assist desk will contact you by phone.</p>
+              <p className="text-xs text-muted-foreground">{emailCopy.help}</p>
             </div>
           )}
           <div className="grid sm:grid-cols-2 gap-4">

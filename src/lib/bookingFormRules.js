@@ -26,7 +26,7 @@ function flightMs(date, time) {
 }
 
 /** @returns {Record<string, string>} one message per field key; empty when the form is fine. Keys: consent, package_code, flight_number, flight_date, scheduled_flight_time, contact, contact_email, passenger_<n>_name. */
-export function validateBooking({ form, passengers, channel, consented, now = Date.now() }) {
+export function validateBooking({ form, passengers, channel, consented, porterService = false, now = Date.now() }) {
   /** @type {Record<string, string>} */
   const errors = {};
   if (!form.package_code) errors.package_code = 'Choose a service package.';
@@ -40,8 +40,9 @@ export function validateBooking({ form, passengers, channel, consented, now = Da
   }
   if (channel === 'online') {
     const email = String(form.contact_email ?? '').trim();
-    if (!email) errors.contact_email = 'Enter your email address. Your booking details are sent there.';
-    else if (!isEmail(email)) errors.contact_email = 'Enter a valid email address, for example name@example.com.';
+    // Porter Service Only is confirmed by text message, so its email is optional (but must be valid if given).
+    if (!email && !porterService) errors.contact_email = 'Enter your email address. Your booking details are sent there.';
+    else if (email && !isEmail(email)) errors.contact_email = 'Enter a valid email address, for example name@example.com.';
   }
   if (!String(form.contact).trim()) errors.contact = 'Enter a phone or WhatsApp number we can reach you on.';
   else if (!isPhone(form.contact)) errors.contact = 'Enter a phone number with at least 7 digits. Add the country code if it is not a Ghana number.';

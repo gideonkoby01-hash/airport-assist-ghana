@@ -63,7 +63,7 @@ export const SETTINGS: SettingDef[] = [
   { key: 'smtp_username', group: 'email', label: 'SMTP username', type: 'text', default: '', optional: true, maxLength: 200, showWhen: { key: 'email_provider', value: 'smtp' },
     help: 'Often your email address. Leave empty only for a server that needs no sign-in.' },
 
-  { key: 'sms_enabled', group: 'sms', label: 'Text passengers about their booking', type: 'boolean', default: 'false',
+  { key: 'sms_enabled', group: 'sms', label: 'Text passengers about their booking', type: 'boolean', default: 'false', public: true,
     help: 'Switch on only after the Hubtel keys and the sender name are saved and a test text has reached your phone. Each text costs Hubtel credit.' },
   { key: 'sms_sender_id', group: 'sms', label: 'Sender name', type: 'text', default: '', maxLength: 11, optional: true,
     help: 'What passengers see as the sender: up to 11 letters or numbers, no spaces (for example AirportAsst). Hubtel must approve it for your account first; ask Hubtel support if texts are refused.' },
